@@ -1,6 +1,7 @@
 --// Rebirth Loop UI (LocalScript)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -24,17 +25,65 @@ frame.Size = UDim2.new(0, 300, 0, 170)
 frame.Position = UDim2.new(0, 20, 0, 120)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
+frame.Active = true -- ช่วยรับ input ให้ลากได้ดีขึ้น
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
+-- ===== Drag frame (ลาก UI ได้) =====
+local dragging = false
+local dragStart
+local startPos
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+end
+
+frame.InputBegan:Connect(function(input)
+	-- กันลากตอนกำลังพิมพ์ใน TextBox
+	if UserInputService:GetFocusedTextBox() then return end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+		updateDrag(input)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+		updateDrag(input)
+	end
+end)
+
+-- ===== Title / Labels =====
 local title = Instance.new("TextLabel")
 title.Parent = frame
 title.Size = UDim2.new(1, -20, 0, 30)
 title.Position = UDim2.new(0, 10, 0, 8)
 title.BackgroundTransparency = 1
-title.Text = "Rebirth Auto Loop"
+title.Text = "Rebirth Auto Loop (Drag Me)"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -54,7 +103,7 @@ roundsLabel.TextXAlignment = Enum.TextXAlignment.Left
 local function makeLabel(txt, y)
 	local l = Instance.new("TextLabel")
 	l.Parent = frame
-	l.Size = UDim2.new(0, 90, 0, 24)
+	l.Size = UDim2.new(0, 100, 0, 24)
 	l.Position = UDim2.new(0, 10, 0, y)
 	l.BackgroundTransparency = 1
 	l.Text = txt
@@ -77,9 +126,11 @@ local function makeBox(default, y)
 	b.Text = default
 	b.ClearTextOnFocus = false
 	b.BorderSizePixel = 0
+
 	local c = Instance.new("UICorner")
 	c.CornerRadius = UDim.new(0, 6)
 	c.Parent = b
+
 	return b
 end
 
@@ -89,6 +140,7 @@ local intervalBox = makeBox("30", 72)
 makeLabel("Arg (e.g. 5):", 102)
 local argBox = makeBox("5", 102)
 
+-- ===== Buttons =====
 local startStopBtn = Instance.new("TextButton")
 startStopBtn.Parent = frame
 startStopBtn.Size = UDim2.new(0, 130, 0, 30)
@@ -99,6 +151,7 @@ startStopBtn.Font = Enum.Font.GothamBold
 startStopBtn.TextSize = 14
 startStopBtn.Text = "START"
 startStopBtn.BorderSizePixel = 0
+
 local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 8)
 btnCorner.Parent = startStopBtn
@@ -113,6 +166,7 @@ resetBtn.Font = Enum.Font.GothamBold
 resetBtn.TextSize = 14
 resetBtn.Text = "RESET COUNT"
 resetBtn.BorderSizePixel = 0
+
 local btnCorner2 = Instance.new("UICorner")
 btnCorner2.CornerRadius = UDim.new(0, 8)
 btnCorner2.Parent = resetBtn
