@@ -180,6 +180,45 @@ msg.TextSize = 12
 msg.TextXAlignment = Enum.TextXAlignment.Left
 msg.Parent = root
 
+-- ===== Drag to move (ลากย้าย UI) =====
+do
+    local UIS = game:GetService("UserInputService")
+    local dragging = false
+    local dragStart
+    local startPos
+
+    local function update(pos)
+        local delta = pos - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+
+    title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            update(input.Position)
+        end
+    end)
+end
+
 -- ===== Logic (ของเดิม) =====
 local loopEnabled = false
 local loopRunning = false
@@ -287,3 +326,4 @@ okBtn.MouseButton1Click:Connect(function()
         setLoopUI(false)
     end)
 end)
+
