@@ -113,7 +113,7 @@ local xBox = makeBox("X"); xBox.LayoutOrder = 1; xBox.Size = UDim2.new(1/3, -7, 
 local yBox = makeBox("Y"); yBox.LayoutOrder = 2; yBox.Size = UDim2.new(1/3, -7, 1, 0); yBox.Parent = rowXYZ
 local zBox = makeBox("Z"); zBox.LayoutOrder = 3; zBox.Size = UDim2.new(1/3, -7, 1, 0); zBox.Parent = rowXYZ
 
-xBox.Text = "-390"
+xBox.Text = "-490"
 yBox.Text = "6000"
 zBox.Text = "-30.5"
 
@@ -143,10 +143,10 @@ local function makeLabel(text, w)
 end
 
 local countLabel = makeLabel("จำนวน:", 55); countLabel.LayoutOrder = 1; countLabel.Parent = rowOpt
-local countBox = makeBox("1"); countBox.LayoutOrder = 2; countBox.Size = UDim2.new(0, 60, 1, 0); countBox.Text = "1"; countBox.Parent = rowOpt
+local countBox = makeBox("50"); countBox.LayoutOrder = 2; countBox.Size = UDim2.new(0, 60, 1, 0); countBox.Text = "50"; countBox.Parent = rowOpt
 
 local delayLabel = makeLabel("หน่วง:", 45); delayLabel.LayoutOrder = 3; delayLabel.Parent = rowOpt
-local delayBox = makeBox("0.2"); delayBox.LayoutOrder = 4; delayBox.Size = UDim2.new(0, 60, 1, 0); delayBox.Text = "0.2"; delayBox.Parent = rowOpt
+local delayBox = makeBox("3"); delayBox.LayoutOrder = 4; delayBox.Size = UDim2.new(0, 60, 1, 0); delayBox.Text = "3"; delayBox.Parent = rowOpt
 
 -- checkbox group
 local loopGroup = Instance.new("Frame")
@@ -362,5 +362,6 @@ okBtn.MouseButton1Click:Connect(function()
         setLoopUI(false)
     end)
 end)
+
 
 
