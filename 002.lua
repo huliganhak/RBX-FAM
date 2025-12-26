@@ -47,6 +47,42 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.Parent = root
 
+local minimized = false
+local fullSize = frame.Size
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 28, 0, 28)
+minBtn.Position = UDim2.new(1, -28, 0, 0)
+minBtn.AnchorPoint = Vector2.new(1, 0)
+minBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.Text = "–"
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 18
+minBtn.Parent = title
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 8)
+
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        -- ซ่อนทุกอย่างยกเว้น title
+        for _, child in ipairs(root:GetChildren()) do
+            if child ~= title and child:IsA("GuiObject") then
+                child.Visible = false
+            end
+        end
+        frame.Size = UDim2.new(fullSize.X.Scale, fullSize.X.Offset, 0, 55)
+        minBtn.Text = "+"
+    else
+        for _, child in ipairs(root:GetChildren()) do
+            if child ~= title and child:IsA("GuiObject") then
+                child.Visible = true
+            end
+        end
+        frame.Size = fullSize
+        minBtn.Text = "–"
+    end
+end)
+
 local function makeBox(placeholder)
     local box = Instance.new("TextBox")
     box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -326,4 +362,5 @@ okBtn.MouseButton1Click:Connect(function()
         setLoopUI(false)
     end)
 end)
+
 
