@@ -27,52 +27,85 @@ local function getRootPartFromInstance(inst)
 	return nil
 end
 
-local function tpToNearestMonster(mapId, monsterId)
-	local monstersRoot = workspace:FindFirstChild("Monsters")
-	if not monstersRoot then return false, "ไม่พบ workspace.Monsters" end
+local function getHpFromMonster(inst)
+    -- HpValue เป็น NumberValue อยู่ใต้ตัวมอนสเตอร์
+    local hp = inst:FindFirstChild("HpValue")
+    if hp and hp:IsA("NumberValue") then
+        return hp.Value
+    end
+    -- เผื่อเป็น Model แล้ว HpValue อยู่ข้างใน
+    if inst:IsA("Model") then
+        local hp2 = inst:FindFirstChild("HpValue", true)
+        if hp2 and hp2:IsA("NumberValue") then
+            return hp2.Value
+        end
+    end
+    return nil -- ไม่เจอ HpValue
+end
 
-	local mapKey = string.format("%03d", tonumber(mapId) or 0)
-	local monsterKey = string.format("%03d", tonumber(monsterId) or 0)
+local function tpToNearestMonsterAlive(mapId, monsterId)
+    local monstersRoot = workspace:FindFirstChild("Monsters")
+    if not monstersRoot then return false, "ไม่พบ workspace.Monsters" end
 
-	local mapFolder = monstersRoot:FindFirstChild(mapKey)
-	if not mapFolder then return false, "ไม่พบโฟลเดอร์แผนที่: " .. mapKey end
+    local mapKey = string.format("%03d", tonumber(mapId) or 0)
+    local monsterKey = string.format("%03d", tonumber(monsterId) or 0)
 
-	-- ใน mapFolder มีหลายตัวชื่อเดียวกัน เช่น "001"
-	local candidates = {}
-	for _, inst in ipairs(mapFolder:GetChildren()) do
-		if inst.Name == monsterKey then
-			table.insert(candidates, inst)
-		end
-	end
+    local mapFolder = monstersRoot:FindFirstChild(mapKey)
+    if not mapFolder then return false, "ไม่พบโฟลเดอร์แผนที่: " .. mapKey end
 
-	if #candidates == 0 then
-		return false, ("ไม่พบมอนสเตอร์ชื่อ %s ใน map %s"):format(monsterKey, mapKey)
-	end
+    -- เก็บทุก instance ที่ชื่อเดียวกัน เช่น "001"
+    local candidates = {}
+    for _, inst in ipairs(mapFolder:GetChildren()) do
+        if inst.Name == monsterKey then
+            table.insert(candidates, inst)
+        end
+    end
+    if #candidates == 0 then
+        return false, ("ไม่พบมอนสเตอร์ชื่อ %s ใน map %s"):format(monsterKey, mapKey)
+    end
 
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return false, "ไม่พบ HumanoidRootPart ของผู้เล่น" end
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false, "ไม่พบ HumanoidRootPart ของผู้เล่น" end
 
-	local origin = hrp.Position
-	local bestPart, bestDist = nil, math.huge
+    local origin = hrp.Position
+    local bestPart, bestDist, bestHp = nil, math.huge, nil
+    local aliveCount, deadCount, noHpCount = 0, 0, 0
 
-	for _, inst in ipairs(candidates) do
-		local p = getRootPartFromInstance(inst)
-		if p then
-			local dist = (p.Position - origin).Magnitude
-			if dist < bestDist then
-				bestDist = dist
-				bestPart = p
-			end
-		end
-	end
+    for _, inst in ipairs(candidates) do
+        local hp = getHpFromMonster(inst)
 
-	if not bestPart then
-		return false, "เจอชื่อมอนสเตอร์ แต่ไม่มี BasePart/Model ที่ใช้หาตำแหน่งได้"
-	end
+        -- ถ้า hp เจอและ <= 0 ให้ข้ามทันที
+        if hp ~= nil and hp <= 0 then
+            deadCount += 1
+        else
+            if hp == nil then
+                noHpCount += 1 -- ไม่เจอ HpValue (ยังให้ผ่านได้ ถ้าคุณอยากให้ข้ามก็สั่งได้)
+            else
+                aliveCount += 1
+            end
 
-	hrp.CFrame = bestPart.CFrame * CFrame.new(0, 0, 6)
-	return true, ("TP หา %s ใน %s (ใกล้สุด ระยะ %.1f)"):format(monsterKey, mapKey, bestDist)
+            local p = getRootPartFromInstance(inst)
+            if p then
+                local dist = (p.Position - origin).Magnitude
+                if dist < bestDist then
+                    bestDist = dist
+                    bestPart = p
+                    bestHp = hp
+                end
+            end
+        end
+    end
+
+    if not bestPart then
+        return false, ("ไม่มีตัวที่ TP ได้ (HP0=%d, ไม่มีHP=%d)"):format(deadCount, noHpCount)
+    end
+
+    hrp.CFrame = bestPart.CFrame * CFrame.new(0, 0, 6)
+
+    local hpText = (bestHp ~= nil) and tostring(bestHp) or "N/A"
+    return true, ("TP หา %s ใน %s | HP=%s | ใกล้สุด %.1f (Alive=%d Dead=%d NoHp=%d)")
+        :format(monsterKey, mapKey, hpText, bestDist, aliveCount, deadCount, noHpCount)
 end
 
 -- ===================== UI =====================
@@ -269,6 +302,7 @@ tpBtn.MouseButton1Click:Connect(function()
 		return
 	end
 
-	local ok, info = tpToNearestMonster(mapNum, monsterNum)
+	local ok, info = tpToNearestMonsterAlive(mapNum, monsterNum)
 	msg.Text = info or (ok and "OK" or "Fail")
 end)
+
