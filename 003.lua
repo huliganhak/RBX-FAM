@@ -169,10 +169,11 @@ local function tpToNearestMonsterAlive(mapId, monsterId)
 end
 
 local function stopAutoLoop(msgLabel)
-	if loopRunning then
-		loopRunning = false
-		loopToken += 1
-		if msgLabel then msgLabel.Text = "STOP: หยุดลูปแล้ว" end
+	-- หยุดเสมอ กันซ้อน 100%
+	loopRunning = false
+	loopToken += 1
+	if msgLabel then
+		msgLabel.Text = "STOP: หยุดลูปแล้ว"
 	end
 end
 
@@ -475,7 +476,9 @@ autoBtn.MouseButton1Click:Connect(function()
 				end
 			end
 
-			task.wait(0.25) -- ความถี่การเช็ค (ปรับได้)
+			task.wait(0.25)
+			if not (loopRunning and myToken == loopToken) then break end
+
 		end
 
 		-- จบลูป
@@ -492,5 +495,6 @@ stopLoopBtn.MouseButton1Click:Connect(function()
 	autoBtn.Active = true
 	autoBtn.AutoButtonColor = true
 end)
+
 
 
