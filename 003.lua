@@ -43,6 +43,16 @@ local function getHpFromMonster(inst)
     return nil -- ไม่เจอ HpValue
 end
 
+local function formatHp(hp)
+	if hp == nil then return "N/A" end
+	-- ทำให้สั้น: เช่น 1.08e+23 หรือ 12345.67
+	if math.abs(hp) >= 1e6 or (math.abs(hp) > 0 and math.abs(hp) < 0.001) then
+		return string.format("%.2e", hp)
+	else
+		return string.format("%.2f", hp)
+	end
+end
+
 local function tpToNearestMonsterAlive(mapId, monsterId)
     local monstersRoot = workspace:FindFirstChild("Monsters")
     if not monstersRoot then return false, "ไม่พบ workspace.Monsters" end
@@ -103,9 +113,12 @@ local function tpToNearestMonsterAlive(mapId, monsterId)
 
     hrp.CFrame = bestPart.CFrame * CFrame.new(0, 0, 6)
 
-    local hpText = (bestHp ~= nil) and tostring(bestHp) or "N/A"
-    return true, ("TP หา %s ใน %s | HP=%s | ใกล้สุด %.1f (Alive=%d Dead=%d NoHp=%d)")
-        :format(monsterKey, mapKey, hpText, bestDist, aliveCount, deadCount, noHpCount)
+    local hpText = formatHp(bestHp)
+
+	return true, (
+		"TP หา %s ใน %s | HP=%s | ใกล้สุด %.1f\n" ..
+		"Alive=%d  Dead=%d  NoHp=%d"
+	):format(monsterKey, mapKey, hpText, bestDist, aliveCount, deadCount, noHpCount)
 end
 
 -- ===================== UI =====================
@@ -239,13 +252,15 @@ Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 12)
 
 local msg = Instance.new("TextLabel")
 msg.LayoutOrder = 4
-msg.Size = UDim2.new(1, 0, 0, 18)
+msg.Size = UDim2.new(1, 0, 0, 34) -- ✅ เพิ่มความสูง (จาก 18 -> 34/40)
 msg.BackgroundTransparency = 1
 msg.Text = ""
 msg.TextColor3 = Color3.fromRGB(255, 200, 80)
 msg.Font = Enum.Font.Gotham
 msg.TextSize = 12
 msg.TextXAlignment = Enum.TextXAlignment.Left
+msg.TextYAlignment = Enum.TextYAlignment.Top -- ✅ ชิดบน
+msg.TextWrapped = true -- ✅ ให้ตัดบรรทัดอัตโนมัติ
 msg.Parent = root
 
 -- Drag (ลากที่ title)
@@ -305,4 +320,5 @@ tpBtn.MouseButton1Click:Connect(function()
 	local ok, info = tpToNearestMonsterAlive(mapNum, monsterNum)
 	msg.Text = info or (ok and "OK" or "Fail")
 end)
+
 
