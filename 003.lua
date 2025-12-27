@@ -456,7 +456,7 @@ autoBtn.MouseButton1Click:Connect(function()
 			-- ถ้าใกล้สุด HP=0 -> TP ไปหา “ตัวถัดไปที่ HP != 0”
 			if nPart and nHp ~= nil and nHp <= 0 then
 				local aInst, aPart, aDist, aHp = findNearest(candidates, origin, function(_, hp)
-					return (hp == nil) or (hp > 0)  -- HP nil ให้ผ่านได้ (ถ้าคุณอยากบังคับต้องมี hp>0 บอกได้)
+					return (hp ~= nil) and (hp > 0)  -- HP nil ให้ผ่านได้ (ถ้าคุณอยากบังคับต้องมี hp>0 บอกได้)
 				end)
 
 				if aPart then
@@ -495,6 +495,7 @@ stopLoopBtn.MouseButton1Click:Connect(function()
 	autoBtn.Active = true
 	autoBtn.AutoButtonColor = true
 end)
+
 
 
 
