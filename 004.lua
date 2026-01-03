@@ -22,8 +22,8 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 360, 0, 270) -- เพิ่มสูงขึ้น
-frame.Position = UDim2.new(0.5, -180, 0.5, -135)
+frame.Size = UDim2.new(0, 380, 0, 320) -- เพิ่มสูงขึ้น
+frame.Position = UDim2.new(0.5, -190, 0.5, -160)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -167,13 +167,13 @@ local lockSpeedBtn = mkBtn("Lock: OFF", 240, 198, 104)
 lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(75, 55, 35)
 
 -- Start/Stop
-local startBtn = mkBtn("Start", 16, 205, 160)
-local stopBtn  = mkBtn("Stop",  196, 205, 148)
+local startBtn = mkBtn("Start", 16, 250, 170)
+local stopBtn  = mkBtn("Stop",  206, 250, 158)
 stopBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
 
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, -32, 0, 22)
-status.Position = UDim2.new(0, 16, 0, 242)
+status.Position = UDim2.new(0, 16, 0, 290)
 status.BackgroundTransparency = 1
 status.TextColor3 = Color3.fromRGB(180, 180, 180)
 status.Font = Enum.Font.SourceSans
@@ -307,3 +307,4 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
+
