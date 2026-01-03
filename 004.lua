@@ -43,7 +43,7 @@ titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = titleBar
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -16, 1, 0)
+title.Size = UDim2.new(1, -56, 1, 0) -- เผื่อที่ให้ปุ่มพับ
 title.Position = UDim2.new(0, 8, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "RF Invoker (Attack)"
@@ -52,6 +52,21 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 18
 title.Parent = titleBar
+
+-- ===== Collapse Button =====
+local collapseBtn = Instance.new("TextButton")
+collapseBtn.Size = UDim2.new(0, 32, 0, 24)
+collapseBtn.Position = UDim2.new(1, -40, 0, 8)
+collapseBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+collapseBtn.Font = Enum.Font.SourceSansBold
+collapseBtn.TextSize = 16
+collapseBtn.Text = "—" -- กดแล้วพับ (เปลี่ยนเป็น "+" ตอนพับ)
+collapseBtn.Parent = titleBar
+
+local cbCorner = Instance.new("UICorner")
+cbCorner.CornerRadius = UDim.new(0, 8)
+cbCorner.Parent = collapseBtn
 
 -- Draggable
 do
@@ -186,6 +201,38 @@ local function setStatus(t)
 	status.Text = "Status: " .. t
 end
 
+-- ===== Collapse / Expand Logic =====
+local expandedSize = frame.Size
+local expandedPos = frame.Position
+local collapsedSize = UDim2.new(expandedSize.X.Scale, expandedSize.X.Offset, 0, 44) -- เหลือแค่หัว
+local isCollapsed = false
+
+local function setChildrenVisible(visible)
+	for _, child in ipairs(frame:GetChildren()) do
+		if child ~= titleBar then
+			child.Visible = visible
+		end
+	end
+end
+
+collapseBtn.MouseButton1Click:Connect(function()
+	isCollapsed = not isCollapsed
+
+	if isCollapsed then
+		expandedSize = frame.Size
+		expandedPos = frame.Position
+
+		setChildrenVisible(false)
+		frame.Size = collapsedSize
+		collapseBtn.Text = "+"
+	else
+		setChildrenVisible(true)
+		frame.Size = expandedSize
+		frame.Position = expandedPos
+		collapseBtn.Text = "—"
+	end
+end)
+
 --// ===== WalkSpeed logic =====
 local lockSpeed = false
 local desiredSpeed = 16
@@ -307,4 +354,3 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
-
