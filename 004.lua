@@ -23,7 +23,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 320)
+frame.Size = UDim2.new(0, 450, 0, 300)
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -463,5 +463,6 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
+
 
 
