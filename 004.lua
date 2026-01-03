@@ -13,6 +13,7 @@ local args = { "Attack" }
 --// ===== UI (Draggable) =====
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
@@ -21,8 +22,8 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 360, 0, 220)
-frame.Position = UDim2.new(0.5, -180, 0.5, -110)
+frame.Size = UDim2.new(0, 360, 0, 270) -- เพิ่มสูงขึ้น
+frame.Position = UDim2.new(0.5, -180, 0.5, -135)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -51,14 +52,6 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 18
 title.Parent = titleBar
-
--- Make only top corners rounded visually
-local maskBottom = Instance.new("Frame")
-maskBottom.Size = UDim2.new(1, 0, 0, 10)
-maskBottom.Position = UDim2.new(0, 0, 1, -10)
-maskBottom.BackgroundColor3 = titleBar.BackgroundColor3
-maskBottom.BorderSizePixel = 0
-maskBottom.Parent = titleBar
 
 -- Draggable
 do
@@ -92,7 +85,7 @@ end
 -- Helpers UI
 local function mkLabel(text, x, y)
 	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(0, 110, 0, 26)
+	l.Size = UDim2.new(0, 120, 0, 26)
 	l.Position = UDim2.new(0, x, 0, y)
 	l.BackgroundTransparency = 1
 	l.Text = text
@@ -104,9 +97,9 @@ local function mkLabel(text, x, y)
 	return l
 end
 
-local function mkBox(defaultText, x, y)
+local function mkBox(defaultText, x, y, w)
 	local tb = Instance.new("TextBox")
-	tb.Size = UDim2.new(0, 90, 0, 28)
+	tb.Size = UDim2.new(0, w or 90, 0, 28)
 	tb.Position = UDim2.new(0, x, 0, y)
 	tb.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	tb.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -147,6 +140,13 @@ local function mkBtn(text, x, y, w)
 	return b
 end
 
+local function toNumberSafe(text, fallback)
+	local n = tonumber(text)
+	if not n then return fallback end
+	return n
+end
+
+-- Inputs
 mkLabel("Total:", 16, 60)
 local totalBox = mkBox(50, 140, 58)
 
@@ -156,13 +156,24 @@ local batchBox = mkBox(10, 140, 93)
 mkLabel("Delay (sec):", 16, 130)
 local delayBox = mkBox(0.1, 140, 128)
 
-local startBtn = mkBtn("Start", 16, 170, 160)
-local stopBtn  = mkBtn("Stop",  196, 170, 148)
+-- Speed UI
+mkLabel("WalkSpeed:", 16, 165)
+local speedBox = mkBox(16, 140, 163)
+
+local applySpeedBtn = mkBtn("Apply Speed", 240, 160, 104)
+applySpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 75, 45)
+
+local lockSpeedBtn = mkBtn("Lock: OFF", 240, 198, 104)
+lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(75, 55, 35)
+
+-- Start/Stop
+local startBtn = mkBtn("Start", 16, 205, 160)
+local stopBtn  = mkBtn("Stop",  196, 205, 148)
 stopBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
 
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, -32, 0, 22)
-status.Position = UDim2.new(0, 16, 0, 205)
+status.Position = UDim2.new(0, 16, 0, 242)
 status.BackgroundTransparency = 1
 status.TextColor3 = Color3.fromRGB(180, 180, 180)
 status.Font = Enum.Font.SourceSans
@@ -171,19 +182,64 @@ status.TextXAlignment = Enum.TextXAlignment.Left
 status.Text = "Status: Idle"
 status.Parent = frame
 
---// ===== Logic =====
-local running = false
-local runToken = 0
-
-local function toNumberSafe(text, fallback)
-	local n = tonumber(text)
-	if not n then return fallback end
-	return n
-end
-
 local function setStatus(t)
 	status.Text = "Status: " .. t
 end
+
+--// ===== WalkSpeed logic =====
+local lockSpeed = false
+local desiredSpeed = 16
+
+local function getHumanoid()
+	local char = player.Character
+	if not char then return nil end
+	return char:FindFirstChildOfClass("Humanoid")
+end
+
+local function applySpeed()
+	local hum = getHumanoid()
+	if not hum then
+		setStatus("No Humanoid yet (respawn?)")
+		return
+	end
+	hum.WalkSpeed = desiredSpeed
+	setStatus("WalkSpeed set to " .. tostring(desiredSpeed))
+end
+
+applySpeedBtn.MouseButton1Click:Connect(function()
+	desiredSpeed = toNumberSafe(speedBox.Text, 16)
+	if desiredSpeed < 0 then desiredSpeed = 0 end
+	speedBox.Text = tostring(desiredSpeed)
+	applySpeed()
+end)
+
+lockSpeedBtn.MouseButton1Click:Connect(function()
+	lockSpeed = not lockSpeed
+	lockSpeedBtn.Text = lockSpeed and "Lock: ON" or "Lock: OFF"
+	lockSpeedBtn.BackgroundColor3 = lockSpeed and Color3.fromRGB(45, 95, 95) or Color3.fromRGB(75, 55, 35)
+	setStatus(lockSpeed and ("Locking WalkSpeed=" .. desiredSpeed) or "Speed lock off")
+end)
+
+-- รักษาความเร็วไว้ (ถ้าเปิด Lock)
+RunService.Heartbeat:Connect(function()
+	if not lockSpeed then return end
+	local hum = getHumanoid()
+	if hum and hum.WalkSpeed ~= desiredSpeed then
+		hum.WalkSpeed = desiredSpeed
+	end
+end)
+
+-- เผื่อเกิด respawn ให้ apply ใหม่อัตโนมัติ
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	if lockSpeed then
+		applySpeed()
+	end
+end)
+
+--// ===== Invoke logic =====
+local running = false
+local runToken = 0
 
 local function invokeOnce(index)
 	local ok, result = pcall(function()
@@ -196,8 +252,8 @@ end
 
 local function runBatched(total, batch, delay, token)
 	setStatus(("Running... total=%d batch=%d delay=%.3f"):format(total, batch, delay))
-
 	local sent = 0
+
 	for startIdx = 1, total, batch do
 		if not running or token ~= runToken then
 			setStatus(("Stopped at %d/%d"):format(sent, total))
@@ -228,13 +284,11 @@ startBtn.MouseButton1Click:Connect(function()
 	local batch = math.floor(toNumberSafe(batchBox.Text, 10))
 	local delay = toNumberSafe(delayBox.Text, 0.1)
 
-	-- Clamp กันค่าพังๆ
 	if total < 1 then total = 1 end
 	if batch < 1 then batch = 1 end
 	if delay < 0 then delay = 0 end
 	if batch > total then batch = total end
 
-	-- update textbox ให้เห็นค่าที่ clamp แล้ว
 	totalBox.Text = tostring(total)
 	batchBox.Text = tostring(batch)
 	delayBox.Text = tostring(delay)
@@ -242,7 +296,6 @@ startBtn.MouseButton1Click:Connect(function()
 	running = true
 	runToken += 1
 	local token = runToken
-
 	task.spawn(runBatched, total, batch, delay, token)
 end)
 
