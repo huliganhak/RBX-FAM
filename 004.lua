@@ -176,22 +176,22 @@ row2.Parent = root
 local row2Layout = Instance.new("UIListLayout")
 row2Layout.FillDirection = Enum.FillDirection.Horizontal
 row2Layout.SortOrder = Enum.SortOrder.LayoutOrder
-row2Layout.Padding = UDim.new(0, 10)
+row2Layout.Padding = UDim.new(0, 8)
 row2Layout.Parent = row2
 
 local leftCell = Instance.new("Frame")
 leftCell.BackgroundTransparency = 1
-leftCell.Size = UDim2.new(0.40, 0, 1, 0)
+leftCell.Size = UDim2.new(0.40, -6, 1, 0)
 leftCell.Parent = row2
 
 local midCell = Instance.new("Frame")
 midCell.BackgroundTransparency = 1
-midCell.Size = UDim2.new(0.30, 0, 1, 0)
+midCell.Size = UDim2.new(0.30, -6, 1, 0)
 midCell.Parent = row2
 
 local rightCell = Instance.new("Frame")
 rightCell.BackgroundTransparency = 1
-rightCell.Size = UDim2.new(0.30, 0, 1, 0)
+rightCell.Size = UDim2.new(0.30, -6, 1, 0)
 rightCell.Parent = row2
 
 local speedBox = makeField(leftCell, "Speed:", "16", 58)
@@ -463,6 +463,7 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
+
 
 
 
