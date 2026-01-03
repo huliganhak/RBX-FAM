@@ -64,7 +64,7 @@ local function makeBox(defaultText)
 	return box
 end
 
-local function makeLabel(text, w)
+local function makeLabel(text)
 	local lb = Instance.new("TextLabel")
 	lb.BackgroundTransparency = 1
 	lb.Text = text
@@ -72,26 +72,37 @@ local function makeLabel(text, w)
 	lb.Font = Enum.Font.Gotham
 	lb.TextSize = 14
 	lb.TextXAlignment = Enum.TextXAlignment.Left
-	if w then lb.Size = UDim2.new(0, w, 1, 0) end
 	return lb
-end
-
-local function makeBtn(text, h)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(1, 0, 0, h or 36)
-	b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	b.TextColor3 = Color3.fromRGB(255, 255, 255)
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 15
-	b.Text = text
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 12)
-	return b
 end
 
 local function toNumberSafe(text, fallback)
 	local n = tonumber(text)
 	if n == nil then return fallback end
 	return n
+end
+
+-- field helper: label + box ใน cell เดียว (กันหลุดขอบ)
+local function makeField(parent, labelText, defaultValue, labelWidth)
+	local cell = Instance.new("Frame")
+	cell.BackgroundTransparency = 1
+	cell.Size = UDim2.new(1, 0, 1, 0)
+	cell.Parent = parent
+
+	local lay = Instance.new("UIListLayout")
+	lay.FillDirection = Enum.FillDirection.Horizontal
+	lay.SortOrder = Enum.SortOrder.LayoutOrder
+	lay.Padding = UDim.new(0, 6)
+	lay.Parent = cell
+
+	local lb = makeLabel(labelText)
+	lb.Size = UDim2.new(0, labelWidth or 52, 1, 0)
+	lb.Parent = cell
+
+	local box = makeBox(defaultValue)
+	box.Size = UDim2.new(1, -(labelWidth or 52) - 6, 1, 0)
+	box.Parent = cell
+
+	return box
 end
 
 -- ===== Title row =====
@@ -123,7 +134,7 @@ minBtn.TextSize = 18
 minBtn.Parent = titleRow
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 8)
 
--- ===== Row: Total / Batch / Delay =====
+-- ===== Row: Total / Batch / Delay (FIX ไม่หลุดขอบ) =====
 local row1 = Instance.new("Frame")
 row1.LayoutOrder = 2
 row1.Size = UDim2.new(1, 0, 0, 34)
@@ -133,19 +144,29 @@ row1.Parent = root
 local row1Layout = Instance.new("UIListLayout")
 row1Layout.FillDirection = Enum.FillDirection.Horizontal
 row1Layout.SortOrder = Enum.SortOrder.LayoutOrder
-row1Layout.Padding = UDim.new(0, 8)
+row1Layout.Padding = UDim.new(0, 10)
 row1Layout.Parent = row1
 
-local totalLabel = makeLabel("Total:", 45); totalLabel.LayoutOrder = 1; totalLabel.Parent = row1
-local totalBox = makeBox("50"); totalBox.LayoutOrder = 2; totalBox.Size = UDim2.new(0, 60, 1, 0); totalBox.Parent = row1
+local cellA = Instance.new("Frame")
+cellA.BackgroundTransparency = 1
+cellA.Size = UDim2.new(1/3, -7, 1, 0)
+cellA.Parent = row1
 
-local batchLabel = makeLabel("Batch:", 50); batchLabel.LayoutOrder = 3; batchLabel.Parent = row1
-local batchBox = makeBox("10"); batchBox.LayoutOrder = 4; batchBox.Size = UDim2.new(0, 60, 1, 0); batchBox.Parent = row1
+local cellB = Instance.new("Frame")
+cellB.BackgroundTransparency = 1
+cellB.Size = UDim2.new(1/3, -7, 1, 0)
+cellB.Parent = row1
 
-local delayLabel = makeLabel("Delay:", 48); delayLabel.LayoutOrder = 5; delayLabel.Parent = row1
-local delayBox = makeBox("0.1"); delayBox.LayoutOrder = 6; delayBox.Size = UDim2.new(0, 70, 1, 0); delayBox.Parent = row1
+local cellC = Instance.new("Frame")
+cellC.BackgroundTransparency = 1
+cellC.Size = UDim2.new(1/3, -7, 1, 0)
+cellC.Parent = row1
 
--- ===== Row: WalkSpeed + Apply + Lock =====
+local totalBox = makeField(cellA, "Total:", "50", 52)
+local batchBox = makeField(cellB, "Batch:", "10", 52)
+local delayBox = makeField(cellC, "Delay:", "0.1", 52)
+
+-- ===== Row: WalkSpeed + Apply + Lock (FIX ไม่หลุดขอบ) =====
 local row2 = Instance.new("Frame")
 row2.LayoutOrder = 3
 row2.Size = UDim2.new(1, 0, 0, 34)
@@ -155,32 +176,44 @@ row2.Parent = root
 local row2Layout = Instance.new("UIListLayout")
 row2Layout.FillDirection = Enum.FillDirection.Horizontal
 row2Layout.SortOrder = Enum.SortOrder.LayoutOrder
-row2Layout.Padding = UDim.new(0, 8)
+row2Layout.Padding = UDim.new(0, 10)
 row2Layout.Parent = row2
 
-local speedLabel = makeLabel("WalkSpeed:", 80); speedLabel.LayoutOrder = 1; speedLabel.Parent = row2
-local speedBox = makeBox("16"); speedBox.LayoutOrder = 2; speedBox.Size = UDim2.new(0, 60, 1, 0); speedBox.Parent = row2
+local leftCell = Instance.new("Frame")
+leftCell.BackgroundTransparency = 1
+leftCell.Size = UDim2.new(0.40, 0, 1, 0)
+leftCell.Parent = row2
+
+local midCell = Instance.new("Frame")
+midCell.BackgroundTransparency = 1
+midCell.Size = UDim2.new(0.30, 0, 1, 0)
+midCell.Parent = row2
+
+local rightCell = Instance.new("Frame")
+rightCell.BackgroundTransparency = 1
+rightCell.Size = UDim2.new(0.30, 0, 1, 0)
+rightCell.Parent = row2
+
+local speedBox = makeField(leftCell, "Speed:", "16", 58)
 
 local applySpeedBtn = Instance.new("TextButton")
-applySpeedBtn.LayoutOrder = 3
-applySpeedBtn.Size = UDim2.new(0, 110, 1, 0)
+applySpeedBtn.Size = UDim2.new(1, 0, 1, 0)
 applySpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 160, 80)
 applySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 applySpeedBtn.Text = "Apply"
 applySpeedBtn.Font = Enum.Font.GothamBold
 applySpeedBtn.TextSize = 14
-applySpeedBtn.Parent = row2
+applySpeedBtn.Parent = midCell
 Instance.new("UICorner", applySpeedBtn).CornerRadius = UDim.new(0, 10)
 
 local lockSpeedBtn = Instance.new("TextButton")
-lockSpeedBtn.LayoutOrder = 4
-lockSpeedBtn.Size = UDim2.new(0, 110, 1, 0)
+lockSpeedBtn.Size = UDim2.new(1, 0, 1, 0)
 lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(80, 60, 40)
 lockSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 lockSpeedBtn.Text = "Lock: OFF"
 lockSpeedBtn.Font = Enum.Font.GothamBold
 lockSpeedBtn.TextSize = 14
-lockSpeedBtn.Parent = row2
+lockSpeedBtn.Parent = rightCell
 Instance.new("UICorner", lockSpeedBtn).CornerRadius = UDim.new(0, 10)
 
 -- ===== Row: Start / Stop =====
@@ -197,7 +230,6 @@ row3Layout.Padding = UDim.new(0, 10)
 row3Layout.Parent = row3
 
 local startBtn = Instance.new("TextButton")
-startBtn.LayoutOrder = 1
 startBtn.Size = UDim2.new(0.5, -5, 1, 0)
 startBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 startBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -208,7 +240,6 @@ startBtn.Parent = row3
 Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 12)
 
 local stopBtn = Instance.new("TextButton")
-stopBtn.LayoutOrder = 2
 stopBtn.Size = UDim2.new(0.5, -5, 1, 0)
 stopBtn.BackgroundColor3 = Color3.fromRGB(160, 70, 70)
 stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -272,7 +303,7 @@ do
 	end)
 end
 
--- ===== Minimize / Expand (แบบเดียวกับที่คุณใช้แล้วเวิร์ค) =====
+-- ===== Minimize / Expand =====
 local minimized = false
 local fullSize = frame.Size
 
