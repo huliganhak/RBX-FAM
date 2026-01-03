@@ -210,7 +210,10 @@ local isCollapsed = false
 local function setChildrenVisible(visible)
 	for _, child in ipairs(frame:GetChildren()) do
 		if child ~= titleBar then
-			child.Visible = visible
+			-- ซ่อนเฉพาะ GUI objects (TextLabel/TextBox/TextButton/Frame ฯลฯ)
+			if child:IsA("GuiObject") then
+				child.Visible = visible
+			end
 		end
 	end
 end
@@ -354,3 +357,4 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
+
