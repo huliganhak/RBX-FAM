@@ -210,11 +210,29 @@ local lockSpeedBtn = Instance.new("TextButton")
 lockSpeedBtn.Size = UDim2.new(1, 0, 1, 0)
 lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(80, 60, 40)
 lockSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-lockSpeedBtn.Text = "Lock: OFF"
+lockSpeedBtn.Text = "Lock OFF"
 lockSpeedBtn.Font = Enum.Font.GothamBold
 lockSpeedBtn.TextSize = 14
 lockSpeedBtn.Parent = rightCell
 Instance.new("UICorner", lockSpeedBtn).CornerRadius = UDim.new(0, 10)
+
+local function fitButtonText(btn)
+	btn.TextScaled = true
+
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.Parent = btn
+
+	-- กันตัวอักษรโดนบีบจนเล็กเกิน
+	local c = Instance.new("UITextSizeConstraint")
+	c.MinTextSize = 10
+	c.MaxTextSize = btn.TextSize -- ใช้ TextSize เดิมเป็น max
+	c.Parent = btn
+end
+
+fitButtonText(applySpeedBtn)
+fitButtonText(lockSpeedBtn)
 
 -- ===== Row: Start / Stop =====
 local row3 = Instance.new("Frame")
@@ -357,7 +375,7 @@ end)
 
 lockSpeedBtn.MouseButton1Click:Connect(function()
 	lockSpeed = not lockSpeed
-	lockSpeedBtn.Text = lockSpeed and "Lock: ON" or "Lock: OFF"
+	lockSpeedBtn.Text = lockSpeed and "Lock ON" or "Lock OFF"
 	lockSpeedBtn.BackgroundColor3 = lockSpeed and Color3.fromRGB(45, 95, 95) or Color3.fromRGB(80, 60, 40)
 	setStatus(lockSpeed and ("Locking WalkSpeed=" .. desiredSpeed) or "Speed lock off")
 end)
@@ -445,4 +463,5 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
+
 
