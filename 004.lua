@@ -10,74 +10,251 @@ local rf = game:GetService("ReplicatedStorage")
 
 local args = { "Attack" }
 
---// ===== UI (Draggable) =====
+--// ===== Services =====
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
+--// ===== GUI =====
 local gui = Instance.new("ScreenGui")
-gui.Name = "InvokeUI"
+gui.Name = "RFInvokerUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 380, 0, 320) -- เพิ่มสูงขึ้น
-frame.Position = UDim2.new(0.5, -190, 0.5, -160)
+frame.Size = UDim2.new(0, 380, 0, 300)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 12)
+padding.PaddingBottom = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 12)
+padding.PaddingRight = UDim.new(0, 12)
+padding.Parent = frame
 
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = frame
+-- root container
+local root = Instance.new("Frame")
+root.BackgroundTransparency = 1
+root.Size = UDim2.new(1, 0, 1, 0)
+root.Parent = frame
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 10)
-titleCorner.Parent = titleBar
+local rootLayout = Instance.new("UIListLayout")
+rootLayout.FillDirection = Enum.FillDirection.Vertical
+rootLayout.SortOrder = Enum.SortOrder.LayoutOrder
+rootLayout.Padding = UDim.new(0, 10)
+rootLayout.Parent = root
+
+-- helpers
+local function makeBox(defaultText)
+	local box = Instance.new("TextBox")
+	box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	box.TextColor3 = Color3.fromRGB(255, 255, 255)
+	box.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+	box.ClearTextOnFocus = false
+	box.Font = Enum.Font.Gotham
+	box.TextSize = 14
+	box.Text = tostring(defaultText or "")
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
+	return box
+end
+
+local function makeLabel(text, w)
+	local lb = Instance.new("TextLabel")
+	lb.BackgroundTransparency = 1
+	lb.Text = text
+	lb.TextColor3 = Color3.fromRGB(220, 220, 220)
+	lb.Font = Enum.Font.Gotham
+	lb.TextSize = 14
+	lb.TextXAlignment = Enum.TextXAlignment.Left
+	if w then lb.Size = UDim2.new(0, w, 1, 0) end
+	return lb
+end
+
+local function makeBtn(text, h)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1, 0, 0, h or 36)
+	b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	b.TextColor3 = Color3.fromRGB(255, 255, 255)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 15
+	b.Text = text
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 12)
+	return b
+end
+
+local function toNumberSafe(text, fallback)
+	local n = tonumber(text)
+	if n == nil then return fallback end
+	return n
+end
+
+-- ===== Title row =====
+local titleRow = Instance.new("Frame")
+titleRow.LayoutOrder = 1
+titleRow.Size = UDim2.new(1, 0, 0, 28)
+titleRow.BackgroundTransparency = 1
+titleRow.Parent = root
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -56, 1, 0) -- เผื่อที่ให้ปุ่มพับ
-title.Position = UDim2.new(0, 8, 0, 0)
+title.Size = UDim2.new(1, -34, 1, 0)
 title.BackgroundTransparency = 1
 title.Text = "RF Invoker (Attack)"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.SourceSansBold
+title.Font = Enum.Font.GothamBold
 title.TextSize = 18
-title.Parent = titleBar
+title.Parent = titleRow
 
--- ===== Collapse Button =====
-local collapseBtn = Instance.new("TextButton")
-collapseBtn.Size = UDim2.new(0, 32, 0, 24)
-collapseBtn.Position = UDim2.new(1, -40, 0, 8)
-collapseBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-collapseBtn.Font = Enum.Font.SourceSansBold
-collapseBtn.TextSize = 16
-collapseBtn.Text = "—" -- กดแล้วพับ (เปลี่ยนเป็น "+" ตอนพับ)
-collapseBtn.Parent = titleBar
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 28, 0, 28)
+minBtn.Position = UDim2.new(1, 0, 0, 0)
+minBtn.AnchorPoint = Vector2.new(1, 0)
+minBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.Text = "–"
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 18
+minBtn.Parent = titleRow
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 8)
 
-local cbCorner = Instance.new("UICorner")
-cbCorner.CornerRadius = UDim.new(0, 8)
-cbCorner.Parent = collapseBtn
+-- ===== Row: Total / Batch / Delay =====
+local row1 = Instance.new("Frame")
+row1.LayoutOrder = 2
+row1.Size = UDim2.new(1, 0, 0, 34)
+row1.BackgroundTransparency = 1
+row1.Parent = root
 
--- Draggable
+local row1Layout = Instance.new("UIListLayout")
+row1Layout.FillDirection = Enum.FillDirection.Horizontal
+row1Layout.SortOrder = Enum.SortOrder.LayoutOrder
+row1Layout.Padding = UDim.new(0, 8)
+row1Layout.Parent = row1
+
+local totalLabel = makeLabel("Total:", 45); totalLabel.LayoutOrder = 1; totalLabel.Parent = row1
+local totalBox = makeBox("50"); totalBox.LayoutOrder = 2; totalBox.Size = UDim2.new(0, 60, 1, 0); totalBox.Parent = row1
+
+local batchLabel = makeLabel("Batch:", 50); batchLabel.LayoutOrder = 3; batchLabel.Parent = row1
+local batchBox = makeBox("10"); batchBox.LayoutOrder = 4; batchBox.Size = UDim2.new(0, 60, 1, 0); batchBox.Parent = row1
+
+local delayLabel = makeLabel("Delay:", 48); delayLabel.LayoutOrder = 5; delayLabel.Parent = row1
+local delayBox = makeBox("0.1"); delayBox.LayoutOrder = 6; delayBox.Size = UDim2.new(0, 70, 1, 0); delayBox.Parent = row1
+
+-- ===== Row: WalkSpeed + Apply + Lock =====
+local row2 = Instance.new("Frame")
+row2.LayoutOrder = 3
+row2.Size = UDim2.new(1, 0, 0, 34)
+row2.BackgroundTransparency = 1
+row2.Parent = root
+
+local row2Layout = Instance.new("UIListLayout")
+row2Layout.FillDirection = Enum.FillDirection.Horizontal
+row2Layout.SortOrder = Enum.SortOrder.LayoutOrder
+row2Layout.Padding = UDim.new(0, 8)
+row2Layout.Parent = row2
+
+local speedLabel = makeLabel("WalkSpeed:", 80); speedLabel.LayoutOrder = 1; speedLabel.Parent = row2
+local speedBox = makeBox("16"); speedBox.LayoutOrder = 2; speedBox.Size = UDim2.new(0, 60, 1, 0); speedBox.Parent = row2
+
+local applySpeedBtn = Instance.new("TextButton")
+applySpeedBtn.LayoutOrder = 3
+applySpeedBtn.Size = UDim2.new(0, 110, 1, 0)
+applySpeedBtn.BackgroundColor3 = Color3.fromRGB(60, 160, 80)
+applySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+applySpeedBtn.Text = "Apply"
+applySpeedBtn.Font = Enum.Font.GothamBold
+applySpeedBtn.TextSize = 14
+applySpeedBtn.Parent = row2
+Instance.new("UICorner", applySpeedBtn).CornerRadius = UDim.new(0, 10)
+
+local lockSpeedBtn = Instance.new("TextButton")
+lockSpeedBtn.LayoutOrder = 4
+lockSpeedBtn.Size = UDim2.new(0, 110, 1, 0)
+lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(80, 60, 40)
+lockSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+lockSpeedBtn.Text = "Lock: OFF"
+lockSpeedBtn.Font = Enum.Font.GothamBold
+lockSpeedBtn.TextSize = 14
+lockSpeedBtn.Parent = row2
+Instance.new("UICorner", lockSpeedBtn).CornerRadius = UDim.new(0, 10)
+
+-- ===== Row: Start / Stop =====
+local row3 = Instance.new("Frame")
+row3.LayoutOrder = 4
+row3.Size = UDim2.new(1, 0, 0, 40)
+row3.BackgroundTransparency = 1
+row3.Parent = root
+
+local row3Layout = Instance.new("UIListLayout")
+row3Layout.FillDirection = Enum.FillDirection.Horizontal
+row3Layout.SortOrder = Enum.SortOrder.LayoutOrder
+row3Layout.Padding = UDim.new(0, 10)
+row3Layout.Parent = row3
+
+local startBtn = Instance.new("TextButton")
+startBtn.LayoutOrder = 1
+startBtn.Size = UDim2.new(0.5, -5, 1, 0)
+startBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+startBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+startBtn.Text = "Start"
+startBtn.Font = Enum.Font.GothamBold
+startBtn.TextSize = 15
+startBtn.Parent = row3
+Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 12)
+
+local stopBtn = Instance.new("TextButton")
+stopBtn.LayoutOrder = 2
+stopBtn.Size = UDim2.new(0.5, -5, 1, 0)
+stopBtn.BackgroundColor3 = Color3.fromRGB(160, 70, 70)
+stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopBtn.Text = "Stop"
+stopBtn.Font = Enum.Font.GothamBold
+stopBtn.TextSize = 15
+stopBtn.Parent = row3
+Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 12)
+
+-- ===== Status =====
+local status = Instance.new("TextLabel")
+status.LayoutOrder = 5
+status.Size = UDim2.new(1, 0, 0, 18)
+status.BackgroundTransparency = 1
+status.Text = "Status: Idle"
+status.TextColor3 = Color3.fromRGB(255, 200, 80)
+status.Font = Enum.Font.Gotham
+status.TextSize = 12
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = root
+
+local function setStatus(t)
+	status.Text = "Status: " .. t
+end
+
+-- ===== Drag to move (ลากย้าย UI) =====
 do
 	local dragging = false
-	local dragStart, startPos
+	local dragStart
+	local startPos
 
-	titleBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	local function update(pos)
+		local delta = pos - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+
+	titleRow.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = frame.Position
+
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging = false
@@ -87,156 +264,40 @@ do
 	end)
 
 	UIS.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local delta = input.Position - dragStart
-			frame.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + delta.X,
-				startPos.Y.Scale, startPos.Y.Offset + delta.Y
-			)
+		if not dragging then return end
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
+			update(input.Position)
 		end
 	end)
 end
 
--- Helpers UI
-local function mkLabel(text, x, y)
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(0, 120, 0, 26)
-	l.Position = UDim2.new(0, x, 0, y)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = Color3.fromRGB(220, 220, 220)
-	l.Font = Enum.Font.SourceSans
-	l.TextSize = 16
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Parent = frame
-	return l
-end
+-- ===== Minimize / Expand (แบบเดียวกับที่คุณใช้แล้วเวิร์ค) =====
+local minimized = false
+local fullSize = frame.Size
 
-local function mkBox(defaultText, x, y, w)
-	local tb = Instance.new("TextBox")
-	tb.Size = UDim2.new(0, w or 90, 0, 28)
-	tb.Position = UDim2.new(0, x, 0, y)
-	tb.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	tb.TextColor3 = Color3.fromRGB(255, 255, 255)
-	tb.Font = Enum.Font.SourceSans
-	tb.TextSize = 16
-	tb.ClearTextOnFocus = false
-	tb.Text = tostring(defaultText)
-	tb.Parent = frame
-
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, 8)
-	c.Parent = tb
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(70, 70, 70)
-	stroke.Thickness = 1
-	stroke.Parent = tb
-
-	return tb
-end
-
-local function mkBtn(text, x, y, w)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0, w, 0, 34)
-	b.Position = UDim2.new(0, x, 0, y)
-	b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	b.TextColor3 = Color3.fromRGB(255, 255, 255)
-	b.Font = Enum.Font.SourceSansBold
-	b.TextSize = 16
-	b.Text = text
-	b.AutoButtonColor = true
-	b.Parent = frame
-
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, 10)
-	c.Parent = b
-
-	return b
-end
-
-local function toNumberSafe(text, fallback)
-	local n = tonumber(text)
-	if not n then return fallback end
-	return n
-end
-
--- Inputs
-mkLabel("Total:", 16, 60)
-local totalBox = mkBox(50, 140, 58)
-
-mkLabel("Batch:", 16, 95)
-local batchBox = mkBox(10, 140, 93)
-
-mkLabel("Delay (sec):", 16, 130)
-local delayBox = mkBox(0.1, 140, 128)
-
--- Speed UI
-mkLabel("WalkSpeed:", 16, 165)
-local speedBox = mkBox(16, 140, 163)
-
-local applySpeedBtn = mkBtn("Apply Speed", 240, 160, 104)
-applySpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 75, 45)
-
-local lockSpeedBtn = mkBtn("Lock: OFF", 240, 198, 104)
-lockSpeedBtn.BackgroundColor3 = Color3.fromRGB(75, 55, 35)
-
--- Start/Stop
-local startBtn = mkBtn("Start", 16, 250, 170)
-local stopBtn  = mkBtn("Stop",  206, 250, 158)
-stopBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -32, 0, 22)
-status.Position = UDim2.new(0, 16, 0, 290)
-status.BackgroundTransparency = 1
-status.TextColor3 = Color3.fromRGB(180, 180, 180)
-status.Font = Enum.Font.SourceSans
-status.TextSize = 14
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.Text = "Status: Idle"
-status.Parent = frame
-
-local function setStatus(t)
-	status.Text = "Status: " .. t
-end
-
--- ===== Collapse / Expand Logic =====
-local expandedSize = frame.Size
-local expandedPos = frame.Position
-local collapsedSize = UDim2.new(expandedSize.X.Scale, expandedSize.X.Offset, 0, 44) -- เหลือแค่หัว
-local isCollapsed = false
-
-local function setChildrenVisible(visible)
-	for _, child in ipairs(frame:GetChildren()) do
-		if child ~= titleBar then
-			-- ซ่อนเฉพาะ GUI objects (TextLabel/TextBox/TextButton/Frame ฯลฯ)
-			if child:IsA("GuiObject") then
-				child.Visible = visible
-			end
+local function setRootChildrenVisible(visible)
+	for _, child in ipairs(root:GetChildren()) do
+		if child ~= titleRow and child:IsA("GuiObject") then
+			child.Visible = visible
 		end
 	end
 end
 
-collapseBtn.MouseButton1Click:Connect(function()
-	isCollapsed = not isCollapsed
-
-	if isCollapsed then
-		expandedSize = frame.Size
-		expandedPos = frame.Position
-
-		setChildrenVisible(false)
-		frame.Size = collapsedSize
-		collapseBtn.Text = "+"
+minBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		setRootChildrenVisible(false)
+		frame.Size = UDim2.new(fullSize.X.Scale, fullSize.X.Offset, 0, 55)
+		minBtn.Text = "+"
 	else
-		setChildrenVisible(true)
-		frame.Size = expandedSize
-		frame.Position = expandedPos
-		collapseBtn.Text = "—"
+		setRootChildrenVisible(true)
+		frame.Size = fullSize
+		minBtn.Text = "–"
 	end
 end)
 
---// ===== WalkSpeed logic =====
+-- ===== WalkSpeed logic =====
 local lockSpeed = false
 local desiredSpeed = 16
 
@@ -266,11 +327,10 @@ end)
 lockSpeedBtn.MouseButton1Click:Connect(function()
 	lockSpeed = not lockSpeed
 	lockSpeedBtn.Text = lockSpeed and "Lock: ON" or "Lock: OFF"
-	lockSpeedBtn.BackgroundColor3 = lockSpeed and Color3.fromRGB(45, 95, 95) or Color3.fromRGB(75, 55, 35)
+	lockSpeedBtn.BackgroundColor3 = lockSpeed and Color3.fromRGB(45, 95, 95) or Color3.fromRGB(80, 60, 40)
 	setStatus(lockSpeed and ("Locking WalkSpeed=" .. desiredSpeed) or "Speed lock off")
 end)
 
--- รักษาความเร็วไว้ (ถ้าเปิด Lock)
 RunService.Heartbeat:Connect(function()
 	if not lockSpeed then return end
 	local hum = getHumanoid()
@@ -279,15 +339,12 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- เผื่อเกิด respawn ให้ apply ใหม่อัตโนมัติ
 player.CharacterAdded:Connect(function()
 	task.wait(0.2)
-	if lockSpeed then
-		applySpeed()
-	end
+	if lockSpeed then applySpeed() end
 end)
 
---// ===== Invoke logic =====
+-- ===== Invoke logic =====
 local running = false
 local runToken = 0
 
@@ -357,4 +414,3 @@ stopBtn.MouseButton1Click:Connect(function()
 	running = false
 	setStatus("Stopping...")
 end)
-
