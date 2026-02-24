@@ -3,12 +3,16 @@
 --// Close flow : ZoomS -> ExpandIn
 --// + Auto Collect Coin ON/OFF
 --// + Auto Craft ON/OFF (Craft x20 -> MergeAll x1)
+--// + Smart check MergeAllNum / Stats
+--//    - If MergeAllNum <= 20 -> pause 5 minutes
+--//    - Read Itemcount / maxDartsNum from Stats JSON
 --// + Minimize / Close UI
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -137,6 +141,59 @@ local function clickIfVisible(target, targetName)
 end
 
 --========================
+-- Read craft-related data
+--========================
+local function readCraftData()
+    local ok, result = pcall(function()
+        local mergeObj = player:WaitForChild("MergeAllNum", 2)
+        local statsObj = player:WaitForChild("Stats", 2)
+
+        if not mergeObj then
+            return {
+                ok = false,
+                error = "MergeAllNum not found"
+            }
+        end
+
+        if not statsObj then
+            return {
+                ok = false,
+                error = "Stats not found"
+            }
+        end
+
+        local mergeVal = tonumber(mergeObj.Value) or 0
+
+        local statsStr = tostring(statsObj.Value or "")
+        local statsData = {}
+
+        if statsStr ~= "" then
+            statsData = HttpService:JSONDecode(statsStr)
+        end
+
+        local dartsList = statsData.DartsList or {}
+        local itemCount = #dartsList
+        local maxDartsNum = tonumber(statsData.maxDartsNum) or 0
+
+        return {
+            ok = true,
+            mergeVal = mergeVal,
+            itemCount = itemCount,
+            maxDartsNum = maxDartsNum
+        }
+    end)
+
+    if not ok then
+        return {
+            ok = false,
+            error = "readCraftData failed: " .. tostring(result)
+        }
+    end
+
+    return result
+end
+
+--========================
 -- Auto Collect Logic
 --========================
 local function startAutoCollect(statusLabel)
@@ -205,6 +262,34 @@ local function startAutoCraft(statusLabel)
 
     task.spawn(function()
         while getgenv().AutoCraft do
+            -- อ่านข้อมูลจากเกมก่อนเริ่มรอบ
+            local info = readCraftData()
+            if not info.ok then
+                statusLabel.Text = "Status: " .. tostring(info.error)
+                task.wait(1)
+                continue
+            end
+
+            -- แสดงสถานะรวม
+            statusLabel.Text = string.format(
+                "Status: Merge=%d | Bag=%d/%d",
+                info.mergeVal,
+                info.itemCount,
+                info.maxDartsNum
+            )
+
+            -- ถ้า MergeAllNum ต่ำ (<=20) ให้พัก 5 นาที
+            if info.mergeVal <= 20 then
+                for sec = 300, 1, -1 do
+                    if not getgenv().AutoCraft then break end
+                    if sec % 10 == 0 or sec <= 5 then
+                        statusLabel.Text = ("Status: Merge low (%d), wait %ds"):format(info.mergeVal, sec)
+                    end
+                    task.wait(1)
+                end
+                continue
+            end
+
             local craftBtn = getCraftButton()
             local mergeAllBtn = getMergeAllButton()
 
@@ -218,19 +303,51 @@ local function startAutoCraft(statusLabel)
                 break
             end
 
+            -- ถ้ากระเป๋าเต็ม/ใกล้เต็ม ให้ MergeAll ก่อน
+            if info.maxDartsNum > 0 and info.itemCount >= info.maxDartsNum then
+                local okMergeBag, msgMergeBag = clickIfVisible(mergeAllBtn, "MergeAll")
+                if okMergeBag then
+                    statusLabel.Text = "Status: Bag full -> MergeAll"
+                else
+                    statusLabel.Text = "Status: " .. msgMergeBag
+                end
+                task.wait(0.25)
+                continue
+            end
+
             -- กด Craft 20 ครั้ง
+            local craftSuccessCount = 0
+            local interruptedByLowMerge = false
+
             for i = 1, 20 do
                 if not getgenv().AutoCraft then
                     break
                 end
 
-                local ok, msg = clickIfVisible(craftBtn, "Craft")
-                if not ok then
-                    statusLabel.Text = "Status: " .. msg
+                -- เช็คระหว่างทางด้วย
+                local loopInfo = readCraftData()
+                if loopInfo.ok then
+                    if loopInfo.mergeVal <= 20 then
+                        interruptedByLowMerge = true
+                        statusLabel.Text = "Status: Merge low mid-craft, pausing..."
+                        break
+                    end
+
+                    -- ถ้ากระเป๋าเต็มระหว่างทางก็หยุดไป MergeAll
+                    if loopInfo.maxDartsNum > 0 and loopInfo.itemCount >= loopInfo.maxDartsNum then
+                        statusLabel.Text = "Status: Bag full mid-craft, merging..."
+                        break
+                    end
+                end
+
+                local okClick, msgClick = clickIfVisible(craftBtn, "Craft")
+                if not okClick then
+                    statusLabel.Text = "Status: " .. msgClick
                     task.wait(0.3)
                     break
                 end
 
+                craftSuccessCount = craftSuccessCount + 1
                 statusLabel.Text = ("Status: Crafting... (%d/20)"):format(i)
                 task.wait(0.08) -- ปรับความเร็วได้
             end
@@ -239,15 +356,25 @@ local function startAutoCraft(statusLabel)
                 break
             end
 
-            -- กด MergeAll 1 ครั้ง
-            local ok2, msg2 = clickIfVisible(mergeAllBtn, "MergeAll")
-            if ok2 then
-                statusLabel.Text = "Status: MergeAll clicked"
-            else
-                statusLabel.Text = "Status: " .. msg2
+            -- ถ้า merge ต่ำระหว่าง craft ให้กลับไปเข้า loop หลัก (จะพัก 5 นาทีเอง)
+            if interruptedByLowMerge then
+                task.wait(0.2)
+                continue
             end
 
-            task.wait(0.15) -- พักก่อนเริ่มรอบใหม่
+            -- กด MergeAll เมื่อ craft ได้ครบ 20 หรือกระเป๋าเริ่มเต็ม
+            if craftSuccessCount > 0 then
+                local ok2, msg2 = clickIfVisible(mergeAllBtn, "MergeAll")
+                if ok2 then
+                    statusLabel.Text = ("Status: MergeAll clicked (Crafted %d)"):format(craftSuccessCount)
+                else
+                    statusLabel.Text = "Status: " .. msg2
+                end
+            else
+                task.wait(0.25)
+            end
+
+            task.wait(0.15)
         end
 
         autoCraftThreadRunning = false
@@ -280,7 +407,7 @@ end)
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.new(0, 240, 0, 215) -- สูงขึ้นเพื่อใส่ปุ่ม Craft
+frame.Size = UDim2.new(0, 240, 0, 215)
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
@@ -290,7 +417,7 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
--- Header bar (สำหรับลาก + ปุ่ม min/close)
+-- Header bar (ลาก + ปุ่ม min/close)
 local header = Instance.new("Frame")
 header.Name = "Header"
 header.Size = UDim2.new(1, 0, 0, 34)
@@ -344,7 +471,7 @@ local closeCornerTop = Instance.new("UICorner")
 closeCornerTop.CornerRadius = UDim.new(0, 6)
 closeCornerTop.Parent = destroyBtn
 
--- Content container (ส่วนที่ย่อ/ขยาย)
+-- Content container
 local content = Instance.new("Frame")
 content.Name = "Content"
 content.Size = UDim2.new(1, 0, 1, -34)
