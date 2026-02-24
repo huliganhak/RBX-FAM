@@ -1,9 +1,11 @@
 --// ShurikenMerge Open/Close UI
---// ใช้กดปุ่ม ExpandOut (Open) / ExpandIn (Close) ด้วย VirtualInputManager
+--// Open flow  : ExpandOut -> ZoomL
+--// Close flow : ZoomS -> ExpandIn
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -42,24 +44,65 @@ end
 --========================
 -- Helper: get target buttons
 --========================
-local function getExpandOut()
+local function getMerge()
     local shurikenMerge = playerGui:FindFirstChild("ShurikenMerge")
     if not shurikenMerge then return nil end
 
     local merge = shurikenMerge:FindFirstChild("Merge")
     if not merge then return nil end
 
+    return merge
+end
+
+local function getExpandOut()
+    local merge = getMerge()
+    if not merge then return nil end
     return merge:FindFirstChild("ExpandOut")
 end
 
 local function getExpandIn()
-    local shurikenMerge = playerGui:FindFirstChild("ShurikenMerge")
-    if not shurikenMerge then return nil end
-
-    local merge = shurikenMerge:FindFirstChild("Merge")
+    local merge = getMerge()
     if not merge then return nil end
-
     return merge:FindFirstChild("ExpandIn")
+end
+
+local function getZoomL()
+    local merge = getMerge()
+    if not merge then return nil end
+    return merge:FindFirstChild("ZoomL")
+end
+
+local function getZoomS()
+    local merge = getMerge()
+    if not merge then return nil end
+    return merge:FindFirstChild("ZoomS")
+end
+
+--========================
+-- Helper: click safely
+--========================
+local function clickIfVisible(target, targetName)
+    if not target then
+        warn(targetName .. " not found")
+        return false, targetName .. " not found"
+    end
+
+    if not target:IsA("GuiObject") then
+        warn(targetName .. " is not GuiObject")
+        return false, targetName .. " is not GuiObject"
+    end
+
+    if not target.Visible then
+        warn(targetName .. " Visible = false")
+        return false, targetName .. " Visible = false"
+    end
+
+    local ok = interact_2(target)
+    if ok then
+        return true, targetName .. " clicked"
+    end
+
+    return false, targetName .. " click failed"
 end
 
 --========================
@@ -81,7 +124,7 @@ end)
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.new(0, 220, 0, 110)
+frame.Size = UDim2.new(0, 240, 0, 120)
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
@@ -104,7 +147,7 @@ title.Parent = frame
 
 local openBtn = Instance.new("TextButton")
 openBtn.Name = "OpenButton"
-openBtn.Size = UDim2.new(0, 95, 0, 38)
+openBtn.Size = UDim2.new(0, 105, 0, 40)
 openBtn.Position = UDim2.new(0, 10, 0, 40)
 openBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
 openBtn.BorderSizePixel = 0
@@ -120,8 +163,8 @@ openCorner.Parent = openBtn
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
-closeBtn.Size = UDim2.new(0, 95, 0, 38)
-closeBtn.Position = UDim2.new(0, 115, 0, 40)
+closeBtn.Size = UDim2.new(0, 105, 0, 40)
+closeBtn.Position = UDim2.new(0, 125, 0, 40)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "Close"
@@ -136,8 +179,8 @@ closeCorner.Parent = closeBtn
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "Status"
-statusLabel.Size = UDim2.new(1, -10, 0, 20)
-statusLabel.Position = UDim2.new(0, 5, 1, -24)
+statusLabel.Size = UDim2.new(1, -10, 0, 26)
+statusLabel.Position = UDim2.new(0, 5, 1, -28)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Status: Ready"
 statusLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -166,13 +209,7 @@ frame.InputBegan:Connect(function(input)
     end
 end)
 
-frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        -- no-op
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
         frame.Position = UDim2.new(
@@ -183,38 +220,48 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
 end)
 
 --========================
--- Button actions
+-- Button actions (NEW FLOW)
 --========================
 openBtn.MouseButton1Click:Connect(function()
-    local target = getExpandOut()
-    if not target then
-        statusLabel.Text = "Status: ExpandOut not found"
-        warn("ExpandOut not found")
+    statusLabel.Text = "Status: Opening..."
+
+    -- Step 1: ExpandOut
+    local ok1, msg1 = clickIfVisible(getExpandOut(), "ExpandOut")
+    if not ok1 then
+        statusLabel.Text = "Status: " .. msg1
         return
     end
 
-    if target.Visible then
-        statusLabel.Text = "Status: Open clicked (ExpandOut)"
-        interact_2(target)
-    else
-        statusLabel.Text = "Status: ExpandOut Visible = false"
-        warn("ExpandOut Visible = false")
+    task.wait(0.15) -- รอ UI ขยับ
+
+    -- Step 2: ZoomL
+    local ok2, msg2 = clickIfVisible(getZoomL(), "ZoomL")
+    if not ok2 then
+        statusLabel.Text = "Status: " .. msg2
+        return
     end
+
+    statusLabel.Text = "Status: Open flow done"
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    local target = getExpandIn()
-    if not target then
-        statusLabel.Text = "Status: ExpandIn not found"
-        warn("ExpandIn not found")
+    statusLabel.Text = "Status: Closing..."
+
+    -- Step 1: ZoomS
+    local ok1, msg1 = clickIfVisible(getZoomS(), "ZoomS")
+    if not ok1 then
+        statusLabel.Text = "Status: " .. msg1
         return
     end
 
-    if target.Visible then
-        statusLabel.Text = "Status: Close clicked (ExpandIn)"
-        interact_2(target)
-    else
-        statusLabel.Text = "Status: ExpandIn Visible = false"
-        warn("ExpandIn Visible = false")
+    task.wait(0.15) -- รอ UI ขยับ
+
+    -- Step 2: ExpandIn
+    local ok2, msg2 = clickIfVisible(getExpandIn(), "ExpandIn")
+    if not ok2 then
+        statusLabel.Text = "Status: " .. msg2
+        return
     end
+
+    statusLabel.Text = "Status: Close flow done"
 end)
