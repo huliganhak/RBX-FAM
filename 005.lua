@@ -2,6 +2,7 @@
 --// Open flow  : ExpandOut -> ZoomL
 --// Close flow : ZoomS -> ExpandIn
 --// + Auto Collect Coin ON/OFF
+--// + Minimize / Close UI
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -140,9 +141,9 @@ local function startAutoCollect(statusLabel)
                         local part = v.Parent
                         if part and part:IsA("BasePart") and part:IsDescendantOf(workspace) then
                             pcall(function()
-                                firetouchinterest(hrp, part, 0) -- touch
+                                firetouchinterest(hrp, part, 0)
                                 task.wait()
-                                firetouchinterest(hrp, part, 1) -- untouch
+                                firetouchinterest(hrp, part, 1)
                             end)
                         end
                     end
@@ -182,7 +183,7 @@ end)
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.new(0, 240, 0, 175) -- สูงขึ้น
+frame.Size = UDim2.new(0, 240, 0, 175)
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
@@ -192,29 +193,80 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
+-- Header bar (สำหรับลาก + ปุ่ม min/close)
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 34)
+header.Position = UDim2.new(0, 0, 0, 0)
+header.BackgroundTransparency = 1
+header.Parent = frame
+
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, -10, 0, 28)
-title.Position = UDim2.new(0, 5, 0, 4)
+title.Size = UDim2.new(1, -65, 1, 0)
+title.Position = UDim2.new(0, 8, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "ShurikenMerge Control"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBold
-title.Parent = frame
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Minimize button
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Name = "MinimizeButton"
+minimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+minimizeBtn.Position = UDim2.new(1, -56, 0, 5)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Text = "_"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextSize = 16
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.Parent = header
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minimizeBtn
+
+-- Close button
+local destroyBtn = Instance.new("TextButton")
+destroyBtn.Name = "DestroyButton"
+destroyBtn.Size = UDim2.new(0, 24, 0, 24)
+destroyBtn.Position = UDim2.new(1, -28, 0, 5)
+destroyBtn.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+destroyBtn.BorderSizePixel = 0
+destroyBtn.Text = "X"
+destroyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+destroyBtn.TextSize = 14
+destroyBtn.Font = Enum.Font.GothamBold
+destroyBtn.Parent = header
+
+local closeCornerTop = Instance.new("UICorner")
+closeCornerTop.CornerRadius = UDim.new(0, 6)
+closeCornerTop.Parent = destroyBtn
+
+-- Content container (ส่วนที่ย่อ/ขยาย)
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Size = UDim2.new(1, 0, 1, -34)
+content.Position = UDim2.new(0, 0, 0, 34)
+content.BackgroundTransparency = 1
+content.Parent = frame
 
 -- Open / Close row
 local openBtn = Instance.new("TextButton")
 openBtn.Name = "OpenButton"
 openBtn.Size = UDim2.new(0, 105, 0, 40)
-openBtn.Position = UDim2.new(0, 10, 0, 40)
+openBtn.Position = UDim2.new(0, 10, 0, 6)
 openBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
 openBtn.BorderSizePixel = 0
 openBtn.Text = "Open"
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openBtn.TextSize = 16
 openBtn.Font = Enum.Font.GothamBold
-openBtn.Parent = frame
+openBtn.Parent = content
 
 local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 8)
@@ -223,14 +275,14 @@ openCorner.Parent = openBtn
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
 closeBtn.Size = UDim2.new(0, 105, 0, 40)
-closeBtn.Position = UDim2.new(0, 125, 0, 40)
+closeBtn.Position = UDim2.new(0, 125, 0, 6)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "Close"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.TextSize = 16
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = frame
+closeBtn.Parent = content
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
@@ -240,14 +292,14 @@ closeCorner.Parent = closeBtn
 local collectOnBtn = Instance.new("TextButton")
 collectOnBtn.Name = "CollectOnButton"
 collectOnBtn.Size = UDim2.new(0, 105, 0, 34)
-collectOnBtn.Position = UDim2.new(0, 10, 0, 88)
+collectOnBtn.Position = UDim2.new(0, 10, 0, 54)
 collectOnBtn.BackgroundColor3 = Color3.fromRGB(65, 130, 255)
 collectOnBtn.BorderSizePixel = 0
 collectOnBtn.Text = "Collect ON"
 collectOnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 collectOnBtn.TextSize = 14
 collectOnBtn.Font = Enum.Font.GothamBold
-collectOnBtn.Parent = frame
+collectOnBtn.Parent = content
 
 local collectOnCorner = Instance.new("UICorner")
 collectOnCorner.CornerRadius = UDim.new(0, 8)
@@ -256,14 +308,14 @@ collectOnCorner.Parent = collectOnBtn
 local collectOffBtn = Instance.new("TextButton")
 collectOffBtn.Name = "CollectOffButton"
 collectOffBtn.Size = UDim2.new(0, 105, 0, 34)
-collectOffBtn.Position = UDim2.new(0, 125, 0, 88)
+collectOffBtn.Position = UDim2.new(0, 125, 0, 54)
 collectOffBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 collectOffBtn.BorderSizePixel = 0
 collectOffBtn.Text = "Collect OFF"
 collectOffBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 collectOffBtn.TextSize = 14
 collectOffBtn.Font = Enum.Font.GothamBold
-collectOffBtn.Parent = frame
+collectOffBtn.Parent = content
 
 local collectOffCorner = Instance.new("UICorner")
 collectOffCorner.CornerRadius = UDim.new(0, 8)
@@ -279,15 +331,43 @@ statusLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 statusLabel.TextSize = 12
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = frame
+statusLabel.Parent = content
 
 --========================
--- Drag UI
+-- Minimize / Restore
+--========================
+local expandedSize = UDim2.new(0, 240, 0, 175)
+local minimizedSize = UDim2.new(0, 240, 0, 34)
+local isMinimized = false
+
+local function setMinimized(state)
+    isMinimized = state
+    content.Visible = not state
+    frame.Size = state and minimizedSize or expandedSize
+    minimizeBtn.Text = state and "□" or "_"
+end
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    setMinimized(not isMinimized)
+end)
+
+--========================
+-- Destroy / Close UI
+--========================
+destroyBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoCollectCoin = false -- หยุด loop ก่อน
+    if screenGui then
+        screenGui:Destroy()
+    end
+end)
+
+--========================
+-- Drag UI (ลากที่ header)
 --========================
 local dragging = false
 local dragStart, startPos
 
-frame.InputBegan:Connect(function(input)
+header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
