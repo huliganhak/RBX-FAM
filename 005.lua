@@ -2,6 +2,7 @@
 --// Open flow  : ExpandOut -> ZoomL
 --// Close flow : ZoomS -> ExpandIn
 --// + Auto Collect Coin ON/OFF
+--// + Auto Craft ON/OFF (Craft x20 -> MergeAll x1)
 --// + Minimize / Close UI
 
 local Players = game:GetService("Players")
@@ -17,6 +18,9 @@ local playerGui = player:WaitForChild("PlayerGui")
 --========================
 getgenv().AutoCollectCoin = false
 local autoCollectThreadRunning = false
+
+getgenv().AutoCraft = false
+local autoCraftThreadRunning = false
 
 --========================
 -- Click function
@@ -83,6 +87,26 @@ local function getZoomS()
     local merge = getMerge()
     if not merge then return nil end
     return merge:FindFirstChild("ZoomS")
+end
+
+local function getCraftButton()
+    local merge = getMerge()
+    if not merge then return nil end
+
+    local buttonRight = merge:FindFirstChild("ButtonRight")
+    if not buttonRight then return nil end
+
+    return buttonRight:FindFirstChild("Craft")
+end
+
+local function getMergeAllButton()
+    local merge = getMerge()
+    if not merge then return nil end
+
+    local buttonLeft = merge:FindFirstChild("ButtonLeft")
+    if not buttonLeft then return nil end
+
+    return buttonLeft:FindFirstChild("MergeAll")
 end
 
 --========================
@@ -166,6 +190,79 @@ local function stopAutoCollect(statusLabel)
 end
 
 --========================
+-- Auto Craft Logic
+--========================
+local function startAutoCraft(statusLabel)
+    if autoCraftThreadRunning then
+        getgenv().AutoCraft = true
+        statusLabel.Text = "Status: Auto Craft already running"
+        return
+    end
+
+    getgenv().AutoCraft = true
+    autoCraftThreadRunning = true
+    statusLabel.Text = "Status: Auto Craft ON"
+
+    task.spawn(function()
+        while getgenv().AutoCraft do
+            local craftBtn = getCraftButton()
+            local mergeAllBtn = getMergeAllButton()
+
+            if not craftBtn then
+                statusLabel.Text = "Status: Craft button not found"
+                break
+            end
+
+            if not mergeAllBtn then
+                statusLabel.Text = "Status: MergeAll button not found"
+                break
+            end
+
+            -- กด Craft 20 ครั้ง
+            for i = 1, 20 do
+                if not getgenv().AutoCraft then
+                    break
+                end
+
+                local ok, msg = clickIfVisible(craftBtn, "Craft")
+                if not ok then
+                    statusLabel.Text = "Status: " .. msg
+                    task.wait(0.3)
+                    break
+                end
+
+                statusLabel.Text = ("Status: Crafting... (%d/20)"):format(i)
+                task.wait(0.08) -- ปรับความเร็วได้
+            end
+
+            if not getgenv().AutoCraft then
+                break
+            end
+
+            -- กด MergeAll 1 ครั้ง
+            local ok2, msg2 = clickIfVisible(mergeAllBtn, "MergeAll")
+            if ok2 then
+                statusLabel.Text = "Status: MergeAll clicked"
+            else
+                statusLabel.Text = "Status: " .. msg2
+            end
+
+            task.wait(0.15) -- พักก่อนเริ่มรอบใหม่
+        end
+
+        autoCraftThreadRunning = false
+        if statusLabel and statusLabel.Parent then
+            statusLabel.Text = "Status: Auto Craft OFF"
+        end
+    end)
+end
+
+local function stopAutoCraft(statusLabel)
+    getgenv().AutoCraft = false
+    statusLabel.Text = "Status: Stopping Auto Craft..."
+end
+
+--========================
 -- Create UI
 --========================
 local old = CoreGui:FindFirstChild("ShurikenMergeToggleUI")
@@ -183,7 +280,7 @@ end)
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.new(0, 240, 0, 175)
+frame.Size = UDim2.new(0, 240, 0, 215) -- สูงขึ้นเพื่อใส่ปุ่ม Craft
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
@@ -321,6 +418,39 @@ local collectOffCorner = Instance.new("UICorner")
 collectOffCorner.CornerRadius = UDim.new(0, 8)
 collectOffCorner.Parent = collectOffBtn
 
+-- Craft ON / OFF row
+local craftOnBtn = Instance.new("TextButton")
+craftOnBtn.Name = "CraftOnButton"
+craftOnBtn.Size = UDim2.new(0, 105, 0, 34)
+craftOnBtn.Position = UDim2.new(0, 10, 0, 94)
+craftOnBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 40)
+craftOnBtn.BorderSizePixel = 0
+craftOnBtn.Text = "Craft ON"
+craftOnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+craftOnBtn.TextSize = 14
+craftOnBtn.Font = Enum.Font.GothamBold
+craftOnBtn.Parent = content
+
+local craftOnCorner = Instance.new("UICorner")
+craftOnCorner.CornerRadius = UDim.new(0, 8)
+craftOnCorner.Parent = craftOnBtn
+
+local craftOffBtn = Instance.new("TextButton")
+craftOffBtn.Name = "CraftOffButton"
+craftOffBtn.Size = UDim2.new(0, 105, 0, 34)
+craftOffBtn.Position = UDim2.new(0, 125, 0, 94)
+craftOffBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+craftOffBtn.BorderSizePixel = 0
+craftOffBtn.Text = "Craft OFF"
+craftOffBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+craftOffBtn.TextSize = 14
+craftOffBtn.Font = Enum.Font.GothamBold
+craftOffBtn.Parent = content
+
+local craftOffCorner = Instance.new("UICorner")
+craftOffCorner.CornerRadius = UDim.new(0, 8)
+craftOffCorner.Parent = craftOffBtn
+
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "Status"
 statusLabel.Size = UDim2.new(1, -10, 0, 26)
@@ -336,7 +466,7 @@ statusLabel.Parent = content
 --========================
 -- Minimize / Restore
 --========================
-local expandedSize = UDim2.new(0, 240, 0, 175)
+local expandedSize = UDim2.new(0, 240, 0, 215)
 local minimizedSize = UDim2.new(0, 240, 0, 34)
 local isMinimized = false
 
@@ -355,7 +485,8 @@ end)
 -- Destroy / Close UI
 --========================
 destroyBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoCollectCoin = false -- หยุด loop ก่อน
+    getgenv().AutoCollectCoin = false
+    getgenv().AutoCraft = false
     if screenGui then
         screenGui:Destroy()
     end
@@ -443,4 +574,15 @@ end)
 
 collectOffBtn.MouseButton1Click:Connect(function()
     stopAutoCollect(statusLabel)
+end)
+
+--========================
+-- Button actions (Auto Craft)
+--========================
+craftOnBtn.MouseButton1Click:Connect(function()
+    startAutoCraft(statusLabel)
+end)
+
+craftOffBtn.MouseButton1Click:Connect(function()
+    stopAutoCraft(statusLabel)
 end)
