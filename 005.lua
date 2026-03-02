@@ -194,6 +194,35 @@ local function readCraftData()
 end
 
 --========================
+-- One-shot: use any buff buttons that exist right now
+--========================
+local function useAnyBuffOnce()
+    local sh = playerGui:FindFirstChild("ShurikenMerge")
+    if not sh then return end
+
+    local merge = sh:FindFirstChild("Merge")
+    if not merge then return end
+
+    local buffArea = merge:FindFirstChild("BuffArea")
+    if not buffArea then return end
+
+    -- รายชื่อปุ่มบัฟที่คุณเจอ/อยากใช้
+    local targets = {
+        "CraftAll",
+        "AddCraftPro",
+        "AddBurningMergeNum",
+        "AddMerge", -- เผื่อมีด้วย
+    }
+
+    for _, name in ipairs(targets) do
+        local btn = buffArea:FindFirstChild(name)
+        if btn and btn:GetAttribute("use") ~= true then
+            btn:SetAttribute("use", true) -- สั่งใช้ทันที (ทำครั้งเดียว)
+        end
+    end
+end
+
+--========================
 -- Auto Collect Logic
 --========================
 local function startAutoCollect(statusLabel)
@@ -308,6 +337,7 @@ local function startAutoCraft(statusLabel)
                 local okMergeBag, msgMergeBag = clickIfVisible(mergeAllBtn, "MergeAll")
                 if okMergeBag then
                     statusLabel.Text = "Status: Bag full -> MergeAll"
+                    useAnyBuffOnce()
                 else
                     statusLabel.Text = "Status: " .. msgMergeBag
                 end
@@ -367,6 +397,7 @@ local function startAutoCraft(statusLabel)
                 local ok2, msg2 = clickIfVisible(mergeAllBtn, "MergeAll")
                 if ok2 then
                     statusLabel.Text = ("Status: MergeAll clicked (Crafted %d)"):format(craftSuccessCount)
+                    useAnyBuffOnce()
                 else
                     statusLabel.Text = "Status: " .. msg2
                 end
@@ -713,3 +744,4 @@ end)
 craftOffBtn.MouseButton1Click:Connect(function()
     stopAutoCraft(statusLabel)
 end)
+
