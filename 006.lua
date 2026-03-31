@@ -2,11 +2,14 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local collectCashRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("CollectCash")
+local claimEventLuckyBlockRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("ClaimEventLuckyBlock")
 
 local running = false
 local interval = 30
 local collapsed = false
+local claimingLuckyBlock = false
 
 local guiParent
 if gethui then
@@ -71,8 +74,8 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 145)
-frame.Position = UDim2.new(0.5, -125, 0.5, -72)
+frame.Size = UDim2.new(0, 250, 0, 188)
+frame.Position = UDim2.new(0.5, -125, 0.5, -94)
 frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -190,7 +193,23 @@ local stopCorner = Instance.new("UICorner")
 stopCorner.CornerRadius = UDim.new(0, 8)
 stopCorner.Parent = stopButton
 
-local expandedSize = UDim2.new(0, 250, 0, 145)
+local luckyBlockButton = Instance.new("TextButton")
+luckyBlockButton.Size = UDim2.new(0, 222, 0, 34)
+luckyBlockButton.Position = UDim2.new(0, 14, 0, 132)
+luckyBlockButton.BackgroundColor3 = Color3.fromRGB(210, 150, 55)
+luckyBlockButton.Text = "Claim Event Box x5"
+luckyBlockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+luckyBlockButton.TextScaled = false
+luckyBlockButton.TextSize = 15
+luckyBlockButton.Font = Enum.Font.SourceSansBold
+luckyBlockButton.BorderSizePixel = 0
+luckyBlockButton.Parent = frame
+
+local luckyBlockCorner = Instance.new("UICorner")
+luckyBlockCorner.CornerRadius = UDim.new(0, 8)
+luckyBlockCorner.Parent = luckyBlockButton
+
+local expandedSize = UDim2.new(0, 250, 0, 188)
 local collapsedSize = UDim2.new(0, 250, 0, 34)
 
 local function setCollapsed(state)
@@ -199,6 +218,7 @@ local function setCollapsed(state)
 	statusLabel.Visible = not state
 	startButton.Visible = not state
 	stopButton.Visible = not state
+	luckyBlockButton.Visible = not state
 
 	minimizeButton.Text = state and "+" or "–"
 
@@ -230,6 +250,32 @@ end)
 stopButton.MouseButton1Click:Connect(function()
 	running = false
 	statusLabel.Text = "Status: Stopped"
+end)
+
+luckyBlockButton.MouseButton1Click:Connect(function()
+	if claimingLuckyBlock then
+		return
+	end
+
+	claimingLuckyBlock = true
+	local oldText = luckyBlockButton.Text
+	luckyBlockButton.Text = "Claiming..."
+	luckyBlockButton.Active = false
+	luckyBlockButton.AutoButtonColor = false
+
+	task.spawn(function()
+		for i = 1, 5 do
+			pcall(function()
+				claimEventLuckyBlockRemote:FireServer()
+			end)
+			task.wait(0.15)
+		end
+
+		luckyBlockButton.Text = oldText
+		luckyBlockButton.Active = true
+		luckyBlockButton.AutoButtonColor = true
+		claimingLuckyBlock = false
+	end)
 end)
 
 minimizeButton.MouseButton1Click:Connect(function()
