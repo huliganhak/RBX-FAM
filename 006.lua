@@ -7,7 +7,7 @@ local collectCashRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild(
 local claimEventLuckyBlockRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("ClaimEventLuckyBlock")
 
 local running = false
-local interval = 30
+local interval = 60
 local collapsed = false
 local claimingLuckyBlock = false
 
