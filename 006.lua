@@ -56,6 +56,20 @@ local function getCurrentPlot()
 	return plots:FindFirstChild(plotName)
 end
 
+local function destroyIfExists(parent, childName)
+	if not parent then
+		return false
+	end
+
+	local obj = parent:FindFirstChild(childName)
+	if obj then
+		obj:Destroy()
+		return true
+	end
+
+	return false
+end
+
 local function clearAll()
 	local plot = getCurrentPlot()
 	if not plot then
@@ -329,7 +343,7 @@ local clearButton = Instance.new("TextButton")
 clearButton.Size = UDim2.new(0, 222, 0, 34)
 clearButton.Position = UDim2.new(0, 14, 0, 226)
 clearButton.BackgroundColor3 = Color3.fromRGB(70, 120, 210)
-clearButton.Text = "Clear x10Luck"
+clearButton.Text = "Clear Robux Object"
 clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 clearButton.TextScaled = false
 clearButton.TextSize = 15
