@@ -108,6 +108,13 @@ local function clearAll()
 	if destroyIfExists(interactables, "GamepassBoard") then
 		clearedCount += 1
 	end
+
+	local playerGui = player:FindFirstChild("PlayerGui")
+	local screenGui = playerGui and playerGui:FindFirstChild("ScreenGui")
+	local discounts = screenGui and screenGui:FindFirstChild("Discounts")
+	if discounts then
+		discounts.Visible = false
+	end
 end
 
 local function jumpOnce()
