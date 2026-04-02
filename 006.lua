@@ -73,7 +73,6 @@ end
 local function clearAll()
 	local plot = getCurrentPlot()
 	if not plot then
-		statusLabel.Text = "Status: Plot not found"
 		return
 	end
 
@@ -109,8 +108,6 @@ local function clearAll()
 	if destroyIfExists(interactables, "GamepassBoard") then
 		clearedCount += 1
 	end
-
-	statusLabel.Text = "Status: Cleared " .. tostring(clearedCount) .. " object(s)"
 end
 
 local function jumpOnce()
