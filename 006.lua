@@ -42,6 +42,63 @@ local function formatTime(seconds)
 	return string.format("%02d:%02d", minutes, secs)
 end
 
+local function getCurrentPlot()
+	local plotName = player:GetAttribute("PlotName")
+	if not plotName then
+		return nil
+	end
+
+	local plots = workspace:FindFirstChild("Plots")
+	if not plots then
+		return nil
+	end
+
+	return plots:FindFirstChild(plotName)
+end
+
+local function clearAll()
+	local plot = getCurrentPlot()
+	if not plot then
+		statusLabel.Text = "Status: Plot not found"
+		return
+	end
+
+	local interactables = plot:FindFirstChild("Interactables")
+	local monetization = interactables and interactables:FindFirstChild("Monetization")
+
+	local clearedCount = 0
+
+	if destroyIfExists(monetization, "x10Luck") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(monetization, "x3Gems") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(monetization, "x3Cash") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(monetization, "RainbowPetCollector") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(monetization, "RainbowPetSpawner") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(monetization, "RainbowPetUpgrader") then
+		clearedCount += 1
+	end
+
+	if destroyIfExists(interactables, "GamepassBoard") then
+		clearedCount += 1
+	end
+
+	statusLabel.Text = "Status: Cleared " .. tostring(clearedCount) .. " object(s)"
+end
+
 local function jumpOnce()
 	if not running then
 		return
@@ -55,17 +112,7 @@ local function jumpOnce()
 end
 
 local function getPlacements()
-	local plotName = player:GetAttribute("PlotName")
-	if not plotName then
-		return nil
-	end
-
-	local plots = workspace:FindFirstChild("Plots")
-	if not plots then
-		return nil
-	end
-
-	local plot = plots:FindFirstChild(plotName)
+	local plot = getCurrentPlot()
 	if not plot then
 		return nil
 	end
@@ -110,7 +157,7 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 230)
+frame.Size = UDim2.new(0, 250, 0, 275)
 frame.Position = UDim2.new(0.5, -125, 0.5, -115)
 frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 frame.BorderSizePixel = 0
@@ -278,7 +325,23 @@ local luckyBlockCorner = Instance.new("UICorner")
 luckyBlockCorner.CornerRadius = UDim.new(0, 8)
 luckyBlockCorner.Parent = luckyBlockButton
 
-local expandedSize = UDim2.new(0, 250, 0, 230)
+local clearButton = Instance.new("TextButton")
+clearButton.Size = UDim2.new(0, 222, 0, 34)
+clearButton.Position = UDim2.new(0, 14, 0, 226)
+clearButton.BackgroundColor3 = Color3.fromRGB(70, 120, 210)
+clearButton.Text = "Clear x10Luck"
+clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+clearButton.TextScaled = false
+clearButton.TextSize = 15
+clearButton.Font = Enum.Font.SourceSansBold
+clearButton.BorderSizePixel = 0
+clearButton.Parent = frame
+
+local clearButtonCorner = Instance.new("UICorner")
+clearButtonCorner.CornerRadius = UDim.new(0, 8)
+clearButtonCorner.Parent = clearButton
+
+local expandedSize = UDim2.new(0, 250, 0, 275)
 local collapsedSize = UDim2.new(0, 250, 0, 34)
 
 local function resetStatusDisplay()
@@ -298,6 +361,7 @@ local function setCollapsed(state)
 	startButton.Visible = not state
 	stopButton.Visible = not state
 	luckyBlockButton.Visible = not state
+	clearButton.Visible = not state
 
 	minimizeButton.Text = state and "+" or "–"
 
@@ -401,6 +465,10 @@ luckyBlockButton.MouseButton1Click:Connect(function()
 		luckyBlockButton.AutoButtonColor = true
 		claimingLuckyBlock = false
 	end)
+end)
+
+clearButton.MouseButton1Click:Connect(function()
+	clearAll()
 end)
 
 minimizeButton.MouseButton1Click:Connect(function()
