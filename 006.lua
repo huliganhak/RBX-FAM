@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local collectCashRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("CollectCash")
 local claimEventLuckyBlockRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("ClaimEventLuckyBlock")
 
@@ -40,6 +40,18 @@ local function formatTime(seconds)
 	end
 
 	return string.format("%02d:%02d", minutes, secs)
+end
+
+local function jumpOnce()
+	if not running then
+		return
+	end
+
+	pcall(function()
+		VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+		task.wait()
+		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+	end)
 end
 
 local function getPlacements()
@@ -334,6 +346,8 @@ startButton.MouseButton1Click:Connect(function()
 			statusLabel.Text = "Status: Collecting"
 
 			collectOnce()
+			task.wait(0.1)
+	        jumpOnce()
 
 			if not running then
 				break
