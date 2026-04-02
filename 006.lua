@@ -96,6 +96,11 @@ local function collectOnce()
 			task.wait(0.2)
 		end
 	end
+
+	if running then
+		task.wait(0.1)
+		jumpOnce()
+	end
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -346,8 +351,6 @@ startButton.MouseButton1Click:Connect(function()
 			statusLabel.Text = "Status: Collecting"
 
 			collectOnce()
-			task.wait(0.1)
-	        jumpOnce()
 
 			if not running then
 				break
