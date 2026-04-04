@@ -95,6 +95,16 @@ local function jumpOnce()
 	end)
 end
 
+local function RebirthOnce()
+	if not running then
+		return
+	end
+
+	pcall(function()
+	    ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rebirth"):FireServer()
+	end)
+end
+
 local function getPlacements()
 	local plot = getCurrentPlot()
 	if not plot then
@@ -131,6 +141,8 @@ local function collectOnce()
 	if running then
 		task.wait(0.1)
 		jumpOnce()
+		task.wait(0.1)
+		RebirthOnce()
 	end
 end
 
