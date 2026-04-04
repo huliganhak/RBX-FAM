@@ -106,6 +106,19 @@ local function rebirthOnce()
 	end)
 end
 
+local function claimEventOnce()
+	if not running then
+		return
+	end
+
+	for i = 1, 5 do
+		pcall(function()
+			claimEventLuckyBlockRemote:FireServer()
+		end)
+		task.wait(0.15)
+	end
+end
+
 local function getPlacements()
 	local plot = getCurrentPlot()
 	if not plot then
@@ -144,6 +157,8 @@ local function collectOnce()
 		jumpOnce()
 		task.wait(0.1)
 		rebirthOnce()
+		task.wait(0.1)
+		claimEventOnce()
 	end
 end
 
