@@ -57,6 +57,42 @@ local function getCurrentPlot()
 	return plots:FindFirstChild(plotName)
 end
 
+local function safeHide(root)
+	if not root then
+		return
+	end
+
+	for _, obj in ipairs(root:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			obj.Transparency = 1
+			obj.CanCollide = false
+			obj.CanTouch = false
+			obj.CanQuery = false
+		elseif obj:IsA("Decal") or obj:IsA("Texture") then
+			obj.Transparency = 1
+		elseif obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
+			obj.Enabled = false
+		elseif obj:IsA("GuiObject") then
+			obj.Visible = false
+		elseif obj:IsA("ProximityPrompt") then
+			obj.Enabled = false
+		elseif obj:IsA("Highlight") then
+			obj.Enabled = false
+		end
+	end
+
+	if root:IsA("BasePart") then
+		root.Transparency = 1
+		root.CanCollide = false
+		root.CanTouch = false
+		root.CanQuery = false
+	elseif root:IsA("BillboardGui") or root:IsA("SurfaceGui") then
+		root.Enabled = false
+	elseif root:IsA("GuiObject") then
+		root.Visible = false
+	end
+end
+
 local function clearAll()
 	local plot = getCurrentPlot()
 	if not plot then
@@ -66,14 +102,10 @@ local function clearAll()
 	local interactables = plot:FindFirstChild("Interactables")
 	if interactables then
 		local monetization = interactables:FindFirstChild("Monetization")
-		if monetization then
-			monetization:Destroy()
-		end
-
 		local gamepassBoard = interactables:FindFirstChild("GamepassBoard")
-		if gamepassBoard then
-			gamepassBoard:Destroy()
-		end
+
+		safeHide(monetization)
+		safeHide(gamepassBoard)
 	end
 
 	local playerGui = player:FindFirstChild("PlayerGui")
