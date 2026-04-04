@@ -107,24 +107,28 @@ local function rebirthOnce()
 end
 
 local function claimEventOnce()
-	if not running then
+	if not running or claimingLuckyBlock then
 		return
 	end
 
 	local textLabel = workspace.EventBoards.Board.Main.SurfaceGui.EventMenu.TimedEventType.ContentText
-    local currentText = textLabel:gsub("^%s+", ""):gsub("%s+$", "") 
+	local currentText = textLabel:gsub("^%s+", ""):gsub("%s+$", "")
 
-	if currentText == "ENDS IN:" then
-
-		for i = 1, 5 do
-			pcall(function()
-				claimEventLuckyBlockRemote:FireServer()
-			end)
-			task.wait(0.15)
-		end
-	else
+	if currentText ~= "ENDS IN:" then
 		print("ตอนนี้ไม่ใช่ ENDS IN:, ตอนนี้เป็น =", currentText)
+		return
 	end
+
+	claimingLuckyBlock = true
+
+	for i = 1, 5 do
+		pcall(function()
+			claimEventLuckyBlockRemote:FireServer()
+		end)
+		task.wait(0.15)
+	end
+
+	claimingLuckyBlock = false
 end
 
 local function getPlacements()
