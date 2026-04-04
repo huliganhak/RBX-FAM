@@ -56,59 +56,15 @@ local function getCurrentPlot()
 	return plots:FindFirstChild(plotName)
 end
 
-local function destroyIfExists(parent, childName)
-	if not parent then
-		return false
-	end
-
-	local obj = parent:FindFirstChild(childName)
-	if obj then
-		obj:Destroy()
-		return true
-	end
-
-	return false
-end
-
 local function clearAll()
 	local plot = getCurrentPlot()
 	if not plot then
 		return
 	end
 
-	local interactables = plot:FindFirstChild("Interactables")
-	local monetization = interactables and interactables:FindFirstChild("Monetization")
-
-	local clearedCount = 0
-
-	if destroyIfExists(monetization, "x10Luck") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(monetization, "x3Gems") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(monetization, "x3Cash") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(monetization, "RainbowPetCollector") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(monetization, "RainbowPetSpawner") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(monetization, "RainbowPetUpgrader") then
-		clearedCount += 1
-	end
-
-	if destroyIfExists(interactables, "GamepassBoard") then
-		clearedCount += 1
-	end
-
+    plot:Interactables.Monetization:Destroy()
+	plot:Interactables.GamepassBoard:Destroy()
+	
 	local playerGui = player:FindFirstChild("PlayerGui")
 	local screenGui = playerGui and playerGui:FindFirstChild("ScreenGui")
 	local discounts = screenGui and screenGui:FindFirstChild("Discounts")
