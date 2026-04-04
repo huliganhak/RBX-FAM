@@ -62,8 +62,8 @@ local function clearAll()
 		return
 	end
 
-    plot:Interactables.Monetization:Destroy()
-	plot:Interactables.GamepassBoard:Destroy()
+	workspace.Plots.plot.Interactables.Monetization:Destroy()
+	workspace.Plots.plot.Interactables.GamepassBoard:Destroy()
 	
 	local playerGui = player:FindFirstChild("PlayerGui")
 	local screenGui = playerGui and playerGui:FindFirstChild("ScreenGui")
