@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local collectCashRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("CollectCash")
 local claimEventLuckyBlockRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("ClaimEventLuckyBlock")
+local rebirthRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rebirth")
 
 local running = false
 local interval = 180
@@ -95,13 +96,13 @@ local function jumpOnce()
 	end)
 end
 
-local function RebirthOnce()
+local function rebirthOnce()
 	if not running then
 		return
 	end
 
 	pcall(function()
-	    ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rebirth"):FireServer()
+		rebirthRemote:FireServer()
 	end)
 end
 
@@ -142,7 +143,7 @@ local function collectOnce()
 		task.wait(0.1)
 		jumpOnce()
 		task.wait(0.1)
-		RebirthOnce()
+		rebirthOnce()
 	end
 end
 
