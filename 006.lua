@@ -111,11 +111,19 @@ local function claimEventOnce()
 		return
 	end
 
-	for i = 1, 5 do
-		pcall(function()
-			claimEventLuckyBlockRemote:FireServer()
-		end)
-		task.wait(0.15)
+	local textLabel = workspace.EventBoards.Board.Main.SurfaceGui.EventMenu.TimedEventType.ContentText
+    local currentText = textLabel:gsub("^%s+", ""):gsub("%s+$", "") 
+
+	if currentText == "ENDS IN:" then
+
+		for i = 1, 5 do
+			pcall(function()
+				claimEventLuckyBlockRemote:FireServer()
+			end)
+			task.wait(0.15)
+		end
+	else
+		print("ตอนนี้ไม่ใช่ ENDS IN:, ตอนนี้เป็น =", currentText)
 	end
 end
 
