@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
+local shopUI = player.PlayerGui.ScreenGui.Menus.Buildings
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local collectCashRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("CollectCash")
@@ -213,7 +214,7 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 275)
+frame.Size = UDim2.new(0, 250, 0, 320)
 frame.Position = UDim2.new(0.5, -125, 0.5, -115)
 frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 frame.BorderSizePixel = 0
@@ -397,7 +398,23 @@ local clearButtonCorner = Instance.new("UICorner")
 clearButtonCorner.CornerRadius = UDim.new(0, 8)
 clearButtonCorner.Parent = clearButton
 
-local expandedSize = UDim2.new(0, 250, 0, 275)
+local shopToggleButton = Instance.new("TextButton")
+shopToggleButton.Size = UDim2.new(0, 222, 0, 34)
+shopToggleButton.Position = UDim2.new(0, 14, 0, 270)
+shopToggleButton.BackgroundColor3 = Color3.fromRGB(140, 90, 210)
+shopToggleButton.Text = "Toggle ShopUI"
+shopToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+shopToggleButton.TextScaled = false
+shopToggleButton.TextSize = 15
+shopToggleButton.Font = Enum.Font.SourceSansBold
+shopToggleButton.BorderSizePixel = 0
+shopToggleButton.Parent = frame
+
+local shopToggleCorner = Instance.new("UICorner")
+shopToggleCorner.CornerRadius = UDim.new(0, 8)
+shopToggleCorner.Parent = shopToggleButton
+
+local expandedSize = UDim2.new(0, 250, 0, 320)
 local collapsedSize = UDim2.new(0, 250, 0, 34)
 
 local function resetStatusDisplay()
@@ -418,6 +435,7 @@ local function setCollapsed(state)
 	stopButton.Visible = not state
 	luckyBlockButton.Visible = not state
 	clearButton.Visible = not state
+	shopToggleButton.Visible = not state
 
 	minimizeButton.Text = state and "+" or "–"
 
@@ -525,6 +543,12 @@ end)
 
 clearButton.MouseButton1Click:Connect(function()
 	clearAll()
+end)
+
+shopToggleButton.MouseButton1Click:Connect(function()
+	if shopUI then
+		shopUI.Visible = not shopUI.Visible
+	end
 end)
 
 minimizeButton.MouseButton1Click:Connect(function()
