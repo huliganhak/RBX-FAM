@@ -58,7 +58,7 @@ local gui = make("ScreenGui", {
 
 local frame = make("Frame", {
 	Name = "Main",
-	Size = UDim2.new(0, 420, 0, 430),
+	Size = UDim2.new(0, 460, 0, 430),
 	Position = UDim2.new(0, 30, 0, 120),
 	BackgroundColor3 = Color3.fromRGB(28, 28, 28),
 	BorderSizePixel = 0,
@@ -82,7 +82,7 @@ make("UICorner", {
 
 make("TextLabel", {
 	Name = "Title",
-	Size = UDim2.new(1, -40, 1, 0),
+	Size = UDim2.new(1, -110, 1, 0),
 	Position = UDim2.new(0, 12, 0, 0),
 	BackgroundTransparency = 1,
 	Text = "RollWeapons Tester",
@@ -91,6 +91,22 @@ make("TextLabel", {
 	Font = Enum.Font.GothamBold,
 	TextSize = 16,
 }, titleBar)
+
+local minimizeBtn = make("TextButton", {
+	Name = "MinimizeBtn",
+	Size = UDim2.new(0, 28, 0, 28),
+	Position = UDim2.new(1, -68, 0, 4),
+	BackgroundColor3 = Color3.fromRGB(70, 120, 180),
+	BorderSizePixel = 0,
+	Text = "_",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.GothamBold,
+	TextSize = 16,
+}, titleBar)
+
+make("UICorner", {
+	CornerRadius = UDim.new(0, 8),
+}, minimizeBtn)
 
 local closeBtn = make("TextButton", {
 	Name = "CloseBtn",
@@ -178,7 +194,7 @@ make("UICorner", {
 local startBtn = make("TextButton", {
 	Name = "StartBtn",
 	Size = UDim2.new(0, 90, 0, 28),
-	Position = UDim2.new(0, 240, 0, 24),
+	Position = UDim2.new(0, 242, 0, 24),
 	BackgroundColor3 = Color3.fromRGB(50, 140, 75),
 	BorderSizePixel = 0,
 	Text = "Start",
@@ -194,7 +210,7 @@ make("UICorner", {
 local stopBtn = make("TextButton", {
 	Name = "StopBtn",
 	Size = UDim2.new(0, 90, 0, 28),
-	Position = UDim2.new(0, 338, 0, 24),
+	Position = UDim2.new(0, 342, 0, 24),
 	BackgroundColor3 = Color3.fromRGB(170, 70, 70),
 	BorderSizePixel = 0,
 	Text = "Stop",
@@ -339,6 +355,23 @@ local function getRewardName()
 	return nil
 end
 
+local expandedSize = frame.Size
+local minimized = false
+
+local function toggleMinimize()
+	minimized = not minimized
+
+	if minimized then
+		content.Visible = false
+		frame.Size = UDim2.new(frame.Size.X.Scale, frame.Size.X.Offset, 0, 44)
+		minimizeBtn.Text = "+"
+	else
+		content.Visible = true
+		frame.Size = expandedSize
+		minimizeBtn.Text = "_"
+	end
+end
+
 startBtn.MouseButton1Click:Connect(function()
 	if running then
 		return
@@ -416,6 +449,10 @@ end)
 
 stopBtn.MouseButton1Click:Connect(function()
 	stopRolling()
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	toggleMinimize()
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
