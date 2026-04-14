@@ -1,435 +1,230 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local rollRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RollWeapons")
+local mainGui = playerGui:WaitForChild("MainGUI")
+local buttonUI = mainGui:WaitForChild("ButtonUI")
+local leaderstats = player:WaitForChild("leaderstats")
 
-local oldGui = playerGui:FindFirstChild("RollTestUI")
+-- =========================
+-- ตัวแปรที่แก้ได้ อยู่ในไฟล์นี้
+-- =========================
+local SOURCE_BUY_BUTTON_NAME = "BuyBtn"       -- ปุ่มจริงของเกม สำหรับซื้อ 5 SP
+local SOURCE_BIGBUY_BUTTON_NAME = "BigBuyBtn" -- ปุ่มจริงของเกม สำหรับซื้อ 50 SP
+local LOOP_DELAY = 0.5                        -- เวลาหน่วงต่อรอบ
+-- =========================
+
+local mana, sp
+for _, v in ipairs(leaderstats:GetChildren()) do
+	if v.Name:find("Mana", 1, true) then
+		mana = v
+	elseif v.Name:find("SP", 1, true) then
+		sp = v
+	end
+end
+
+if not mana or not sp then
+	warn("ไม่เจอ Mana หรือ SP ใน leaderstats")
+	return
+end
+
+local sourceBuyBtn = buttonUI:FindFirstChild(SOURCE_BUY_BUTTON_NAME)
+local sourceBigBuyBtn = buttonUI:FindFirstChild(SOURCE_BIGBUY_BUTTON_NAME)
+
+if not sourceBuyBtn or not sourceBigBuyBtn then
+	warn("ไม่เจอ BuyBtn หรือ BigBuyBtn ใน MainGUI.ButtonUI")
+	return
+end
+
+local function getButtonInfo(btn)
+	if not btn then
+		return nil, nil, nil
+	end
+
+	local label = btn:FindFirstChild("TextLabel")
+	if not label then
+		return nil, nil, nil
+	end
+
+	local amountText, priceText = tostring(label.Text):match("BUY%s+([%d,]+)%s+SP%s*%-%s*([%d,]+)%s+MANA")
+	local amount = amountText and tonumber((amountText:gsub(",", "")))
+	local price = priceText and tonumber((priceText:gsub(",", "")))
+
+	return amount, price, label.Text
+end
+
+local function canBuy(btn)
+	local amount, price = getButtonInfo(btn)
+	if not amount or not price then
+		return false, "อ่านราคาไม่ได้"
+	end
+
+	if mana.Value < price then
+		return false, ("Mana ไม่พอ | ต้องใช้ %d | มี %d"):format(price, mana.Value)
+	end
+
+	return true, ("ซื้อ %d SP ใช้ %d Mana"):format(amount, price)
+end
+
+local function doBuy(btn)
+	local amount, price = getButtonInfo(btn)
+	if not amount or not price then
+		return false, "อ่านราคาไม่ได้"
+	end
+
+	if mana.Value < price then
+		return false, ("Mana ไม่พอ | ต้องใช้ %d | มี %d"):format(price, mana.Value)
+	end
+
+	firesignal(btn.MouseButton1Click)
+	return true, ("ซื้อ %d SP สำเร็จ"):format(amount)
+end
+
+-- =========================
+-- สร้าง UI
+-- =========================
+local oldGui = playerGui:FindFirstChild("CustomSPBuyerUI")
 if oldGui then
 	oldGui:Destroy()
 end
 
-local running = false
-local runToken = 0
-local summary = {}
-local recentLogs = {}
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomSPBuyerUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
-local function make(className, props, parent)
-	local obj = Instance.new(className)
-	for k, v in pairs(props or {}) do
-		obj[k] = v
-	end
-	obj.Parent = parent
-	return obj
-end
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 300, 0, 220)
+frame.Position = UDim2.new(0.5, -150, 0.5, -110)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
 
-local function buildSummaryText()
-	local names = {}
-	for name in pairs(summary) do
-		table.insert(names, name)
-	end
-	table.sort(names)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
 
-	if #names == 0 then
-		return "-"
-	end
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(80, 80, 80)
+stroke.Thickness = 1
+stroke.Parent = frame
 
-	local lines = {}
-	for _, name in ipairs(names) do
-		table.insert(lines, string.format("%s = %d", name, summary[name]))
-	end
-	return table.concat(lines, "\n")
-end
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "SP Buyer"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
 
-local function pushRecent(text)
-	table.insert(recentLogs, 1, text)
-	while #recentLogs > 10 do
-		table.remove(recentLogs)
-	end
-end
+local manaLabel = Instance.new("TextLabel")
+manaLabel.Size = UDim2.new(1, -20, 0, 25)
+manaLabel.Position = UDim2.new(0, 10, 0, 40)
+manaLabel.BackgroundTransparency = 1
+manaLabel.TextXAlignment = Enum.TextXAlignment.Left
+manaLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+manaLabel.TextSize = 16
+manaLabel.Font = Enum.Font.Gotham
+manaLabel.Parent = frame
 
-local gui = make("ScreenGui", {
-	Name = "RollTestUI",
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-}, playerGui)
+local spLabel = Instance.new("TextLabel")
+spLabel.Size = UDim2.new(1, -20, 0, 25)
+spLabel.Position = UDim2.new(0, 10, 0, 65)
+spLabel.BackgroundTransparency = 1
+spLabel.TextXAlignment = Enum.TextXAlignment.Left
+spLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+spLabel.TextSize = 16
+spLabel.Font = Enum.Font.Gotham
+spLabel.Parent = frame
 
-local frame = make("Frame", {
-	Name = "Main",
-	Size = UDim2.new(0, 420, 0, 430),
-	Position = UDim2.new(0, 30, 0, 120),
-	BackgroundColor3 = Color3.fromRGB(28, 28, 28),
-	BorderSizePixel = 0,
-	Active = true,
-}, gui)
+local loopBox = Instance.new("TextButton")
+loopBox.Size = UDim2.new(0, 24, 0, 24)
+loopBox.Position = UDim2.new(0, 10, 0, 98)
+loopBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+loopBox.Text = ""
+loopBox.AutoButtonColor = true
+loopBox.Font = Enum.Font.GothamBold
+loopBox.TextSize = 16
+loopBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+loopBox.Parent = frame
 
-make("UICorner", {
-	CornerRadius = UDim.new(0, 10),
-}, frame)
+local loopCorner = Instance.new("UICorner")
+loopCorner.CornerRadius = UDim.new(0, 6)
+loopCorner.Parent = loopBox
 
-local titleBar = make("Frame", {
-	Name = "TitleBar",
-	Size = UDim2.new(1, 0, 0, 36),
-	BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-	BorderSizePixel = 0,
-}, frame)
+local loopText = Instance.new("TextLabel")
+loopText.Size = UDim2.new(1, -45, 0, 24)
+loopText.Position = UDim2.new(0, 40, 0, 98)
+loopText.BackgroundTransparency = 1
+loopText.Text = "Loop Buy"
+loopText.TextColor3 = Color3.fromRGB(255, 255, 255)
+loopText.TextSize = 16
+loopText.Font = Enum.Font.Gotham
+loopText.TextXAlignment = Enum.TextXAlignment.Left
+loopText.Parent = frame
 
-make("UICorner", {
-	CornerRadius = UDim.new(0, 10),
-}, titleBar)
+local buyButton = Instance.new("TextButton")
+buyButton.Size = UDim2.new(1, -20, 0, 36)
+buyButton.Position = UDim2.new(0, 10, 0, 132)
+buyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+buyButton.Text = "Buy"
+buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+buyButton.TextSize = 18
+buyButton.Font = Enum.Font.GothamBold
+buyButton.Parent = frame
 
-make("TextLabel", {
-	Name = "Title",
-	Size = UDim2.new(1, -40, 1, 0),
-	Position = UDim2.new(0, 12, 0, 0),
-	BackgroundTransparency = 1,
-	Text = "RollWeapons Tester",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
-	TextSize = 16,
-}, titleBar)
+local buyCorner = Instance.new("UICorner")
+buyCorner.CornerRadius = UDim.new(0, 8)
+buyCorner.Parent = buyButton
 
-local closeBtn = make("TextButton", {
-	Name = "CloseBtn",
-	Size = UDim2.new(0, 28, 0, 28),
-	Position = UDim2.new(1, -34, 0, 4),
-	BackgroundColor3 = Color3.fromRGB(170, 60, 60),
-	BorderSizePixel = 0,
-	Text = "X",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, titleBar)
+local bigBuyButton = Instance.new("TextButton")
+bigBuyButton.Size = UDim2.new(1, -20, 0, 36)
+bigBuyButton.Position = UDim2.new(0, 10, 0, 174)
+bigBuyButton.BackgroundColor3 = Color3.fromRGB(170, 85, 0)
+bigBuyButton.Text = "BigBuy"
+bigBuyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+bigBuyButton.TextSize = 18
+bigBuyButton.Font = Enum.Font.GothamBold
+bigBuyButton.Parent = frame
 
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, closeBtn)
+local bigBuyCorner = Instance.new("UICorner")
+bigBuyCorner.CornerRadius = UDim.new(0, 8)
+bigBuyCorner.Parent = bigBuyButton
 
-local content = make("Frame", {
-	Name = "Content",
-	Size = UDim2.new(1, -16, 1, -52),
-	Position = UDim2.new(0, 8, 0, 44),
-	BackgroundTransparency = 1,
-}, frame)
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 20)
+statusLabel.Position = UDim2.new(0, 10, 1, -24)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "พร้อมใช้งาน"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextSize = 13
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = frame
 
-make("TextLabel", {
-	Name = "LoopLabel",
-	Size = UDim2.new(0, 80, 0, 24),
-	Position = UDim2.new(0, 0, 0, 0),
-	BackgroundTransparency = 1,
-	Text = "Loop",
-	TextColor3 = Color3.fromRGB(230, 230, 230),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.Gotham,
-	TextSize = 14,
-}, content)
-
-local loopBox = make("TextBox", {
-	Name = "LoopBox",
-	Size = UDim2.new(0, 100, 0, 28),
-	Position = UDim2.new(0, 0, 0, 24),
-	BackgroundColor3 = Color3.fromRGB(45, 45, 45),
-	BorderSizePixel = 0,
-	Text = "30",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	PlaceholderText = "count",
-	Font = Enum.Font.Gotham,
-	TextSize = 14,
-	ClearTextOnFocus = false,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, loopBox)
-
-make("TextLabel", {
-	Name = "DelayLabel",
-	Size = UDim2.new(0, 80, 0, 24),
-	Position = UDim2.new(0, 120, 0, 0),
-	BackgroundTransparency = 1,
-	Text = "Delay",
-	TextColor3 = Color3.fromRGB(230, 230, 230),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.Gotham,
-	TextSize = 14,
-}, content)
-
-local delayBox = make("TextBox", {
-	Name = "DelayBox",
-	Size = UDim2.new(0, 100, 0, 28),
-	Position = UDim2.new(0, 120, 0, 24),
-	BackgroundColor3 = Color3.fromRGB(45, 45, 45),
-	BorderSizePixel = 0,
-	Text = "1",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	PlaceholderText = "seconds",
-	Font = Enum.Font.Gotham,
-	TextSize = 14,
-	ClearTextOnFocus = false,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, delayBox)
-
-local startBtn = make("TextButton", {
-	Name = "StartBtn",
-	Size = UDim2.new(0, 90, 0, 28),
-	Position = UDim2.new(0, 240, 0, 24),
-	BackgroundColor3 = Color3.fromRGB(50, 140, 75),
-	BorderSizePixel = 0,
-	Text = "Start",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, startBtn)
-
-local stopBtn = make("TextButton", {
-	Name = "StopBtn",
-	Size = UDim2.new(0, 90, 0, 28),
-	Position = UDim2.new(0, 338, 0, 24),
-	BackgroundColor3 = Color3.fromRGB(170, 70, 70),
-	BorderSizePixel = 0,
-	Text = "Stop",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, stopBtn)
-
-local statusLabel = make("TextLabel", {
-	Name = "StatusLabel",
-	Size = UDim2.new(1, 0, 0, 24),
-	Position = UDim2.new(0, 0, 0, 64),
-	BackgroundTransparency = 1,
-	Text = "Status: Idle",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-local progressLabel = make("TextLabel", {
-	Name = "ProgressLabel",
-	Size = UDim2.new(1, 0, 0, 24),
-	Position = UDim2.new(0, 0, 0, 88),
-	BackgroundTransparency = 1,
-	Text = "Progress: 0 / 0",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.Gotham,
-	TextSize = 14,
-}, content)
-
-local lastItemLabel = make("TextLabel", {
-	Name = "LastItemLabel",
-	Size = UDim2.new(1, 0, 0, 24),
-	Position = UDim2.new(0, 0, 0, 112),
-	BackgroundTransparency = 1,
-	Text = "Last Item: -",
-	TextColor3 = Color3.fromRGB(255, 230, 120),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-make("TextLabel", {
-	Name = "RecentTitle",
-	Size = UDim2.new(0.48, 0, 0, 24),
-	Position = UDim2.new(0, 0, 0, 148),
-	BackgroundTransparency = 1,
-	Text = "Recent Rolls",
-	TextColor3 = Color3.fromRGB(230, 230, 230),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-make("TextLabel", {
-	Name = "SummaryTitle",
-	Size = UDim2.new(0.48, 0, 0, 24),
-	Position = UDim2.new(0.52, 0, 0, 148),
-	BackgroundTransparency = 1,
-	Text = "Summary",
-	TextColor3 = Color3.fromRGB(230, 230, 230),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-}, content)
-
-local recentFrame = make("Frame", {
-	Name = "RecentFrame",
-	Size = UDim2.new(0.48, -6, 0, 220),
-	Position = UDim2.new(0, 0, 0, 172),
-	BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-	BorderSizePixel = 0,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, recentFrame)
-
-local recentLabel = make("TextLabel", {
-	Name = "RecentLabel",
-	Size = UDim2.new(1, -10, 1, -10),
-	Position = UDim2.new(0, 5, 0, 5),
-	BackgroundTransparency = 1,
-	Text = "-",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Top,
-	Font = Enum.Font.Code,
-	TextSize = 14,
-	TextWrapped = false,
-}, recentFrame)
-
-local summaryFrame = make("Frame", {
-	Name = "SummaryFrame",
-	Size = UDim2.new(0.52, -6, 0, 220),
-	Position = UDim2.new(0.48, 6, 0, 172),
-	BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-	BorderSizePixel = 0,
-}, content)
-
-make("UICorner", {
-	CornerRadius = UDim.new(0, 8),
-}, summaryFrame)
-
-local summaryLabel = make("TextLabel", {
-	Name = "SummaryLabel",
-	Size = UDim2.new(1, -10, 1, -10),
-	Position = UDim2.new(0, 5, 0, 5),
-	BackgroundTransparency = 1,
-	Text = "-",
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Top,
-	Font = Enum.Font.Code,
-	TextSize = 14,
-	TextWrapped = false,
-}, summaryFrame)
-
-local function setStatus(text)
-	statusLabel.Text = "Status: " .. text
-end
-
-local function stopRolling()
-	running = false
-end
-
-local function getRewardName()
-	local result = rollRemote:InvokeServer(false)
-	local items = result and result[1]
-	local reward = items and items[#items]
-
-	if reward and reward:IsA("Instance") then
-		return reward.Name
-	end
-
-	return nil
-end
-
-startBtn.MouseButton1Click:Connect(function()
-	if running then
-		return
-	end
-
-	local loopCount = tonumber(loopBox.Text) or 30
-	local delay = tonumber(delayBox.Text) or 1
-
-	loopCount = math.max(1, math.floor(loopCount))
-	delay = math.max(0, delay)
-
-	summary = {}
-	recentLogs = {}
-	recentLabel.Text = "-"
-	summaryLabel.Text = "-"
-	progressLabel.Text = string.format("Progress: 0 / %d", loopCount)
-	lastItemLabel.Text = "Last Item: -"
-
-	running = true
-	runToken += 1
-	local myToken = runToken
-
-	setStatus("Starting...")
-
-	task.spawn(function()
-		for i = 1, loopCount do
-			if not running or myToken ~= runToken then
-				break
-			end
-
-			setStatus("Rolling...")
-			progressLabel.Text = string.format("Progress: %d / %d", i, loopCount)
-
-			local ok, rewardNameOrError = pcall(getRewardName)
-			local rewardName
-
-			if ok then
-				rewardName = rewardNameOrError
-			else
-				rewardName = nil
-			end
-
-			if rewardName then
-				lastItemLabel.Text = "Last Item: " .. rewardName
-				summary[rewardName] = (summary[rewardName] or 0) + 1
-				pushRecent(string.format("%03d) %s", i, rewardName))
-			else
-				lastItemLabel.Text = "Last Item: -"
-				pushRecent(string.format("%03d) FAILED", i))
-			end
-
-			recentLabel.Text = table.concat(recentLogs, "\n")
-			summaryLabel.Text = buildSummaryText()
-
-			if i < loopCount then
-				local startTime = os.clock()
-				while running and myToken == runToken and (os.clock() - startTime) < delay do
-					task.wait(0.05)
-				end
-			end
-		end
-
-		if myToken ~= runToken then
-			return
-		end
-
-		if running then
-			running = false
-			setStatus("Done")
-		else
-			setStatus("Stopped")
-		end
-	end)
-end)
-
-stopBtn.MouseButton1Click:Connect(function()
-	stopRolling()
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-	stopRolling()
-	gui:Destroy()
-end)
-
+-- =========================
+-- Drag UI
+-- =========================
 local dragging = false
 local dragInput
 local dragStart
 local startPos
 
-titleBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+local UserInputService = game:GetService("UserInputService")
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+end
+
+title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
 		dragStart = input.Position
 		startPos = frame.Position
@@ -442,20 +237,130 @@ titleBar.InputBegan:Connect(function(input)
 	end
 end)
 
-titleBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
+title.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 		dragInput = input
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if input == dragInput and dragging then
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset + delta.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset + delta.Y
-		)
+		updateDrag(input)
 	end
 end)
+
+-- =========================
+-- Loop logic
+-- =========================
+local loopEnabled = false
+local currentLoopToken = 0
+
+local function refreshLoopBox()
+	if loopEnabled then
+		loopBox.Text = "✓"
+		loopBox.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+	else
+		loopBox.Text = ""
+		loopBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	end
+end
+
+loopBox.MouseButton1Click:Connect(function()
+	loopEnabled = not loopEnabled
+	refreshLoopBox()
+
+	if not loopEnabled then
+		currentLoopToken += 1
+		statusLabel.Text = "หยุด loop แล้ว"
+	else
+		statusLabel.Text = "เปิด loop แล้ว"
+	end
+end)
+
+refreshLoopBox()
+
+local function updateInfo()
+	local buyAmount, buyPrice = getButtonInfo(sourceBuyBtn)
+	local bigAmount, bigPrice = getButtonInfo(sourceBigBuyBtn)
+
+	manaLabel.Text = "Mana คงเหลือ : " .. tostring(mana.Value)
+	spLabel.Text = "SP คงเหลือ : " .. tostring(sp.Value)
+
+	if buyAmount and buyPrice then
+		buyButton.Text = ("Buy (%d SP / %d Mana)"):format(buyAmount, buyPrice)
+	else
+		buyButton.Text = "Buy (อ่านราคาไม่ได้)"
+	end
+
+	if bigAmount and bigPrice then
+		bigBuyButton.Text = ("BigBuy (%d SP / %d Mana)"):format(bigAmount, bigPrice)
+	else
+		bigBuyButton.Text = "BigBuy (อ่านราคาไม่ได้)"
+	end
+end
+
+mana:GetPropertyChangedSignal("Value"):Connect(updateInfo)
+sp:GetPropertyChangedSignal("Value"):Connect(updateInfo)
+
+local buyLabel = sourceBuyBtn:FindFirstChild("TextLabel")
+if buyLabel then
+	buyLabel:GetPropertyChangedSignal("Text"):Connect(updateInfo)
+end
+
+local bigBuyLabel = sourceBigBuyBtn:FindFirstChild("TextLabel")
+if bigBuyLabel then
+	bigBuyLabel:GetPropertyChangedSignal("Text"):Connect(updateInfo)
+end
+
+local function startBuyLoop(btn, modeName)
+	currentLoopToken += 1
+	local myToken = currentLoopToken
+
+	task.spawn(function()
+		while loopEnabled and myToken == currentLoopToken do
+			local ok, msg = doBuy(btn)
+			statusLabel.Text = modeName .. " | " .. msg
+
+			if not ok then
+				break
+			end
+
+			task.wait(LOOP_DELAY)
+		end
+	end)
+end
+
+buyButton.MouseButton1Click:Connect(function()
+	updateInfo()
+
+	if loopEnabled then
+		statusLabel.Text = "เริ่ม loop Buy"
+		startBuyLoop(sourceBuyBtn, "Buy")
+	else
+		local ok, msg = doBuy(sourceBuyBtn)
+		statusLabel.Text = msg
+		if ok then
+			task.wait(0.2)
+			updateInfo()
+		end
+	end
+end)
+
+bigBuyButton.MouseButton1Click:Connect(function()
+	updateInfo()
+
+	if loopEnabled then
+		statusLabel.Text = "เริ่ม loop BigBuy"
+		startBuyLoop(sourceBigBuyBtn, "BigBuy")
+	else
+		local ok, msg = doBuy(sourceBigBuyBtn)
+		statusLabel.Text = msg
+		if ok then
+			task.wait(0.2)
+			updateInfo()
+		end
+	end
+end)
+
+updateInfo()
+print("SP Buyer UI Loaded")
