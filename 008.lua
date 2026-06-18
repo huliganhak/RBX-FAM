@@ -207,7 +207,7 @@ LogText.Parent = LogFrame
 -- =========================================================
 local isRunning = false
 local isLooping = true -- เริ่มต้นให้ติ๊กถูกไว้เลย
-local currentCooldown = 5
+local currentCooldown = 10
 local runningTask = nil
 
 -- ฟังก์ชันอัปเดตข้อความในกล่อง Log บน UI
