@@ -3,7 +3,9 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local lp = Players.LocalPlayer
-local lootFolder = workspace:FindFirstChild("Loot")
+
+-- ใช้ WaitForChild รอให้โฟลเดอร์ Loot พร้อมใช้งานสูงสุด 30 วินาที (สำคัญมากสำหรับระบบ Autoexec)
+local lootFolder = workspace:WaitForChild("Loot", 30)
 
 -- ลบ UI เก่าทิ้งก่อนถ้าเคยรันไปแล้ว
 if CoreGui:FindFirstChild("DeltaX_UltimateLootUI") then
@@ -55,7 +57,7 @@ Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "💎 LOOT CONTROLLER"
+Title.Text = "💎 LOOT CONTROLLER (AUTO)"
 Title.TextColor3 = Color3.fromRGB(0, 255, 170)
 Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -160,14 +162,14 @@ CBLabel.TextSize = 12
 CBLabel.TextXAlignment = Enum.TextXAlignment.Left
 CBLabel.Parent = ContentFrame
 
--- ปุ่มเริ่ม/หยุด (Start / Stop)
+-- ปุ่มเริ่ม/หยุด (ปรับให้เริ่มต้นเป็นสถานะรันอยู่ STOP LOOT สีแดงทันที)
 local ActionBtn = Instance.new("TextButton")
 ActionBtn.Size = UDim2.new(1, -30, 0, 35)
 ActionBtn.Position = UDim2.new(0, 15, 0, 88)
-ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
+ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70) -- สีแดงแสดงว่าบอทเริ่มวิ่งแล้ว
 ActionBtn.Font = Enum.Font.GothamBold
-ActionBtn.Text = "START LOOT"
-ActionBtn.TextColor3 = Color3.fromRGB(15, 15, 20)
+ActionBtn.Text = "STOP LOOT"
+ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ActionBtn.TextSize = 13
 ActionBtn.Parent = ContentFrame
 
@@ -176,7 +178,7 @@ ABCorner.CornerRadius = UDim.new(0, 8)
 ABCorner.Parent = ActionBtn
 
 -- ---------------------------------------------------------
--- โซนแสดงผล Log บน UIแทนการ Print (Log Frame Zone)
+-- โซนแสดงผล Log บน UI แทนการ Print
 -- ---------------------------------------------------------
 local LogFrame = Instance.new("Frame")
 LogFrame.Size = UDim2.new(1, -30, 0, 85)
@@ -194,8 +196,8 @@ LogText.Size = UDim2.new(1, -16, 1, -16)
 LogText.Position = UDim2.new(0, 8, 0, 8)
 LogText.BackgroundTransparency = 1
 LogText.Font = Enum.Font.Code
-LogText.Text = "ระบบ: สแตนด์บาย\nกด START เพื่อเริ่มเก็บไอเทม..."
-LogText.TextColor3 = Color3.fromRGB(150, 150, 160)
+LogText.Text = "ระบบ: เปิดใช้ระบบออโต้ฟาร์มสำเร็จ..."
+LogText.TextColor3 = Color3.fromRGB(0, 255, 170)
 LogText.TextSize = 11
 LogText.TextXAlignment = Enum.TextXAlignment.Left
 LogText.TextYAlignment = Enum.TextYAlignment.Top
@@ -205,8 +207,8 @@ LogText.Parent = LogFrame
 -- =========================================================
 -- ⚡ [LOGIC SYSTEMS] ระบบควบคุมสคริปต์
 -- =========================================================
-local isRunning = false
-local isLooping = true -- เริ่มต้นให้ติ๊กถูกไว้เลย
+local isRunning = true -- 🔥 เปลี่ยนเป็น true เพื่อให้สั่งทำงานออโต้ตั้งแต่เริ่มโหลดไฟล์
+local isLooping = true 
 local currentCooldown = 10
 local runningTask = nil
 
@@ -223,7 +225,7 @@ end
 -- ฟังก์ชันหัวใจหลักในการดึงและยิง Remote เก็บของ
 local function executeLooting()
     if not lootFolder or not remoteFunction then
-        updateUIStatus("❌ ผิดพลาด: ไม่พบโฟลเดอร์ หรือรีโมทเกม", true)
+        updateUIStatus("❌ ผิดพลาด: ระบบกำลังรอโหลดโฟลเดอร์ของในเกม...", true)
         return
     end
 
@@ -240,12 +242,12 @@ local function executeLooting()
             end)
             
             if success then
-                updateUIStatus("⚡ สำเร็จ: ยิงเก็บไอเทมแรกแล้ว!\nID: " .. string.sub(itemID, 1, 15) .. "...")
+                updateUIStatus("⚡ [Auto] สำเร็จ: ยิงเก็บไอเทมรอบนี้แล้ว!\nID: " .. string.sub(itemID, 1, 15) .. "...")
             else
                 updateUIStatus("❌ ผิดพลาด: เซิร์ฟเวอร์ปฏิเสธซิกแนล", true)
             end
         else
-            updateUIStatus("⏳ สถานะ: ไม่พบไอเทมบนพื้น\nกำลังสแกนหาเรื่อยๆ...")
+            updateUIStatus("⏳ [Auto] สถานะ: ไม่พบไอเทมบนพื้น\nกำลังสแกนหาเรื่อยๆ...")
         end
     end
 end
@@ -255,7 +257,6 @@ local function mainLoop()
     while isRunning do
         executeLooting()
         
-        -- ถ้าผู้เล่นไม่ได้ติ๊กถูกระบบวนลูป ให้สั่งหยุดการทำงานทันทีหลังจากเก็บชิ้นแรกเสร็จ
         if not isLooping then
             isRunning = false
             ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
@@ -265,7 +266,6 @@ local function mainLoop()
             break
         end
         
-        -- ดึงค่าดีเลย์จากช่องป้อนข้อมูลล่าสุดมาใช้งาน
         local inputVal = tonumber(DelayInput.Text)
         currentCooldown = inputVal or 5
         
@@ -273,7 +273,10 @@ local function mainLoop()
     end
 end
 
--- ปุ่มเปิด/ปิดระบบการฟาร์ม (Start / Stop)
+-- 🔥 สั่งเปิดระบบฟาร์มให้ทำงานทันทีด้านหลังแบ็คกราวด์ตั้งแต่สคริปต์โหลดเสร็จ
+runningTask = task.spawn(mainLoop)
+
+-- ปุ่มเปิด/ปิดระบบการฟาร์ม (Start / Stop เผื่อต้องการกดคุมมือภายหลัง)
 ActionBtn.MouseButton1Click:Connect(function()
     isRunning = not isRunning
     
