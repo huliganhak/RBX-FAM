@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 
 -- ใช้ WaitForChild รอให้โฟลเดอร์ Loot พร้อมใช้งานสูงสุด 30 วินาที (สำคัญมากสำหรับระบบ Autoexec)
@@ -222,6 +223,15 @@ local function updateUIStatus(message, isError)
     LogText.Text = "🕒 เวลา: " .. os.date("%X") .. "\n" .. message
 end
 
+-- ฟังก์ชันจำลองการคลิกเมาส์ซ้าย (คลิกตรงตำแหน่งที่เรายืน/หันหน้าอยู่ปัจจุบัน)
+local function virtualClick()
+    -- Parameter: (ปุ่มเมาส์ที่กด, สถานะกดพิกัด x/y บนจอ, สภาพแวดล้อมเกม)
+    -- ใช้ Enum.UserInputType.MouseButton1 สำหรับคลิกซ้าย
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0) -- true = กดลง
+    task.wait(0.05)                                                 -- หน่วงเวลานิดหน่อยให้เกมรู้ตัว
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0) -- false = ปล่อยเมาส์
+end
+
 -- ฟังก์ชันหัวใจหลักในการดึงและยิง Remote เก็บของ
 local function executeLooting()
     if not lootFolder or not remoteFunction then
@@ -232,6 +242,8 @@ local function executeLooting()
     if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
         local allItems = lootFolder:GetChildren()
         local firstItem = allItems[1]
+
+        virtualClick()
         
         if firstItem then
             local itemID = firstItem.Name
