@@ -223,13 +223,20 @@ local function updateUIStatus(message, isError)
     LogText.Text = "🕒 เวลา: " .. os.date("%X") .. "\n" .. message
 end
 
--- ฟังก์ชันจำลองการคลิกเมาส์ซ้าย (คลิกตรงตำแหน่งที่เรายืน/หันหน้าอยู่ปัจจุบัน)
+-- ฟังก์ชันจำลองการคลิกเมาส์ซ้าย ตรงกลางหน้าจอแบบอัตโนมัติ
 local function virtualClick()
-    -- Parameter: (ปุ่มเมาส์ที่กด, สถานะกดพิกัด x/y บนจอ, สภาพแวดล้อมเกม)
-    -- ใช้ Enum.UserInputType.MouseButton1 สำหรับคลิกซ้าย
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0) -- true = กดลง
-    task.wait(0.05)                                                 -- หน่วงเวลานิดหน่อยให้เกมรู้ตัว
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0) -- false = ปล่อยเมาส์
+    local camera = workspace.CurrentCamera
+    if camera then
+        -- หาขนาดความกว้าง (X) และความสูง (Y) ของหน้าจอปัจจุบัน
+        local screenSize = camera.ViewportSize
+        local centerX = screenSize.X / 2
+        local centerY = screenSize.Y / 2
+        
+        -- ส่งพิกัดกึ่งกลางจอไปที่ VirtualInputManager
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)  -- กดลง
+        task.wait(0.05)                                                              -- หน่วงเวลาเล็กน้อย
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0) -- ปล่อย
+    end
 end
 
 -- ฟังก์ชันหัวใจหลักในการดึงและยิง Remote เก็บของ
