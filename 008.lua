@@ -127,7 +127,7 @@ DelayInput.Size = UDim2.new(0, 140, 0, 30)
 DelayInput.Position = UDim2.new(0, 145, 0, 15)
 DelayInput.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
 DelayInput.Font = Enum.Font.Gotham
-DelayInput.Text = "5"
+DelayInput.Text = "10"
 DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 DelayInput.TextSize = 13
 DelayInput.Parent = ContentFrame
@@ -267,7 +267,7 @@ local function mainLoop()
         end
         
         local inputVal = tonumber(DelayInput.Text)
-        currentCooldown = inputVal or 5
+        currentCooldown = inputVal or 10
         
         task.wait(currentCooldown)
     end
