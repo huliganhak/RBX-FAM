@@ -5,9 +5,6 @@ local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 
--- ใช้ WaitForChild รอให้โฟลเดอร์ Loot พร้อมใช้งานสูงสุด 30 วินาที (สำคัญมากสำหรับระบบ Autoexec)
-local lootFolder = workspace:WaitForChild("Loot", 30)
-
 -- ลบ UI เก่าทิ้งก่อนถ้าเคยรันไปแล้ว
 if CoreGui:FindFirstChild("DeltaX_UltimateLootUI") then
     CoreGui["DeltaX_UltimateLootUI"]:Destroy()
@@ -31,7 +28,6 @@ ScreenGui.Name = "DeltaX_UltimateLootUI"
 ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- หน้าต่างหลัก (Main Frame)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 300, 0, 270)
@@ -47,7 +43,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
--- แถบหัวเรื่องด้านบน (Top Bar)
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
 TopBar.BackgroundTransparency = 1
@@ -64,7 +59,6 @@ Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
--- ปุ่มย่อหน้าต่าง (Minimize Button)
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 25, 0, 25)
 MinBtn.Position = UDim2.new(1, -55, 0, 5)
@@ -79,7 +73,6 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 6)
 MinCorner.Parent = MinBtn
 
--- ปุ่มปิดหน้าต่าง (Close Button)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 25, 0, 25)
 CloseBtn.Position = UDim2.new(1, -25, 0, 5)
@@ -94,7 +87,6 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseBtn
 
--- เส้นแบ่งโซน (Divider)
 local Line = Instance.new("Frame")
 Line.Size = UDim2.new(1, -24, 0, 1)
 Line.Position = UDim2.new(0, 12, 0, 35)
@@ -102,16 +94,12 @@ Line.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 Line.BorderSizePixel = 0
 Line.Parent = MainFrame
 
--- ---------------------------------------------------------
--- โซนตั้งค่า (Settings Content)
--- ---------------------------------------------------------
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Size = UDim2.new(1, 0, 1, -35)
 ContentFrame.Position = UDim2.new(0, 0, 0, 35)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = MainFrame
 
--- ช่องใส่ค่าดีเลย์ (Delay Box)
 local DelayLabel = Instance.new("TextLabel")
 DelayLabel.Size = UDim2.new(0, 120, 0, 30)
 DelayLabel.Position = UDim2.new(0, 15, 0, 15)
@@ -137,7 +125,6 @@ local DICorner = Instance.new("UICorner")
 DICorner.CornerRadius = UDim.new(0, 6)
 DICorner.Parent = DelayInput
 
--- ส่วนของ Checkbox Loop
 local CBBtn = Instance.new("TextButton")
 CBBtn.Size = UDim2.new(0, 18, 0, 18)
 CBBtn.Position = UDim2.new(0, 15, 0, 56)
@@ -163,11 +150,10 @@ CBLabel.TextSize = 12
 CBLabel.TextXAlignment = Enum.TextXAlignment.Left
 CBLabel.Parent = ContentFrame
 
--- ปุ่มเริ่ม/หยุด (ปรับให้เริ่มต้นเป็นสถานะรันอยู่ STOP LOOT สีแดงทันที)
 local ActionBtn = Instance.new("TextButton")
 ActionBtn.Size = UDim2.new(1, -30, 0, 35)
 ActionBtn.Position = UDim2.new(0, 15, 0, 88)
-ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70) -- สีแดงแสดงว่าบอทเริ่มวิ่งแล้ว
+ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70)
 ActionBtn.Font = Enum.Font.GothamBold
 ActionBtn.Text = "STOP LOOT"
 ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -178,9 +164,6 @@ local ABCorner = Instance.new("UICorner")
 ABCorner.CornerRadius = UDim.new(0, 8)
 ABCorner.Parent = ActionBtn
 
--- ---------------------------------------------------------
--- โซนแสดงผล Log บน UI แทนการ Print
--- ---------------------------------------------------------
 local LogFrame = Instance.new("Frame")
 LogFrame.Size = UDim2.new(1, -30, 0, 85)
 LogFrame.Position = UDim2.new(0, 15, 0, 135)
@@ -208,12 +191,11 @@ LogText.Parent = LogFrame
 -- =========================================================
 -- ⚡ [LOGIC SYSTEMS] ระบบควบคุมสคริปต์
 -- =========================================================
-local isRunning = true -- 🔥 เปลี่ยนเป็น true เพื่อให้สั่งทำงานออโต้ตั้งแต่เริ่มโหลดไฟล์
+local isRunning = true 
 local isLooping = true 
 local currentCooldown = 10
 local runningTask = nil
 
--- ฟังก์ชันอัปเดตข้อความในกล่อง Log บน UI
 local function updateUIStatus(message, isError)
     if isError then
         LogText.TextColor3 = Color3.fromRGB(255, 80, 80)
@@ -223,36 +205,36 @@ local function updateUIStatus(message, isError)
     LogText.Text = "🕒 เวลา: " .. os.date("%X") .. "\n" .. message
 end
 
--- ฟังก์ชันจำลองการคลิกเมาส์ซ้าย ตรงกลางหน้าจอแบบอัตโนมัติ
 local function virtualClick()
     local camera = workspace.CurrentCamera
     if camera then
-        -- หาขนาดความกว้าง (X) และความสูง (Y) ของหน้าจอปัจจุบัน
         local screenSize = camera.ViewportSize
         local centerX = screenSize.X / 2
         local centerY = screenSize.Y / 2
         
-        -- ส่งพิกัดกึ่งกลางจอไปที่ VirtualInputManager
-        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)  -- กดลง
-        task.wait(0.05)                                                              -- หน่วงเวลาเล็กน้อย
-        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0) -- ปล่อย
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)  
+        task.wait(0.05)                                                               
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0) 
     end
 end
 
--- ฟังก์ชันหัวใจหลักในการดึงและยิง Remote เก็บของ
 local function executeLooting()
-    if not lootFolder or not remoteFunction then
-        updateUIStatus("❌ ผิดพลาด: ระบบกำลังรอโหลดโฟลเดอร์ของในเกม...", true)
+    -- 🔥 ย้ายมาเช็คโฟลเดอร์ตรงนี้แบบ Real-time เผื่อกรณีเข้าเกมใหม่แล้วโฟลเดอร์ยังไม่เกิด
+    local currentLootFolder = workspace:FindFirstChild("Loot")
+    if not currentLootFolder or not remoteFunction then
+        updateUIStatus("❌ ระบบกำลังรอโหลดโฟลเดอร์ของในเกม...", true)
         return
     end
 
     if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        local allItems = lootFolder:GetChildren()
+        local allItems = currentLootFolder:GetChildren()
         local firstItem = allItems[1]
-
-        virtualClick()
         
         if firstItem then
+            -- 🔥 คลิกกลางจอเฉพาะตอนเจอกล่องไอเทมเท่านั้น
+            virtualClick()
+            task.wait(0.1)
+            
             local itemID = firstItem.Name
             local args = {"requestCollect", itemID}
             
@@ -261,7 +243,7 @@ local function executeLooting()
             end)
             
             if success then
-                updateUIStatus("⚡ [Auto] สำเร็จ: ยิงเก็บไอเทมรอบนี้แล้ว!\nID: " .. string.sub(itemID, 1, 15) .. "...")
+                updateUIStatus("⚡ [Auto] สำเร็จ: คลิกโจมตีและเก็บไอเทมแล้ว!\nID: " .. string.sub(itemID, 1, 15) .. "...")
             else
                 updateUIStatus("❌ ผิดพลาด: เซิร์ฟเวอร์ปฏิเสธซิกแนล", true)
             end
@@ -271,7 +253,6 @@ local function executeLooting()
     end
 end
 
--- ระบบลูปควบคุมการทำงานหลัก
 local function mainLoop()
     while isRunning do
         executeLooting()
@@ -292,26 +273,21 @@ local function mainLoop()
     end
 end
 
--- 🔥 สั่งเปิดระบบฟาร์มให้ทำงานทันทีด้านหลังแบ็คกราวด์ตั้งแต่สคริปต์โหลดเสร็จ
 runningTask = task.spawn(mainLoop)
 
--- ปุ่มเปิด/ปิดระบบการฟาร์ม (Start / Stop เผื่อต้องการกดคุมมือภายหลัง)
 ActionBtn.MouseButton1Click:Connect(function()
     isRunning = not isRunning
-    
     if isRunning then
         ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70)
         ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         ActionBtn.Text = "STOP LOOT"
         updateUIStatus("▶️ เริ่มทำงาน: กำลังดึงของเข้ากระเป๋า...")
-        
         runningTask = task.spawn(mainLoop)
     else
         ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
         ActionBtn.TextColor3 = Color3.fromRGB(15, 15, 20)
         ActionBtn.Text = "START LOOT"
         updateUIStatus("⏹️ หยุดทำงาน: หยุดยิงระบบดักชั่วคราว")
-        
         if runningTask then
             isRunning = false
             runningTask = nil
@@ -319,7 +295,6 @@ ActionBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ปุ่มเลือกเปิด/ปิดการ วนลูป (Checkbox)
 CBBtn.MouseButton1Click:Connect(function()
     isLooping = not isLooping
     if isLooping then
@@ -330,7 +305,6 @@ CBBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ปุ่มย่อ / ขยายหน้าต่าง UI (Minimize)
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -346,7 +320,6 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ปุ่มปิดสคริปต์ถาวร (Close)
 CloseBtn.MouseButton1Click:Connect(function()
     isRunning = false
     ScreenGui:Destroy()
