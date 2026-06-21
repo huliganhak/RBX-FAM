@@ -218,6 +218,19 @@ local function virtualClick()
     end
 end
 
+local function virtualHoldClick(holdDuration)
+    local camera = workspace.CurrentCamera
+    if camera then
+        local screenSize = camera.ViewportSize
+        local centerX = screenSize.X / 2
+        local centerY = screenSize.Y / 2
+        
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)  
+        task.wait(holdDuration)                                                       
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0) 
+    end
+end
+
 local function executeLooting()
     -- 🔥 ย้ายมาเช็คโฟลเดอร์ตรงนี้แบบ Real-time เผื่อกรณีเข้าเกมใหม่แล้วโฟลเดอร์ยังไม่เกิด
     local currentLootFolder = workspace:FindFirstChild("Loot")
