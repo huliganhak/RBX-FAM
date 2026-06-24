@@ -172,7 +172,7 @@ ClickDelayInput.Size = UDim2.new(1, -135, 1, 0)
 ClickDelayInput.Position = UDim2.new(0, 135, 0, 0)
 ClickDelayInput.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
 ClickDelayInput.Font = Enum.Font.Gotham
-ClickDelayInput.Text = "1"
+ClickDelayInput.Text = "3"  -- ปรับค่าเริ่มต้นตามรูปภาพผู้ใช้
 ClickDelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClickDelayInput.TextSize = 10
 ClickDelayInput.Parent = CustomClickRow
@@ -192,7 +192,7 @@ local CBBtn1 = Instance.new("TextButton")
 CBBtn1.Size = UDim2.new(0, 13, 0, 13)
 CBBtn1.Position = UDim2.new(0, 0, 0, 1)
 CBBtn1.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-CBBtn1.Text = "✓"
+CBBtn1.Text = "✓"  -- เริ่มต้นเปิดใช้งาน
 CBBtn1.Font = Enum.Font.GothamBold
 CBBtn1.TextColor3 = Color3.fromRGB(0, 255, 170)
 CBBtn1.TextSize = 9
@@ -224,7 +224,7 @@ local CBBtn2 = Instance.new("TextButton")
 CBBtn2.Size = UDim2.new(0, 13, 0, 13)
 CBBtn2.Position = UDim2.new(0, 0, 0, 1)
 CBBtn2.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-CBBtn2.Text = ""
+CBBtn2.Text = "✓"  -- แก้ไขให้เริ่มต้นเปิดใช้งาน (ตามรูปภาพ)
 CBBtn2.Font = Enum.Font.GothamBold
 CBBtn2.TextColor3 = Color3.fromRGB(0, 255, 170)
 CBBtn2.TextSize = 9
@@ -248,7 +248,7 @@ CBLabel2.Parent = CBCustomRow
 -- 📥 แถวที่ 5: ปุ่ม Action Button (กระชับความสูงเป็น 22)
 local ActionBtn = Instance.new("TextButton")
 ActionBtn.Size = UDim2.new(1, -16, 0, 22)
-ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70)
+ActionBtn.BackgroundColor3 = Color3.fromRGB(230, 70, 70) -- เริ่มต้นเป็นสีแดง (STOP LOOT) เนื่องจากบอทรันทันที
 ActionBtn.Font = Enum.Font.GothamBold
 ActionBtn.Text = "STOP LOOT"
 ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -277,7 +277,7 @@ LogText.Size = UDim2.new(1, -10, 1, -10)
 LogText.Position = UDim2.new(0, 5, 0, 5)
 LogText.BackgroundTransparency = 1
 LogText.Font = Enum.Font.Code
-LogText.Text = "ระบบ: ย่อขนาดสเกลและปรับสมดุล UI เรียบร้อย..."
+LogText.Text = "ระบบ: เริ่มต้นทำงานอัตโนมัติ..."
 LogText.TextColor3 = Color3.fromRGB(0, 255, 170)
 LogText.TextSize = 9
 LogText.TextXAlignment = Enum.TextXAlignment.Left
@@ -288,9 +288,9 @@ LogText.Parent = LogFrame
 -- =========================================================
 -- ⚡ [LOGIC SYSTEMS] ระบบควบคุมประมวลผลหลังบ้าน
 -- =========================================================
-local isRunning = true 
-local isMainClickEnabled = true    
-local isCustomClickEnabled = false 
+local isRunning = true             -- เปิดใช้งานทันที
+local isMainClickEnabled = true    -- เปิดใช้งานทันที
+local isCustomClickEnabled = true  -- เปิดใช้งานทันทีตามรูปภาพ
 
 local mainLoopTask = nil
 local customClickTask = nil
@@ -363,12 +363,15 @@ end
 local function startCustomClickLoop()
     while isRunning and isCustomClickEnabled do
         virtualClick()
-        local clickDelay = tonumber(ClickDelayInput.Text) or 1
+        local clickDelay = tonumber(ClickDelayInput.Text) or 3
         task.wait(clickDelay)
     end
 end
 
+-- สั่งให้ระบเริ่มทำงาน (Auto-Start) ทันทีที่รันสคริปต์
 mainLoopTask = task.spawn(startMainLoop)
+customClickTask = task.spawn(startCustomClickLoop)
+updateUIStatus("▶️ บอทเริ่มทำงานอัตโนมัติเรียบร้อยแล้ว!")
 
 -- Event Handlers
 ActionBtn.MouseButton1Click:Connect(function()
