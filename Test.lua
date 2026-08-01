@@ -1,218 +1,219 @@
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local lp = Players.LocalPlayer
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ลบ UI เก่าทิ้งก่อนถ้าเคยรันไว้
-if CoreGui:FindFirstChild("DeltaX_TeleportUI") then
-    CoreGui["DeltaX_TeleportUI"]:Destroy()
+local Window = Rayfield:CreateWindow({
+   Name = "NuvikTeam - v1",
+   LoadingTitle = "NuvikTeam",
+   LoadingSubtitle = "by Nuvik",
+   Theme = "Amethyst",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "NuvikTeam",
+      FileName = "Config"
+   },
+   KeySystem = false
+})
+
+local SelectedEgg = "Egg1"
+local OpenAmount = 1
+local SelectedTrain = "Normal"
+local SelectedStage = "Stage 1 (0 Wins)"
+
+local AutoEgg = false
+local AutoKill = false
+local AutoTrain = false
+local AutoTrainArena = false
+
+local RS = game:GetService("ReplicatedStorage")
+local Remotes = RS:WaitForChild("Remotes")
+
+local function ExtraerValor(Value)
+    local val = type(Value) == "table" and Value[1] or Value
+    return (val and val ~= "") and val or nil
 end
 
--- =========================================================
--- 🎨 [DESIGN UI] โครงสร้างหน้าต่างควบคุม TP
--- =========================================================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DeltaX_TeleportUI"
-ScreenGui.Parent = CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local FarmTab = Window:CreateTab("Farm", 4483362458)
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 240, 0, 185)
-MainFrame.Position = UDim2.new(0.5, -120, 0.4, -92)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+FarmTab:CreateSection("Farm Configuration")
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
-MainCorner.Parent = MainFrame
+FarmTab:CreateDropdown({
+   Name = "Select Train Arena",
+   Options = {"Normal", "Rebirth", "Gold", "Divine"},
+   CurrentOption = {"Normal"},
+   MultipleOptions = false,
+   Callback = function(Value)
+      local nuevoValor = ExtraerValor(Value)
+      if nuevoValor then
+         SelectedTrain = nuevoValor
+      end
+   end
+})
 
--- แถบหัวเรื่องด้านบน (TopBar)
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 25)
-TopBar.BackgroundTransparency = 1
-TopBar.Parent = MainFrame
+FarmTab:CreateDropdown({
+   Name = "Select Egg",
+   Options = {"Egg1", "Egg2", "Egg3", "Egg4"},
+   CurrentOption = {"Egg1"},
+   MultipleOptions = false,
+   Callback = function(Value)
+      local nuevoValor = ExtraerValor(Value)
+      if nuevoValor then
+         SelectedEgg = nuevoValor
+      end
+   end
+})
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -55, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-Title.Text = "🌀 TELEPORT TOOL"
-Title.TextColor3 = Color3.fromRGB(0, 200, 255)
-Title.TextSize = 10
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+FarmTab:CreateSlider({
+   Name = "Open Amount (Gamepass)",
+   Range = {1, 3},
+   Increment = 1,
+   CurrentValue = 1,
+   Callback = function(Value)
+      OpenAmount = Value
+   end
+})
 
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 16, 0, 16)
-MinBtn.Position = UDim2.new(1, -38, 0, 4)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-MinBtn.TextSize = 11
-MinBtn.Parent = TopBar
+FarmTab:CreateSection("Auto Farms")
 
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 3)
-MinCorner.Parent = MinBtn
+FarmTab:CreateToggle({
+   Name = "Auto Train",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoTrain = Value
+      if AutoTrain then
+         task.spawn(function()
+            while AutoTrain do
+               pcall(function()
+                  Remotes:WaitForChild("MHP"):FireServer()
+               end)
+               task.wait(0.05)
+            end
+         end)
+      end
+   end
+})
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 16, 0, 16)
-CloseBtn.Position = UDim2.new(1, -18, 0, 4)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 9
-CloseBtn.Parent = TopBar
+FarmTab:CreateToggle({
+   Name = "Auto Train Arena",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoTrainArena = Value
+      if AutoTrainArena then
+         task.spawn(function()
+            while AutoTrainArena do
+               pcall(function()
+                  local trainArea = workspace:FindFirstChild("Train Area")
+                  if trainArea and SelectedTrain then
+                     local arenaNode = trainArea:FindFirstChild(SelectedTrain)
+                     if arenaNode then
+                        Remotes:WaitForChild("MHP"):FireServer(arenaNode)
+                     end
+                  end
+               end)
+               task.wait(0.1)
+            end
+         end)
+      end
+   end
+})
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 3)
-CloseCorner.Parent = CloseBtn
+FarmTab:CreateToggle({
+   Name = "Auto Kill",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoKill = Value
+      if AutoKill then
+         task.spawn(function()
+            while AutoKill do
+               pcall(function()
+                  Remotes:WaitForChild("TakeDamage"):FireServer(8000000000000000)
+               end)
+               task.wait(0.1)
+            end
+         end)
+      end
+   end
+})
 
-local Line = Instance.new("Frame")
-Line.Size = UDim2.new(1, -16, 0, 1)
-Line.Position = UDim2.new(0, 8, 0, 25)
-Line.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-Line.BorderSizePixel = 0
-Line.Parent = MainFrame
+FarmTab:CreateToggle({
+   Name = "Auto Egg",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoEgg = Value
+      if AutoEgg then
+         task.spawn(function()
+            while AutoEgg do
+               pcall(function()
+                  RS:WaitForChild("Remote")
+                    :WaitForChild("Function")
+                    :WaitForChild("Luck")
+                    :WaitForChild("[C-S]DoLuck")
+                    :InvokeServer(SelectedEgg, OpenAmount)
+               end)
+               task.wait(0.1) 
+            end
+         end)
+      end
+   end
+})
 
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Size = UDim2.new(1, 0, 1, -25)
-ContentFrame.Position = UDim2.new(0, 0, 0, 25)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+local TpTab = Window:CreateTab("Teleport", 4483362458)
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = ContentFrame
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 5)
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+local StagesData = {
+    ["Stage 1 (0 Wins)"] = "Button1",
+    ["Stage 2 (1 Win)"] = "Button2",
+    ["Stage 3 (3 Wins)"] = "Button3",
+    ["Stage 4 (4 Wins)"] = "Button4",
+    ["Stage 5 (25 Wins)"] = "Button5",
+    ["Stage 6 (75 Wins)"] = "Button6",
+    ["Stage 7 (250 Wins)"] = "Button7",
+    ["Stage 8 (650 Wins)"] = "Button8",
+    ["Stage 9 (1.2K Wins)"] = "Button9",
+    ["Stage 10 (3K Wins)"] = "Button10",
+    ["Stage 11 (7.5K Wins)"] = "Button11",
+    ["Stage 12 (25K Wins)"] = "Button12",
+    ["Stage 13 (75K Wins)"] = "Button13",
+    ["Stage 14 (175K Wins)"] = "Button14",
+    ["Stage 15 (250K Wins)"] = "Button15",
+    ["Stage 16 (1M Wins)"] = "Button16"
+}
 
-local PaddingTop = Instance.new("Frame")
-PaddingTop.Size = UDim2.new(1, 0, 0, 2)
-PaddingTop.BackgroundTransparency = 1
-PaddingTop.LayoutOrder = 1
-PaddingTop.Parent = ContentFrame
+local StageList = {
+    "Stage 1 (0 Wins)", "Stage 2 (1 Win)", "Stage 3 (3 Wins)", "Stage 4 (4 Wins)",
+    "Stage 5 (25 Wins)", "Stage 6 (75 Wins)", "Stage 7 (250 Wins)", "Stage 8 (650 Wins)",
+    "Stage 9 (1.2K Wins)", "Stage 10 (3K Wins)", "Stage 11 (7.5K Wins)", "Stage 12 (25K Wins)",
+    "Stage 13 (75K Wins)", "Stage 14 (175K Wins)", "Stage 15 (250K Wins)", "Stage 16 (1M Wins)"
+}
 
--- 📥 ฟังก์ชั่นสร้างแถวสำหรับกรอกค่า (X, Y, Z)
-local function createCoordRow(labelText, defaultVal, order)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -16, 0, 22)
-    Row.BackgroundTransparency = 1
-    Row.LayoutOrder = order
-    Row.Parent = ContentFrame
+TpTab:CreateSection("Stages by Wins")
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0, 60, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.GothamMedium
-    Label.Text = labelText
-    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
-    Label.TextSize = 10
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
+TpTab:CreateDropdown({
+   Name = "Select Stage",
+   Options = StageList,
+   CurrentOption = {"Stage 1 (0 Wins)"},
+   MultipleOptions = false,
+   Callback = function(Value)
+      local nuevoValor = ExtraerValor(Value)
+      if nuevoValor then
+         SelectedStage = nuevoValor
+      end
+   end
+})
 
-    local Input = Instance.new("TextBox")
-    Input.Size = UDim2.new(1, -65, 1, 0)
-    Input.Position = UDim2.new(0, 65, 0, 0)
-    Input.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-    Input.Font = Enum.Font.Gotham
-    Input.Text = tostring(defaultVal)
-    Input.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Input.TextSize = 10
-    Input.Parent = Row
+TpTab:CreateButton({
+   Name = "Teleport",
+   Callback = function()
+      local targetButtonName = StagesData[SelectedStage]
+      if targetButtonName then
+         local targetButton = RS:WaitForChild("Buttons"):FindFirstChild(targetButtonName)
+         if targetButton then
+            local args = { targetButton }
+            Remotes:WaitForChild("Teleport"):FireServer(unpack(args))
+         end
+      end
+   end
+})
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 3)
-    Corner.Parent = Input
-
-    return Input
-end
-
-local InputX = createCoordRow("พิกัด X:", "0", 2)
-local InputY = createCoordRow("พิกัด Y:", "50", 3)
-local InputZ = createCoordRow("พิกัด Z:", "0", 4)
-
--- 📥 ปุ่มดึงพิกัดปัจจุบัน
-local GetPosBtn = Instance.new("TextButton")
-GetPosBtn.Size = UDim2.new(1, -16, 0, 20)
-GetPosBtn.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
-GetPosBtn.Font = Enum.Font.GothamMedium
-GetPosBtn.Text = "📍 ดึงพิกัดปัจจุบัน"
-GetPosBtn.TextColor3 = Color3.fromRGB(180, 220, 255)
-GetPosBtn.TextSize = 9
-GetPosBtn.LayoutOrder = 5
-GetPosBtn.Parent = ContentFrame
-
-local GetPosCorner = Instance.new("UICorner")
-GetPosCorner.CornerRadius = UDim.new(0, 4)
-GetPosCorner.Parent = GetPosBtn
-
--- 📥 ปุ่มสั่ง Teleport
-local TPBtn = Instance.new("TextButton")
-TPBtn.Size = UDim2.new(1, -16, 0, 24)
-TPBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-TPBtn.Font = Enum.Font.GothamBold
-TPBtn.Text = "TELEPORT"
-TPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TPBtn.TextSize = 10
-TPBtn.LayoutOrder = 6
-TPBtn.Parent = ContentFrame
-
-local TPCorner = Instance.new("UICorner")
-TPCorner.CornerRadius = UDim.new(0, 4)
-TPCorner.Parent = TPBtn
-
--- =========================================================
--- ⚡ [LOGIC SYSTEMS] ระบบประมวลผลการ TP
--- =========================================================
-
--- ปุ่มดึงพิกัดตัวละครปัจจุบัน
-GetPosBtn.MouseButton1Click:Connect(function()
-    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        local pos = lp.Character.HumanoidRootPart.Position
-        InputX.Text = string.format("%.1f", pos.X)
-        InputY.Text = string.format("%.1f", pos.Y)
-        InputZ.Text = string.format("%.1f", pos.Z)
-    end
-end)
-
--- ปุ่มสั่งวาร์ป
-TPBtn.MouseButton1Click:Connect(function()
-    local x = tonumber(InputX.Text)
-    local y = tonumber(InputY.Text)
-    local z = tonumber(InputZ.Text)
-
-    if x and y and z then
-        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            lp.Character.HumanoidRootPart.CFrame = CFrame.new(x, y, z)
-        end
-    end
-end)
-
--- ระบบย่อหน้าต่าง
-local isMinimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        ContentFrame.Visible = false
-        MainFrame:TweenSize(UDim2.new(0, 240, 0, 25), "Out", "Quad", 0.2, true)
-        MinBtn.Text = "+"
-    else
-        MainFrame:TweenSize(UDim2.new(0, 240, 0, 185), "Out", "Quad", 0.2, true, function()
-            ContentFrame.Visible = true
-        end)
-        MinBtn.Text = "-"
-    end
-end)
-
--- ปุ่มปิดหน้าต่าง
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
+Rayfield:Notify({
+   Title = "NuvikTeam",
+   Content = "FULL Hub loaded successfully 🔥",
+   Duration = 4
+})
