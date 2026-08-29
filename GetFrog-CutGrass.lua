@@ -317,22 +317,20 @@ local function catchSingleFrog(frog, currentCount, totalCount)
     statusLabel.Text = string.format("⚡ กำลังจับกบ (%d/%d)...", currentCount, totalCount)
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
-    task.wait(0.05)
+    task.wait(0.2)
 
-    -- 2. ดึง UUID จริงของกบ
-    local frogUUID = nil
-
-    -- ตรวจสอบจาก Attribute หรือชื่อวัตถุ
-    if frog:GetAttribute("UUID") then
-        frogUUID = frog:GetAttribute("UUID")
-    elseif frog:GetAttribute("FrogId") then
-        frogUUID = frog:GetAttribute("FrogId")
-    elseif string.sub(frog.Name, 1, 5) == "Frog_" then
-        frogUUID = string.sub(frog.Name, 6)
-    else
-        frogUUID = frog.Name
+    -- 2. หา UUID ของกบ
+    local frogUUID = frog:GetAttribute("UUID") or frog:GetAttribute("FrogId")
+    if not frogUUID then
+        if string.sub(frog.Name, 1, 5) == "Frog_" then
+            frogUUID = string.sub(frog.Name, 6)
+        else
+            frogUUID = frog.Name
+        end
     end
-
+    
+    task.wait(0.2)
+    
     -- 3. ส่ง UUID ตรงเข้า Remote และรอ Server ยืนยันผลลัพธ์
     if frogUUID then
         local success, result = pcall(function()
@@ -348,6 +346,7 @@ local function catchSingleFrog(frog, currentCount, totalCount)
         end
     end
     
+    task.wait(0.2)
     task.wait(catchDelay)
 end
 
