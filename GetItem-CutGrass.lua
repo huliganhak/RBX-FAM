@@ -168,7 +168,7 @@ actionBtn.MouseButton1Click:Connect(function()
     -- -------------------------------------------------------------
     -- ⏳ [จุดแก้ปัญหา] หน่วงเวลา 0.15 - 0.2 วินาทีให้ Server ยืนยันพิกัด
     -- -------------------------------------------------------------
-    task.wait(0.15)
+    task.wait(0.2)
 
     -- 3. สั่งเก็บไอเทม
     local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
