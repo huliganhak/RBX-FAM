@@ -1,8 +1,54 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. สร้าง UI หลัก
+-- 1. ฟังก์ชันวาร์ปกลับ Spawn
+-- ==========================================
+local function teleportToSpawn()
+    local success, err = pcall(function()
+        local packages = ReplicatedStorage:WaitForChild("Packages", 5)
+        local index = packages and packages:WaitForChild("_Index", 5)
+        local knitPkg = index and index:WaitForChild("acecateer_knit@1.7.2", 5)
+        local knit = knitPkg and knitPkg:WaitForChild("knit", 5)
+        local services = knit and knit:WaitForChild("Services", 5)
+        local teleportService = services and services:WaitForChild("BaseTeleportService", 5)
+        local rf = teleportService and teleportService:WaitForChild("RF", 5)
+        local teleportRemote = rf and rf:WaitForChild("TeleportToSpawn", 5)
+
+        if teleportRemote and teleportRemote:IsA("RemoteFunction") then
+            teleportRemote:InvokeServer()
+        end
+    end)
+    return success
+end
+
+-- ==========================================
+-- 2. ฟังก์ชันเช็คกระเป๋าเต็ม
+-- ==========================================
+local function isBackpackFull()
+    local mainScreen = LocalPlayer.PlayerGui:FindFirstChild("MainScreenGui")
+    local backpackValue = mainScreen and mainScreen:FindFirstChild("Currencies", true) and mainScreen.Currencies:FindFirstChild("Backpack", true) and mainScreen.Currencies.Backpack:FindFirstChild("Value")
+    
+    if backpackValue and backpackValue:IsA("TextLabel") then
+        local currentText = backpackValue.Text -- เช่น "4/23"
+        local current, max = currentText:match("(%d+)%s*/%s*(%d+)")
+        
+        if current and max then
+            local currentNum = tonumber(current)
+            local maxNum = tonumber(max)
+            
+            if currentNum and maxNum and currentNum >= maxNum then
+                return true, currentText
+            end
+            return false, currentText
+        end
+    end
+    return false, "N/A"
+end
+
+-- ==========================================
+-- 3. สร้าง UI หลัก
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DropdownZoneCollectorUI"
@@ -15,12 +61,12 @@ mainFrame.Position = UDim2.new(0.5, -160, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
-mainFrame.ClipsDescendants = false -- เปิดไว้เพื่อให้ Dropdown เลื่อนลงมานอก Frame ได้
+mainFrame.ClipsDescendants = false
 mainFrame.Parent = screenGui
 
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
--- Header (ย่อ/ปิด)
+-- Header
 local headerFrame = Instance.new("Frame")
 headerFrame.Size = UDim2.new(1, 0, 0, 30)
 headerFrame.BackgroundTransparency = 1
@@ -66,14 +112,10 @@ container.Position = UDim2.new(0, 0, 0, 30)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- ตัวแปรเก็บค่าที่เลือก
 local selectedWorldName = "W5"
 local selectedZoneName = ""
 
--- ==========================================
--- 2. ระบบ UI Dropdown (สร้างปุ่มกดเลือก)
--- ==========================================
--- ปุ่มเลือก World
+-- World Dropdown
 local worldDropdownBtn = Instance.new("TextButton")
 worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 32)
 worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
@@ -95,7 +137,7 @@ worldScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 worldScroll.Parent = container
 local worldListLayout = Instance.new("UIListLayout", worldScroll)
 
--- ปุ่มเลือก Zone
+-- Zone Dropdown
 local zoneDropdownBtn = Instance.new("TextButton")
 zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 32)
 zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.05, 0)
@@ -117,7 +159,7 @@ zoneScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 zoneScroll.Parent = container
 local zoneListLayout = Instance.new("UIListLayout", zoneScroll)
 
--- ข้อความบอกสถานะ
+-- Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
 statusLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
@@ -129,7 +171,7 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- ปุ่มทำงาน 1-Click
+-- Action Button
 local actionBtn = Instance.new("TextButton")
 actionBtn.Size = UDim2.new(0.9, 0, 0, 45)
 actionBtn.Position = UDim2.new(0.05, 0, 0.65, 0)
@@ -142,10 +184,9 @@ actionBtn.Parent = container
 Instance.new("UICorner", actionBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
--- 3. ฟังก์ชันสแกนหา List ของ World & Zone
+-- 4. ระบบ List Dropdown
 -- ==========================================
 local function refreshZoneList()
-    -- ลบรายการเก่าออก
     for _, child in pairs(zoneScroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
@@ -212,13 +253,12 @@ local function refreshWorldList()
             worldScroll.Visible = false
             selectedZoneName = ""
             zoneDropdownBtn.Text = "เลือก Zone ▼"
-            refreshZoneList() -- เมื่อเปลี่ยน World ให้ดึงรายชื่อ Zone ของ World นั้นใหม่ทันที
+            refreshZoneList()
         end)
     end
     worldScroll.CanvasSize = UDim2.new(0, 0, 0, #worlds * 25)
 end
 
--- กดเปิด/ปิด และดึงข้อมูลใหม่ Real-time ตอนกด
 worldDropdownBtn.MouseButton1Click:Connect(function()
     refreshWorldList()
     worldScroll.Visible = not worldScroll.Visible
@@ -226,15 +266,26 @@ worldDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 zoneDropdownBtn.MouseButton1Click:Connect(function()
-    refreshZoneList() -- ดึงใหม่สดๆ เผื่อ Zone เพิ่งโหลดขึ้นมา
+    refreshZoneList()
     zoneScroll.Visible = not zoneScroll.Visible
     worldScroll.Visible = false
 end)
 
 -- ==========================================
--- 4. ระบบทำงาน (วาร์ป + เก็บ)
+-- 5. ระบบการทำงานหลัก
 -- ==========================================
 actionBtn.MouseButton1Click:Connect(function()
+    -- 1. เช็คกระเป๋าก่อนทำงาน
+    local isFull, capacityText = isBackpackFull()
+    if isFull then
+        statusLabel.Text = "🛑 กระเป๋าเต็มแล้ว! (" .. capacityText .. ") กำลังกลับ Spawn..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+        
+        -- สั่งกลับ Spawn ทันที
+        teleportToSpawn()
+        return
+    end
+
     if selectedZoneName == "" then
         statusLabel.Text = "⚠️ กรุณากดเลือก Zone ก่อนครับ"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
@@ -312,7 +363,7 @@ actionBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ระบบย่อ/ปิด
+-- ระบบย่อ/ปิด UI
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
