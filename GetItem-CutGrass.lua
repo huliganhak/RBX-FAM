@@ -278,7 +278,7 @@ local function refreshWorldList()
     end
 
     local zonesFolder = workspace:FindFirstChild("Zones")
-    if not zonesFolder me then return end
+    if not zonesFolder then return end
 
     local worlds = {}
     for _, w in pairs(zonesFolder:GetChildren()) do
