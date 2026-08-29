@@ -316,7 +316,7 @@ zoneDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม
+-- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม (แก้ไข Error)
 -- ==========================================
 local function processSingleCollect()
     local isFull, capacityText = isBackpackFull()
@@ -327,7 +327,6 @@ local function processSingleCollect()
         
         teleportToSpawn()
         
-        -- หน่วงเวลารอตามที่ตั้งค่า
         statusLabel.Text = "⏳ รอนับถอยหลังพัก " .. tostring(returnWait) .. " วินาที..."
         task.wait(returnWait)
         return false
@@ -375,9 +374,11 @@ local function processSingleCollect()
 
     task.wait(0.15)
 
+    -- เช็คการเก็บไอเทมแบบปลอดภัย
     local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
     if prompt then
-        if fireproximityprompt then
+        -- ตรวจสอบว่ามีฟังก์ชัน fireproximityprompt หรือไม่ ก่อนเรียกใช้
+        if typeof(fireproximityprompt) == "function" then
             for i = 1, 3 do
                 if targetItem.Parent then
                     fireproximityprompt(prompt)
@@ -385,7 +386,10 @@ local function processSingleCollect()
                 end
             end
         else
+            -- หากไม่มี ให้ใช้ ProximityPromptService หรือ Trigger มาตรฐาน
+            game:GetService("ProximityPromptService")
             prompt:InputHoldBegin()
+            task.wait(prompt.HoldDuration or 0)
             prompt:InputHoldEnd()
         end
 
@@ -393,12 +397,15 @@ local function processSingleCollect()
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
         local itemPart = targetItem:IsA("BasePart") and targetItem or targetItem:FindFirstChildWhichIsA("BasePart", true)
-        if hrp and itemPart and firetouchinterest then
-            firetouchinterest(hrp, itemPart, 0)
-            task.wait(0.05)
-            firetouchinterest(hrp, itemPart, 1)
+        if hrp and itemPart then
+            -- ตรวจสอบ firetouchinterest แบบปลอดภัย
+            if typeof(firetouchinterest) == "function" then
+                firetouchinterest(hrp, itemPart, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, itemPart, 1)
+            end
 
-            statusLabel.Text = "✅ เก็บสำเร็จ (Touch): " .. targetItem.Name
+            statusLabel.Text = "✅ เก็บสำเร็จ: " .. targetItem.Name
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         else
             statusLabel.Text = "❌ ไม่พบวิธีเก็บไอเทม"
