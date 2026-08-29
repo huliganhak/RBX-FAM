@@ -16,7 +16,7 @@ local catchRemote = ReplicatedStorage
     :WaitForChild("Catch")
 
 -- ==========================================
--- 2. สร้าง UI หน้าจอ (ปรับขนาดเพิ่มปุ่มวาร์ป)
+-- 2. สร้าง UI หน้าจอ
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FrogTeleportCatchUI"
@@ -29,82 +29,141 @@ mainFrame.Position = UDim2.new(0.5, -150, 0.35, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.ClipsDescendants = true -- ตัดส่วนเกินเมื่อทำการย่อ UI
 mainFrame.Parent = screenGui
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainFrame
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+
+-- แถบ Header สำหรับคลิกลากและวางปุ่มควบคุม
+local headerFrame = Instance.new("Frame")
+headerFrame.Size = UDim2.new(1, 0, 0, 30)
+headerFrame.BackgroundTransparency = 1
+headerFrame.Parent = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.Text = "🐸 Frog Teleport & Catch"
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Text = "🐸 Frog Catch Tester"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 15
+titleLabel.TextSize = 14
 titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.BackgroundTransparency = 1
-titleLabel.Parent = mainFrame
+titleLabel.Parent = headerFrame
+
+-- ปุ่มย่อ UI (-)
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -55, 0, 3)
+minimizeBtn.Text = "-"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.Font = Enum.Font.SourceSansBold
+minimizeBtn.TextSize = 16
+minimizeBtn.Parent = headerFrame
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
+
+-- ปุ่มปิด UI (X)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 13
+closeBtn.Parent = headerFrame
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
+
+-- ส่วนเนื้อหาภายใน UI
+local container = Instance.new("Frame")
+container.Size = UDim2.new(1, 0, 1, -30)
+container.Position = UDim2.new(0, 0, 0, 30)
+container.BackgroundTransparency = 1
+container.Parent = mainFrame
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 35)
-statusLabel.Position = UDim2.new(0.05, 0, 0.14, 0)
+statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+statusLabel.Position = UDim2.new(0.05, 0, 0, 0)
 statusLabel.Text = "สถานะ: รอสแกนหากบ..."
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 12
 statusLabel.TextWrapped = true
 statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
-statusLabel.Parent = mainFrame
+statusLabel.Parent = container
 
--- ปุ่มที่ 1: สแกน
+-- ปุ่มขั้นตอนต่างๆ
 local scanBtn = Instance.new("TextButton")
 scanBtn.Size = UDim2.new(0.9, 0, 0, 32)
-scanBtn.Position = UDim2.new(0.05, 0, 0.32, 0)
+scanBtn.Position = UDim2.new(0.05, 0, 0.22, 0)
 scanBtn.Text = "1. สแกนหากบตัวแรก"
 scanBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 220)
 scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanBtn.Font = Enum.Font.SourceSansBold
 scanBtn.TextSize = 13
-scanBtn.Parent = mainFrame
+scanBtn.Parent = container
 Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 5)
 
--- ปุ่มที่ 2: วาร์ป
 local tpBtn = Instance.new("TextButton")
 tpBtn.Size = UDim2.new(0.9, 0, 0, 32)
-tpBtn.Position = UDim2.new(0.05, 0, 0.48, 0)
+tpBtn.Position = UDim2.new(0.05, 0, 0.44, 0)
 tpBtn.Text = "2. วาร์ปไปหากบตัวนี้"
 tpBtn.BackgroundColor3 = Color3.fromRGB(200, 130, 30)
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.SourceSansBold
 tpBtn.TextSize = 13
-tpBtn.Parent = mainFrame
+tpBtn.Parent = container
 Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 5)
 
--- ปุ่มที่ 3: จับ
 local catchBtn = Instance.new("TextButton")
 catchBtn.Size = UDim2.new(0.9, 0, 0, 32)
-catchBtn.Position = UDim2.new(0.05, 0, 0.64, 0)
+catchBtn.Position = UDim2.new(0.05, 0, 0.66, 0)
 catchBtn.Text = "3. ส่งคำสั่งจับ (InvokeServer)"
 catchBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 catchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 catchBtn.Font = Enum.Font.SourceSansBold
 catchBtn.TextSize = 13
-catchBtn.Parent = mainFrame
+catchBtn.Parent = container
 Instance.new("UICorner", catchBtn).CornerRadius = UDim.new(0, 5)
 
 -- ==========================================
--- 3. ระบบการทำงาน
+-- 3. ระบบควบคุมปุ่มย่อ / ปุ่มปิด
+-- ==========================================
+local isMinimized = false
+
+-- สลับการย่อ/ขยายหน้าจอ
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 300, 0, 30) -- ย่อเหลือเฉพาะแถบ Title
+        container.Visible = false
+        minimizeBtn.Text = "+"
+    else
+        mainFrame.Size = UDim2.new(0, 300, 0, 240) -- ขยายกลับขนาดปกติ
+        container.Visible = true
+        minimizeBtn.Text = "-"
+    end
+end)
+
+-- ทำลาย UI ทิ้งเมื่อกดปิด
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- ==========================================
+-- 4. ระบบการทำงานสแกน / วาร์ป / จับ
 -- ==========================================
 local currentFrogObject = nil
 local currentFrogUUID = nil
 
--- Step 1: สแกนหากบ
 scanBtn.MouseButton1Click:Connect(function()
     local eventFrogs = workspace:FindFirstChild("LocalEventFrogs")
     currentFrogObject = nil
     currentFrogUUID = nil
 
     if not eventFrogs then
-        statusLabel.Text = "❌ ไม่พบ LocalEventFrogs ใน Workspace"
+        statusLabel.Text = "❌ ไม่พบ LocalEventFrogs"
         statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         return
     end
@@ -120,17 +179,15 @@ scanBtn.MouseButton1Click:Connect(function()
     if currentFrogObject and currentFrogUUID then
         statusLabel.Text = "พบกบ: " .. currentFrogUUID
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        print("[Scan] พบกบ:", currentFrogObject.Name)
     else
         statusLabel.Text = "⚠️ ไม่พบกบใน LocalEventFrogs"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     end
 end)
 
--- Step 2: วาร์ปไปตำแหน่งกบ
 tpBtn.MouseButton1Click:Connect(function()
     if not currentFrogObject or not currentFrogObject.Parent then
-        statusLabel.Text = "⚠️ กรุณาสแกนหากบก่อน หรือกบอาจจะหายไปแล้ว!"
+        statusLabel.Text = "⚠️ สแกนหากบก่อน หรือกบไม่อยู่แล้ว"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         return
     end
@@ -138,13 +195,8 @@ tpBtn.MouseButton1Click:Connect(function()
     local character = LocalPlayer.Character
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
-    if not hrp then
-        statusLabel.Text = "❌ ไม่พบตัวละครของคุณ"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        return
-    end
+    if not hrp then return end
 
-    -- ค้นหาพิกัดของกบ (เช็คจาก CFrame ของตัวกบ หรือ RootPart/PrimaryPart)
     local frogCFrame = nil
     if currentFrogObject:IsA("Model") and currentFrogObject.PrimaryPart then
         frogCFrame = currentFrogObject.PrimaryPart.CFrame
@@ -155,24 +207,14 @@ tpBtn.MouseButton1Click:Connect(function()
     end
 
     if frogCFrame then
-        -- วาร์ปตัวละครไปเหนือกบเล็กน้อย (+3 studs ด้านบน) เพื่อไม่ให้ตัวจมดิน
         hrp.CFrame = frogCFrame + Vector3.new(0, 3, 0)
-        statusLabel.Text = "⚡ วาร์ปไปหากบสำเร็จ!"
+        statusLabel.Text = "⚡ วาร์ปสำเร็จ!"
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
-        print("[Teleport] วาร์ปไปพิกัด:", frogCFrame.Position)
-    else
-        statusLabel.Text = "❌ ไม่พบตำแหน่ง (Part) ของกบตัวนี้"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
 end)
 
--- Step 3: ส่งคำสั่งจับ
 catchBtn.MouseButton1Click:Connect(function()
-    if not currentFrogUUID then
-        statusLabel.Text = "⚠️ กรุณาสแกนหากบก่อน!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return
-    end
+    if not currentFrogUUID then return end
 
     statusLabel.Text = "กำลังส่งคำสั่งจับ..."
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
@@ -183,17 +225,13 @@ catchBtn.MouseButton1Click:Connect(function()
         end)
 
         if success then
-            statusLabel.Text = "✅ จับสำเร็จ! Result: " .. tostring(result)
+            statusLabel.Text = "✅ จับสำเร็จ!"
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            print("[Catch Result]:", result)
-            
-            -- ล้างค่าเตรียมทดสอบตัวถัดไป
             currentFrogObject = nil
             currentFrogUUID = nil
         else
-            statusLabel.Text = "❌ จับไม่สำเร็จ (Error)"
+            statusLabel.Text = "❌ จับไม่สำเร็จ"
             statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-            warn("[Catch Error]:", result)
         end
     end)
 end)
