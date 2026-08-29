@@ -3,17 +3,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. ฟังก์ชันวาร์ปกลับ Spawn (แก้ไขการค้นหาแบบ Dynamic)
+-- 1. ฟังก์ชันวาร์ปกลับ Spawn (ค้นหาแบบ Dynamic ไม่พึ่งชื่อโฟลเดอร์แพ็กเกจ)
 -- ==========================================
 local function teleportToSpawn()
     local success, err = pcall(function()
-        -- ค้นหา RemoteFunction ชื่อ TeleportToSpawn ใน ReplicatedStorage แบบอัตโนมัติ
         local teleportRemote = ReplicatedStorage:FindFirstChild("TeleportToSpawn", true)
 
         if teleportRemote and teleportRemote:IsA("RemoteFunction") then
             teleportRemote:InvokeServer()
         else
-            -- หากไม่พบแบบตรงๆ ให้ลองสแกนหา RemoteEvent / RemoteFunction ที่เกี่ยวข้อง
             for _, v in pairs(ReplicatedStorage:GetDescendants()) do
                 if v.Name == "TeleportToSpawn" and (v:IsA("RemoteFunction") or v:IsA("RemoteEvent")) then
                     if v:IsA("RemoteFunction") then
@@ -278,7 +276,7 @@ local function refreshWorldList()
     end
 
     local zonesFolder = workspace:FindFirstChild("Zones")
-    if not zonesFolder then return end
+    if not zonesFolder then return end -- แก้ไขพิมพ์เกินตรงนี้เรียบร้อยครับ
 
     local worlds = {}
     for _, w in pairs(zonesFolder:GetChildren()) do
@@ -322,7 +320,7 @@ zoneDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม (แก้ไข Error)
+-- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม
 -- ==========================================
 local function processSingleCollect()
     local isFull, capacityText = isBackpackFull()
@@ -380,10 +378,8 @@ local function processSingleCollect()
 
     task.wait(0.15)
 
-    -- เช็คการเก็บไอเทมแบบปลอดภัย
     local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
     if prompt then
-        -- ตรวจสอบว่ามีฟังก์ชัน fireproximityprompt หรือไม่ ก่อนเรียกใช้
         if typeof(fireproximityprompt) == "function" then
             for i = 1, 3 do
                 if targetItem.Parent then
@@ -392,7 +388,6 @@ local function processSingleCollect()
                 end
             end
         else
-            -- หากไม่มี ให้ใช้ ProximityPromptService หรือ Trigger มาตรฐาน
             game:GetService("ProximityPromptService")
             prompt:InputHoldBegin()
             task.wait(prompt.HoldDuration or 0)
@@ -404,7 +399,6 @@ local function processSingleCollect()
     else
         local itemPart = targetItem:IsA("BasePart") and targetItem or targetItem:FindFirstChildWhichIsA("BasePart", true)
         if hrp and itemPart then
-            -- ตรวจสอบ firetouchinterest แบบปลอดภัย
             if typeof(firetouchinterest) == "function" then
                 firetouchinterest(hrp, itemPart, 0)
                 task.wait(0.05)
