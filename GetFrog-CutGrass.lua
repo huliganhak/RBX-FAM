@@ -6,8 +6,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ⚙️ ตั้งค่าความเร็ว และโหมดทำงาน
 -- ==========================================
 local TARGET_WORLD = "W5"       -- กำหนด World ที่ใช้งาน
-local WAIT_FROG_SPAWN = 2    -- เวลาที่รอให้กบโหลดขึ้นมาหลังจากย้าย Zone
-local CATCH_DELAY = 1        -- เวลาหน่วงหลังจับกบแต่ละตัว
+local WAIT_FROG_SPAWN = 2.0    -- เวลาที่รอให้กบโหลดขึ้นมาหลังจากย้าย Zone
+local CATCH_DELAY = 1.0        -- เวลาหน่วงหลังจับกบแต่ละตัว
 
 -- ==========================================
 -- 1. อ้างอิง RemoteFunction (Knit)
