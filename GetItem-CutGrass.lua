@@ -1,238 +1,251 @@
---// Rebirth Loop UI (LocalScript)
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
-local rebirthEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RebirthEvent")
-
--- ===== State =====
-local running = false
-local rounds = 0
-local loopThread = nil
-
--- ===== UI =====
-local gui = Instance.new("ScreenGui")
-gui.Name = "RebirthLoopUI"
-gui.ResetOnSpawn = false
-gui.Parent = playerGui
-
-local frame = Instance.new("Frame")
-frame.Parent = gui
-frame.Size = UDim2.new(0, 300, 0, 170)
-frame.Position = UDim2.new(0, 20, 0, 120)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
-frame.Active = true -- ช่วยรับ input ให้ลากได้ดีขึ้น
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
-
--- ===== Drag frame (ลาก UI ได้) =====
-local dragging = false
-local dragStart
-local startPos
-
-local function updateDrag(input)
-	local delta = input.Position - dragStart
-	frame.Position = UDim2.new(
-		startPos.X.Scale, startPos.X.Offset + delta.X,
-		startPos.Y.Scale, startPos.Y.Offset + delta.Y
-	)
+-- ==========================================
+-- 1. กำหนดตำแหน่งที่ต้องการค้นหาไอเทม
+-- ==========================================
+local function getSpawnZone()
+    local zones = workspace:FindFirstChild("Zones")
+    local w5 = zones and zones:FindFirstChild("W5")
+    local zone47 = w5 and w5:FindFirstChild("Zone_47")
+    return zone47 and zone47:FindFirstChild("SpawnZone")
 end
 
-frame.InputBegan:Connect(function(input)
-	-- กันลากตอนกำลังพิมพ์ใน TextBox
-	if UserInputService:GetFocusedTextBox() then return end
+-- ==========================================
+-- 2. สร้าง UI หน้าจอ
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ItemCollectorUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 240)
+mainFrame.Position = UDim2.new(0.5, -150, 0.35, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
 
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
+-- Header (มีปุ่มย่อ - และปิด X)
+local headerFrame = Instance.new("Frame")
+headerFrame.Size = UDim2.new(1, 0, 0, 30)
+headerFrame.BackgroundTransparency = 1
+headerFrame.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Text = "📦 Item Collector Tester"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.BackgroundTransparency = 1
+titleLabel.Parent = headerFrame
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -55, 0, 3)
+minimizeBtn.Text = "-"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.Font = Enum.Font.SourceSansBold
+minimizeBtn.TextSize = 16
+minimizeBtn.Parent = headerFrame
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 13
+closeBtn.Parent = headerFrame
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
+
+-- Container
+local container = Instance.new("Frame")
+container.Size = UDim2.new(1, 0, 1, -30)
+container.Position = UDim2.new(0, 0, 0, 30)
+container.BackgroundTransparency = 1
+container.Parent = mainFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+statusLabel.Position = UDim2.new(0.05, 0, 0, 0)
+statusLabel.Text = "สถานะ: รอสแกนหาไอเทม..."
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextSize = 12
+statusLabel.TextWrapped = true
+statusLabel.Font = Enum.Font.SourceSans
+statusLabel.BackgroundTransparency = 1
+statusLabel.Parent = container
+
+-- ปุ่ม 3 Step
+local scanBtn = Instance.new("TextButton")
+scanBtn.Size = UDim2.new(0.9, 0, 0, 32)
+scanBtn.Position = UDim2.new(0.05, 0, 0.22, 0)
+scanBtn.Text = "1. สแกนหาไอเทมตัวแรก"
+scanBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 220)
+scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+scanBtn.Font = Enum.Font.SourceSansBold
+scanBtn.TextSize = 13
+scanBtn.Parent = container
+Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 5)
+
+local tpBtn = Instance.new("TextButton")
+tpBtn.Size = UDim2.new(0.9, 0, 0, 32)
+tpBtn.Position = UDim2.new(0.05, 0, 0.44, 0)
+tpBtn.Text = "2. วาร์ปไปหาไอเทม"
+tpBtn.BackgroundColor3 = Color3.fromRGB(200, 130, 30)
+tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpBtn.Font = Enum.Font.SourceSansBold
+tpBtn.TextSize = 13
+tpBtn.Parent = container
+Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 5)
+
+local collectBtn = Instance.new("TextButton")
+collectBtn.Size = UDim2.new(0.9, 0, 0, 32)
+collectBtn.Position = UDim2.new(0.05, 0, 0.66, 0)
+collectBtn.Text = "3. สั่งกดเก็บ (Prompt / Touch)"
+collectBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+collectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+collectBtn.Font = Enum.Font.SourceSansBold
+collectBtn.TextSize = 13
+collectBtn.Parent = container
+Instance.new("UICorner", collectBtn).CornerRadius = UDim.new(0, 5)
+
+-- ==========================================
+-- 3. ระบบย่อ/ปิด UI
+-- ==========================================
+local isMinimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 300, 0, 30)
+        container.Visible = false
+        minimizeBtn.Text = "+"
+    else
+        mainFrame.Size = UDim2.new(0, 300, 0, 240)
+        container.Visible = true
+        minimizeBtn.Text = "-"
+    end
 end)
 
-frame.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch) then
-		updateDrag(input)
-	end
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch) then
-		updateDrag(input)
-	end
+-- ==========================================
+-- 4. ระบบการทำงาน 3 ขั้นตอน
+-- ==========================================
+local currentItem = nil
+
+-- Step 1: สแกนหาไอเทมตัวแรกใน SpawnZone
+scanBtn.MouseButton1Click:Connect(function()
+    local spawnZone = getSpawnZone()
+    currentItem = nil
+
+    if not spawnZone then
+        statusLabel.Text = "❌ ไม่พบ SpawnZone ในพิกัดที่ระบุ"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        return
+    end
+
+    -- ดึงไอเทมตัวแรกที่เจอใน Folder/Zone
+    local items = spawnZone:GetChildren()
+    if #items > 0 then
+        currentItem = items[1]
+        statusLabel.Text = "พบไอเทม: " .. currentItem.Name
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        print("[Scan] พบไอเทม:", currentItem.Name)
+    else
+        statusLabel.Text = "⚠️ ไม่พบไอเทมใน SpawnZone"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    end
 end)
 
--- ===== Title / Labels =====
-local title = Instance.new("TextLabel")
-title.Parent = frame
-title.Size = UDim2.new(1, -20, 0, 30)
-title.Position = UDim2.new(0, 10, 0, 8)
-title.BackgroundTransparency = 1
-title.Text = "Rebirth Auto Loop (Drag Me)"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextXAlignment = Enum.TextXAlignment.Left
+-- Step 2: วาร์ปไปหาไอเทม
+tpBtn.MouseButton1Click:Connect(function()
+    if not currentItem or not currentItem.Parent then
+        statusLabel.Text = "⚠️ กรุณาสแกนหาไอเทมก่อน หรือไอเทมหายไปแล้ว"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        return
+    end
 
-local roundsLabel = Instance.new("TextLabel")
-roundsLabel.Parent = frame
-roundsLabel.Size = UDim2.new(1, -20, 0, 24)
-roundsLabel.Position = UDim2.new(0, 10, 0, 42)
-roundsLabel.BackgroundTransparency = 1
-roundsLabel.Text = "Rounds: 0 | Status: STOPPED"
-roundsLabel.Font = Enum.Font.Gotham
-roundsLabel.TextSize = 14
-roundsLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-roundsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    local character = LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
-local function makeLabel(txt, y)
-	local l = Instance.new("TextLabel")
-	l.Parent = frame
-	l.Size = UDim2.new(0, 100, 0, 24)
-	l.Position = UDim2.new(0, 10, 0, y)
-	l.BackgroundTransparency = 1
-	l.Text = txt
-	l.Font = Enum.Font.Gotham
-	l.TextSize = 13
-	l.TextColor3 = Color3.fromRGB(200, 200, 200)
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	return l
-end
+    if not hrp then return end
 
-local function makeBox(default, y)
-	local b = Instance.new("TextBox")
-	b.Parent = frame
-	b.Size = UDim2.new(0, 170, 0, 24)
-	b.Position = UDim2.new(0, 110, 0, y)
-	b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	b.TextColor3 = Color3.fromRGB(255, 255, 255)
-	b.Font = Enum.Font.Gotham
-	b.TextSize = 13
-	b.Text = default
-	b.ClearTextOnFocus = false
-	b.BorderSizePixel = 0
+    -- หาพิกัด CFrame ของไอเทม (รองรับทั้ง Model, Part และ MeshPart)
+    local itemCFrame = nil
+    if currentItem:IsA("Model") then
+        itemCFrame = currentItem.PrimaryPart and currentItem.PrimaryPart.CFrame or currentItem:GetPivot()
+    elseif currentItem:IsA("BasePart") then
+        itemCFrame = currentItem.CFrame
+    else
+        -- ถ้าไอเทมมี Part ซ่อนอยู่ข้างใน
+        local part = currentItem:FindFirstChildWhichIsA("BasePart", true)
+        if part then itemCFrame = part.CFrame end
+    end
 
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, 6)
-	c.Parent = b
-
-	return b
-end
-
-makeLabel("Interval (s):", 72)
-local intervalBox = makeBox("30", 72)
-
-makeLabel("Arg (e.g. 5):", 102)
-local argBox = makeBox("5", 102)
-
--- ===== Buttons =====
-local startStopBtn = Instance.new("TextButton")
-startStopBtn.Parent = frame
-startStopBtn.Size = UDim2.new(0, 130, 0, 30)
-startStopBtn.Position = UDim2.new(0, 10, 0, 132)
-startStopBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
-startStopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-startStopBtn.Font = Enum.Font.GothamBold
-startStopBtn.TextSize = 14
-startStopBtn.Text = "START"
-startStopBtn.BorderSizePixel = 0
-
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 8)
-btnCorner.Parent = startStopBtn
-
-local resetBtn = Instance.new("TextButton")
-resetBtn.Parent = frame
-resetBtn.Size = UDim2.new(0, 130, 0, 30)
-resetBtn.Position = UDim2.new(0, 150, 0, 132)
-resetBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-resetBtn.Font = Enum.Font.GothamBold
-resetBtn.TextSize = 14
-resetBtn.Text = "RESET COUNT"
-resetBtn.BorderSizePixel = 0
-
-local btnCorner2 = Instance.new("UICorner")
-btnCorner2.CornerRadius = UDim.new(0, 8)
-btnCorner2.Parent = resetBtn
-
--- ===== Helpers =====
-local function setStatus()
-	roundsLabel.Text = ("Rounds: %d | Status: %s"):format(rounds, running and "RUNNING" or "STOPPED")
-	startStopBtn.Text = running and "STOP" or "START"
-	startStopBtn.BackgroundColor3 = running and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(0, 170, 90)
-end
-
-local function getInterval()
-	local n = tonumber(intervalBox.Text)
-	if not n or n < 0.1 then
-		n = 30
-		intervalBox.Text = "30"
-	end
-	return n
-end
-
-local function getArg()
-	local n = tonumber(argBox.Text)
-	if not n then
-		n = 5
-		argBox.Text = "5"
-	end
-	return n
-end
-
-local function startLoop()
-	if running then return end
-	running = true
-	setStatus()
-
-	loopThread = task.spawn(function()
-		while running do
-			local arg = getArg()
-			rebirthEvent:FireServer(arg)
-
-			rounds += 1
-			setStatus()
-
-			local interval = getInterval()
-			task.wait(interval)
-		end
-	end)
-end
-
-local function stopLoop()
-	if not running then return end
-	running = false
-	setStatus()
-end
-
--- ===== Events =====
-startStopBtn.MouseButton1Click:Connect(function()
-	if running then
-		stopLoop()
-	else
-		startLoop()
-	end
+    if itemCFrame then
+        hrp.CFrame = itemCFrame + Vector3.new(0, 2, 0)
+        statusLabel.Text = "⚡ วาร์ปไปหา " .. currentItem.Name .. " แล้ว!"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
+    else
+        statusLabel.Text = "❌ ไม่พบพิกัดของไอเทมนี้"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
 end)
 
-resetBtn.MouseButton1Click:Connect(function()
-	rounds = 0
-	setStatus()
-end)
+-- Step 3: สั่งกดเก็บไอเทม
+collectBtn.MouseButton1Click:Connect(function()
+    if not currentItem or not currentItem.Parent then
+        statusLabel.Text = "⚠️ ไม่พบไอเทมเป้าหมาย"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        return
+    end
 
-setStatus()
+    statusLabel.Text = "กำลังพยายามเก็บไอเทม..."
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+
+    -- ค้นหา ProximityPrompt ข้างในไอเทม
+    local prompt = currentItem:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+    if prompt then
+        -- แบบที่ 1: ถ้าไอเทมใช้ ProximityPrompt ในการเก็บ
+        prompt:InputHoldBegin()
+        if prompt.HoldDuration > 0 then
+            task.wait(prompt.HoldDuration)
+        end
+        prompt:InputHoldEnd()
+        
+        statusLabel.Text = "✅ Trigger ProximityPrompt สำเร็จ!"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        -- แบบที่ 2: ถ้าเป็นไอเทมประเภทเดินชน (TouchInterest)
+        local character = LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local itemPart = currentItem:IsA("BasePart") and currentItem or currentItem:FindFirstChildWhichIsA("BasePart", true)
+
+        if hrp and itemPart then
+            firetouchinterest(hrp, itemPart, 0)
+            task.wait(0.1)
+            firetouchinterest(hrp, itemPart, 1)
+            
+            statusLabel.Text = "✅ สั่ง Touch (เดินชน) ไอเทมเรียบร้อย!"
+            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        else
+            statusLabel.Text = "❌ ไม่พบวิธีเก็บ (ไม่มี Prompt หรือ Part ให้ชน)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        end
+    end
+end)
