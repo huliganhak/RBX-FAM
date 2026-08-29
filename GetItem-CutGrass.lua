@@ -3,21 +3,27 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. ฟังก์ชันวาร์ปกลับ Spawn
+-- 1. ฟังก์ชันวาร์ปกลับ Spawn (แก้ไขการค้นหาแบบ Dynamic)
 -- ==========================================
 local function teleportToSpawn()
     local success, err = pcall(function()
-        local packages = ReplicatedStorage:WaitForChild("Packages", 5)
-        local index = packages and packages:WaitForChild("_Index", 5)
-        local knitPkg = index and index:WaitForChild("acecateer_knit@1.7.2", 5)
-        local knit = knitPkg and knitPkg:WaitForChild("knit", 5)
-        local services = knit and knit:WaitForChild("Services", 5)
-        local teleportService = services and services:WaitForChild("BaseTeleportService", 5)
-        local rf = teleportService and teleportService:WaitForChild("RF", 5)
-        local teleportRemote = rf and rf:WaitForChild("TeleportToSpawn", 5)
+        -- ค้นหา RemoteFunction ชื่อ TeleportToSpawn ใน ReplicatedStorage แบบอัตโนมัติ
+        local teleportRemote = ReplicatedStorage:FindFirstChild("TeleportToSpawn", true)
 
         if teleportRemote and teleportRemote:IsA("RemoteFunction") then
             teleportRemote:InvokeServer()
+        else
+            -- หากไม่พบแบบตรงๆ ให้ลองสแกนหา RemoteEvent / RemoteFunction ที่เกี่ยวข้อง
+            for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+                if v.Name == "TeleportToSpawn" and (v:IsA("RemoteFunction") or v:IsA("RemoteEvent")) then
+                    if v:IsA("RemoteFunction") then
+                        v:InvokeServer()
+                    elseif v:IsA("RemoteEvent") then
+                        v:FireServer()
+                    end
+                    break
+                end
+            end
         end
     end)
     return success
