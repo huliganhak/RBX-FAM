@@ -6,8 +6,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ⚙️ ตั้งค่าความเร็ว และโหมดทำงาน
 -- ==========================================
 local TARGET_WORLD = "W5"       -- กำหนด World ที่ใช้งาน
-local WAIT_FROG_SPAWN = 0.5    -- เวลาที่รอให้กบโหลดขึ้นมาหลังจากย้าย Zone
-local CATCH_DELAY = 0.2        -- เวลาหน่วงหลังจับกบแต่ละตัว
+local WAIT_FROG_SPAWN = 2    -- เวลาที่รอให้กบโหลดขึ้นมาหลังจากย้าย Zone
+local CATCH_DELAY = 1        -- เวลาหน่วงหลังจับกบแต่ละตัว
 
 -- ==========================================
 -- 1. อ้างอิง RemoteFunction (Knit)
@@ -23,7 +23,7 @@ local catchRemote = ReplicatedStorage
     :WaitForChild("Catch")
 
 -- ==========================================
--- 2. สร้าง UI หน้าจอ (ปรับความสูงรองรับ Text + Toggle)
+-- 2. สร้าง UI หน้าจอ
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ZoneFrogFarmUI"
@@ -91,14 +91,14 @@ container.Parent = mainFrame
 local zoneLabel = Instance.new("TextLabel")
 zoneLabel.Size = UDim2.new(0.9, 0, 0, 22)
 zoneLabel.Position = UDim2.new(0.05, 0, 0.02, 0)
-zoneLabel.Text = "📍 Zone ปัจจุบัน: - "
+zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
 zoneLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
 zoneLabel.TextSize = 13
 zoneLabel.Font = Enum.Font.SourceSansBold
 zoneLabel.BackgroundTransparency = 1
 zoneLabel.Parent = container
 
--- Text แสดงสถานะการทำงาน
+-- Text แสดงสถานะการค้นหา/จับกบ
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.9, 0, 0, 22)
 statusLabel.Position = UDim2.new(0.05, 0, 0.16, 0)
@@ -110,7 +110,7 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- ปุ่มสลับเปิด/ปิด โหมดวนลูปซ้ำ (Infinite Loop Toggle)
+-- ปุ่มสลับเปิด/ปิด โหมดวนลูปซ้ำ
 local loopToggleBtn = Instance.new("TextButton")
 loopToggleBtn.Size = UDim2.new(0.9, 0, 0, 30)
 loopToggleBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
@@ -149,7 +149,7 @@ closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
-local isLoopingEnabled = false -- ตัวแปรสถานะโหมดวนลูป
+local isLoopingEnabled = false
 loopToggleBtn.MouseButton1Click:Connect(function()
     isLoopingEnabled = not isLoopingEnabled
     if isLoopingEnabled then
@@ -224,6 +224,9 @@ local function catchSingleFrog(frog)
         hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0)
     end
 
+    statusLabel.Text = "⚡ กำลังจับกบ..."
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+
     task.wait(0.1)
     local frogUUID = string.sub(frog.Name, 6)
     pcall(function()
@@ -246,7 +249,6 @@ local function startZoneFarming()
                 break
             end
 
-            -- ไล่จาก Zone 47 -> Zone สุดท้าย
             for _, zoneData in ipairs(sortedZones) do
                 if not isFarming then break end
 
@@ -256,39 +258,43 @@ local function startZoneFarming()
                 local zoneCFrame = getObjectCFrame(zoneData.object)
 
                 if hrp and zoneCFrame then
-                    -- 1. ย้ายไป Zone ปัจจุบัน
-                    statusLabel.Text = "🚶 กำลังย้ายไป " .. zoneData.name
-                    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+                    -- 1. ย้ายไป Zone
                     hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
+                    
+                    statusLabel.Text = "🔍 กำลังสแกนหากบ..."
+                    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
                     
                     task.wait(WAIT_FROG_SPAWN)
 
-                    -- 2. วนเก็บกบใน Zone
-                    while isFarming do
-                        local frogs = getFrogsList()
-                        if #frogs == 0 then
-                            break -- ไม่เจอกบ ขยับไป Zone+1
+                    -- 2. เช็กและจับกบ
+                    local frogs = getFrogsList()
+                    if #frogs == 0 then
+                        -- ไม่เจอกบ
+                        statusLabel.Text = "⚠️ ไม่พบกบใน Zone นี้"
+                        statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
+                        task.wait(0.3) -- โชว์สถานะแป๊บนึงก่อนไป Zone ถัดไป
+                    else
+                        -- เจอกบ
+                        while #frogs > 0 and isFarming do
+                            statusLabel.Text = string.format("🐸 พบกบ %d ตัว!", #frogs)
+                            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+
+                            for _, frog in ipairs(frogs) do
+                                if not isFarming then break end
+                                catchSingleFrog(frog)
+                            end
+
+                            task.wait(0.1)
+                            frogs = getFrogsList() -- เช็กซ้ำว่าเหลืออีกไหม
                         end
-
-                        statusLabel.Text = string.format("🐸 พบกบ %d ตัวที่ %s", #frogs, zoneData.name)
-                        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-
-                        for _, frog in ipairs(frogs) do
-                            if not isFarming then break end
-                            catchSingleFrog(frog)
-                        end
-
-                        task.wait(0.2)
                     end
                 end
             end
             
             task.wait(0.5)
 
-        -- ถ้าเปิดโหมด Loop ไว้ จะทำวนซ้ำเรื่อยๆ จนกว่าเราจะกดหยุดเอง
         until not isFarming or not isLoopingEnabled
 
-        -- เมื่อทำงานเสร็จสมบูรณ์
         isFarming = false
         startBtn.Text = "🚀 เริ่มฟาร์มแบบไล่ Zone"
         startBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
