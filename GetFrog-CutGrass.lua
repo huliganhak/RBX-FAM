@@ -333,11 +333,19 @@ local function catchSingleFrog(frog, currentCount, totalCount)
         frogUUID = frog.Name
     end
 
-    -- 3. ส่ง UUID ตรงเข้า Remote
+    -- 3. ส่ง UUID ตรงเข้า Remote และรอ Server ยืนยันผลลัพธ์
     if frogUUID then
-        pcall(function()
-            catchRemote:InvokeServer(frogUUID)
+        local success, result = pcall(function()
+            return catchRemote:InvokeServer(frogUUID)
         end)
+    
+        if success then
+            statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 8) .. "..."
+            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        else
+            statusLabel.Text = "❌ จับไม่สำเร็จ (Server Reject)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        end
     end
     
     task.wait(catchDelay)
