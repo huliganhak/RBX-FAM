@@ -31,7 +31,7 @@ local function isBackpackFull()
     local backpackValue = mainScreen and mainScreen:FindFirstChild("Currencies", true) and mainScreen.Currencies:FindFirstChild("Backpack", true) and mainScreen.Currencies.Backpack:FindFirstChild("Value")
     
     if backpackValue and backpackValue:IsA("TextLabel") then
-        local currentText = backpackValue.Text -- เช่น "4/23"
+        local currentText = backpackValue.Text
         local current, max = currentText:match("(%d+)%s*/%s*(%d+)")
         
         if current and max then
@@ -51,13 +51,13 @@ end
 -- 3. สร้าง UI หลัก
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DropdownZoneCollectorUI"
+screenGui.Name = "AutoLoopZoneCollectorUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 260)
-mainFrame.Position = UDim2.new(0.5, -160, 0.3, 0)
+mainFrame.Size = UDim2.new(0, 320, 0, 310)
+mainFrame.Position = UDim2.new(0.5, -160, 0.25, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -75,7 +75,7 @@ headerFrame.Parent = mainFrame
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "📦 Auto Dropdown Zone Collector"
+titleLabel.Text = "🤖 Auto Loop Zone Collector"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 13
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -114,22 +114,23 @@ container.Parent = mainFrame
 
 local selectedWorldName = "W5"
 local selectedZoneName = ""
+local autoLoopActive = false
 
 -- World Dropdown
 local worldDropdownBtn = Instance.new("TextButton")
-worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 32)
-worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
+worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 30)
+worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.04, 0)
 worldDropdownBtn.Text = "World: W5 ▼"
 worldDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 worldDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 worldDropdownBtn.Font = Enum.Font.SourceSansBold
-worldDropdownBtn.TextSize = 13
+worldDropdownBtn.TextSize = 12
 worldDropdownBtn.Parent = container
 Instance.new("UICorner", worldDropdownBtn).CornerRadius = UDim.new(0, 4)
 
 local worldScroll = Instance.new("ScrollingFrame")
-worldScroll.Size = UDim2.new(0.42, 0, 0, 120)
-worldScroll.Position = UDim2.new(0.05, 0, 0.2, 0)
+worldScroll.Size = UDim2.new(0.42, 0, 0, 110)
+worldScroll.Position = UDim2.new(0.05, 0, 0.16, 0)
 worldScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 worldScroll.Visible = false
 worldScroll.ZIndex = 10
@@ -139,19 +140,19 @@ local worldListLayout = Instance.new("UIListLayout", worldScroll)
 
 -- Zone Dropdown
 local zoneDropdownBtn = Instance.new("TextButton")
-zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 32)
-zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.05, 0)
+zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 30)
+zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.04, 0)
 zoneDropdownBtn.Text = "เลือก Zone ▼"
 zoneDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 zoneDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 zoneDropdownBtn.Font = Enum.Font.SourceSansBold
-zoneDropdownBtn.TextSize = 13
+zoneDropdownBtn.TextSize = 12
 zoneDropdownBtn.Parent = container
 Instance.new("UICorner", zoneDropdownBtn).CornerRadius = UDim.new(0, 4)
 
 local zoneScroll = Instance.new("ScrollingFrame")
-zoneScroll.Size = UDim2.new(0.45, 0, 0, 120)
-zoneScroll.Position = UDim2.new(0.5, 0, 0.2, 0)
+zoneScroll.Size = UDim2.new(0.45, 0, 0, 110)
+zoneScroll.Position = UDim2.new(0.5, 0, 0.16, 0)
 zoneScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 zoneScroll.Visible = false
 zoneScroll.ZIndex = 10
@@ -159,10 +160,54 @@ zoneScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 zoneScroll.Parent = container
 local zoneListLayout = Instance.new("UIListLayout", zoneScroll)
 
+-- Settings Input: Loop Delay
+local loopDelayLabel = Instance.new("TextLabel")
+loopDelayLabel.Size = UDim2.new(0.5, 0, 0, 22)
+loopDelayLabel.Position = UDim2.new(0.05, 0, 0.18, 0)
+loopDelayLabel.Text = "หน่วงซ้ำต่อรอบ (วิ):"
+loopDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+loopDelayLabel.TextSize = 11
+loopDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+loopDelayLabel.BackgroundTransparency = 1
+loopDelayLabel.Parent = container
+
+local loopDelayBox = Instance.new("TextBox")
+loopDelayBox.Size = UDim2.new(0.35, 0, 0, 22)
+loopDelayBox.Position = UDim2.new(0.6, 0, 0.18, 0)
+loopDelayBox.Text = "0.5"
+loopDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+loopDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+loopDelayBox.Font = Enum.Font.SourceSans
+loopDelayBox.TextSize = 11
+loopDelayBox.Parent = container
+Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 4)
+
+-- Settings Input: Return Spawn Delay
+local returnDelayLabel = Instance.new("TextLabel")
+returnDelayLabel.Size = UDim2.new(0.5, 0, 0, 22)
+returnDelayLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
+returnDelayLabel.Text = "หน่วงหลังวาร์ปกลับ (วิ):"
+returnDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+returnDelayLabel.TextSize = 11
+returnDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+returnDelayLabel.BackgroundTransparency = 1
+returnDelayLabel.Parent = container
+
+local returnDelayBox = Instance.new("TextBox")
+returnDelayBox.Size = UDim2.new(0.35, 0, 0, 22)
+returnDelayBox.Position = UDim2.new(0.6, 0, 0.28, 0)
+returnDelayBox.Text = "3"
+returnDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+returnDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+returnDelayBox.Font = Enum.Font.SourceSans
+returnDelayBox.TextSize = 11
+returnDelayBox.Parent = container
+Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 4)
+
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
-statusLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
+statusLabel.Position = UDim2.new(0.05, 0, 0.40, 0)
 statusLabel.Text = "สถานะ: พร้อมทำงาน"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 12
@@ -171,20 +216,20 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- Action Button
-local actionBtn = Instance.new("TextButton")
-actionBtn.Size = UDim2.new(0.9, 0, 0, 45)
-actionBtn.Position = UDim2.new(0.05, 0, 0.65, 0)
-actionBtn.Text = "🚀 สแกน + วาร์ป + เก็บไอเทม"
-actionBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-actionBtn.Font = Enum.Font.SourceSansBold
-actionBtn.TextSize = 14
-actionBtn.Parent = container
-Instance.new("UICorner", actionBtn).CornerRadius = UDim.new(0, 6)
+-- Toggle Auto Loop Button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0.9, 0, 0, 45)
+toggleBtn.Position = UDim2.new(0.05, 0, 0.72, 0)
+toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.TextSize = 14
+toggleBtn.Parent = container
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
--- 4. ระบบ List Dropdown
+-- 4. ระบบ Dropdown
 -- ==========================================
 local function refreshZoneList()
     for _, child in pairs(zoneScroll:GetChildren()) do
@@ -193,7 +238,6 @@ local function refreshZoneList()
 
     local zonesFolder = workspace:FindFirstChild("Zones")
     local worldFolder = zonesFolder and zonesFolder:FindFirstChild(selectedWorldName)
-
     if not worldFolder then return end
 
     local zones = {}
@@ -228,7 +272,7 @@ local function refreshWorldList()
     end
 
     local zonesFolder = workspace:FindFirstChild("Zones")
-    if not zonesFolder then return end
+    if not zonesFolder me then return end
 
     local worlds = {}
     for _, w in pairs(zonesFolder:GetChildren()) do
@@ -272,24 +316,27 @@ zoneDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 5. ระบบการทำงานหลัก
+-- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม
 -- ==========================================
-actionBtn.MouseButton1Click:Connect(function()
-    -- 1. เช็คกระเป๋าก่อนทำงาน
+local function processSingleCollect()
     local isFull, capacityText = isBackpackFull()
     if isFull then
-        statusLabel.Text = "🛑 กระเป๋าเต็มแล้ว! (" .. capacityText .. ") กำลังกลับ Spawn..."
+        local returnWait = tonumber(returnDelayBox.Text) or 3
+        statusLabel.Text = "🛑 กระเป๋าเต็ม! (" .. capacityText .. ") วาร์ปกลับ Spawn..."
         statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
         
-        -- สั่งกลับ Spawn ทันที
         teleportToSpawn()
-        return
+        
+        -- หน่วงเวลารอตามที่ตั้งค่า
+        statusLabel.Text = "⏳ รอนับถอยหลังพัก " .. tostring(returnWait) .. " วินาที..."
+        task.wait(returnWait)
+        return false
     end
 
     if selectedZoneName == "" then
         statusLabel.Text = "⚠️ กรุณากดเลือก Zone ก่อนครับ"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return
+        return false
     end
 
     local targetZone = workspace.Zones[selectedWorldName]:FindFirstChild(selectedZoneName)
@@ -298,14 +345,14 @@ actionBtn.MouseButton1Click:Connect(function()
     if not spawnZone then
         statusLabel.Text = "❌ ไม่พบ SpawnZone ใน " .. selectedZoneName
         statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        return
+        return false
     end
 
     local items = spawnZone:GetChildren()
     if #items == 0 then
         statusLabel.Text = "⚠️ ไม่พบไอเทมใน " .. selectedZoneName
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return
+        return false
     end
 
     local targetItem = items[1]
@@ -325,9 +372,6 @@ actionBtn.MouseButton1Click:Connect(function()
 
         if itemCFrame then hrp.CFrame = itemCFrame end
     end
-
-    statusLabel.Text = "⚡ วาร์ปแล้ว รอ Server ซิงค์..."
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
     task.wait(0.15)
 
@@ -361,15 +405,45 @@ actionBtn.MouseButton1Click:Connect(function()
             statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         end
     end
+    return true
+end
+
+-- ==========================================
+-- 6. ระบบ Auto Loop
+-- ==========================================
+toggleBtn.MouseButton1Click:Connect(function()
+    autoLoopActive = not autoLoopActive
+
+    if autoLoopActive then
+        toggleBtn.Text = "⏹️ หยุดทำงาน Auto Loop"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+
+        task.spawn(function()
+            while autoLoopActive do
+                processSingleCollect()
+                
+                local loopWait = tonumber(loopDelayBox.Text) or 0.5
+                task.wait(loopWait)
+            end
+        end)
+    else
+        toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+        statusLabel.Text = "⏸️ หยุดการทำงานแล้ว"
+        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    end
 end)
 
 -- ระบบย่อ/ปิด UI
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 30) or UDim2.new(0, 320, 0, 260)
+    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 30) or UDim2.new(0, 320, 0, 310)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
 
-closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+closeBtn.MouseButton1Click:Connect(function()
+    autoLoopActive = false
+    screenGui:Destroy()
+end)
