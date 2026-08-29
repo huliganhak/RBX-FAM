@@ -264,7 +264,7 @@ loopDelayInput.FocusLost:Connect(function()
 end)
 
 -- ==========================================
--- 4. ฟังก์ชันจัดการ Zone และการจับกบ
+-- 4. ฟังก์ชันจัดการ Zone และการจับกบ (Logic โค้ดเดิม)
 -- ==========================================
 local isFarming = false
 
@@ -299,54 +299,56 @@ local function getFrogsList()
     
     local frogs = {}
     for _, child in ipairs(eventFrogs:GetChildren()) do
-        table.insert(frogs, child)
+        -- สแกนเฉพาะวัตถุที่ขึ้นต้นด้วย Frog_ เหมือนโค้ดเดิม 100%
+        if string.sub(child.Name, 1, 5) == "Frog_" then
+            table.insert(frogs, child)
+        end
     end
     return frogs
 end
 
-local function catchSingleFrog(frog, currentCount, totalCount)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp or not frog or not frog.Parent then return end
+local function catchSingleFrog(targetFrog, currentCount, totalCount)
+    if not targetFrog or not targetFrog.Parent then return end
 
-    -- 1. วาร์ปไปพิกัดกบ
-    local frogCFrame = getObjectCFrame(frog)
-    if frogCFrame then
-        hrp.CFrame = frogCFrame + Vector3.new(0, 1, 0)
+    -- 1. ตัดคำเอา UUID เพียวๆ เหมือนโค้ดเดิมของคุณ
+    local frogUUID = string.sub(targetFrog.Name, 6)
+
+    -- 2. วาร์ปไปพิกัดกบ (ใช้ Logic หาพิกัดจากโค้ดเดิม)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local frogCFrame = nil
+        if targetFrog:IsA("Model") and targetFrog.PrimaryPart then
+            frogCFrame = targetFrog.PrimaryPart.CFrame
+        elseif targetFrog:FindFirstChild("RootPart") then
+            frogCFrame = targetFrog.RootPart.CFrame
+        elseif targetFrog:IsA("BasePart") then
+            frogCFrame = targetFrog.CFrame
+        end
+
+        if frogCFrame then
+            hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0)
+        end
     end
 
-    statusLabel.Text = string.format("⚡ กำลังจับกบ (%d/%d)...", currentCount, totalCount)
+    statusLabel.Text = string.format("⚡ วาร์ปแล้ว รอซิงค์ตำแหน่ง (%d/%d)...", currentCount, totalCount)
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
+    -- หน่วงเวลา 0.2s ให้ Server รับรู้ตำแหน่งพิกัดแบบโค้ดเดิม
     task.wait(0.2)
 
-    -- 2. หา UUID ของกบ
-    local frogUUID = frog:GetAttribute("UUID") or frog:GetAttribute("FrogId")
-    if not frogUUID then
-        if string.sub(frog.Name, 1, 5) == "Frog_" then
-            frogUUID = string.sub(frog.Name, 6)
-        else
-            frogUUID = frog.Name
-        end
+    -- 3. ส่ง Remote จับกบแบบรอยืนยัน
+    local success, result = pcall(function()
+        return catchRemote:InvokeServer(frogUUID)
+    end)
+
+    if success then
+        statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 8) .. "..."
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        statusLabel.Text = "❌ จับไม่สำเร็จ (Error)"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
-    
-    task.wait(0.2)
-    
-    -- 3. ส่ง UUID ตรงเข้า Remote และรอ Server ยืนยันผลลัพธ์
-    if frogUUID then
-        local success, result = pcall(function()
-            return catchRemote:InvokeServer(frogUUID)
-        end)
-    
-        if success then
-            statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 8) .. "..."
-            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            statusLabel.Text = "❌ จับไม่สำเร็จ (Server Reject)"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        end
-    end
-    
-    task.wait(0.2)
+
     task.wait(catchDelay)
 end
 
@@ -381,7 +383,7 @@ local function startZoneFarming()
                     
                     task.wait(waitFrogSpawn)
 
-                    -- 2. เช็กกบ
+                    -- 2. ดึงกบใน Zone
                     local frogs = getFrogsList()
                     
                     if #frogs == 0 then
@@ -392,9 +394,9 @@ local function startZoneFarming()
                         local totalFrogs = #frogs
                         statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
                         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-                        task.wait(0.05)
+                        task.wait(0.1)
 
-                        -- 3. ไล่จับ
+                        -- 3. ไล่เก็บทีละตัว
                         for i, frog in ipairs(frogs) do
                             if not isFarming then break end
                             catchSingleFrog(frog, i, totalFrogs)
