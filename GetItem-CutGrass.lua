@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. กำหนดตำแหน่งที่ต้องการค้นหาไอเทม
+-- 1. ฟังก์ชันอ้างอิงตำแหน่ง SpawnZone
 -- ==========================================
 local function getSpawnZone()
     local zones = workspace:FindFirstChild("Zones")
@@ -15,13 +15,13 @@ end
 -- 2. สร้าง UI หน้าจอ
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ItemCollectorUI"
+screenGui.Name = "ItemOneClickUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 240)
-mainFrame.Position = UDim2.new(0.5, -150, 0.35, 0)
+mainFrame.Size = UDim2.new(0, 280, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -140, 0.35, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -39,7 +39,7 @@ headerFrame.Parent = mainFrame
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "📦 Item Collector Tester"
+titleLabel.Text = "📦 Item One-Click Collect"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 14
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -77,9 +77,9 @@ container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
-statusLabel.Position = UDim2.new(0.05, 0, 0, 0)
-statusLabel.Text = "สถานะ: รอสแกนหาไอเทม..."
+statusLabel.Size = UDim2.new(0.9, 0, 0, 35)
+statusLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
+statusLabel.Text = "สถานะ: พร้อมทำงาน"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 12
 statusLabel.TextWrapped = true
@@ -87,52 +87,30 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- ปุ่ม 3 Step
-local scanBtn = Instance.new("TextButton")
-scanBtn.Size = UDim2.new(0.9, 0, 0, 32)
-scanBtn.Position = UDim2.new(0.05, 0, 0.22, 0)
-scanBtn.Text = "1. สแกนหาไอเทมตัวแรก"
-scanBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 220)
-scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-scanBtn.Font = Enum.Font.SourceSansBold
-scanBtn.TextSize = 13
-scanBtn.Parent = container
-Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 5)
-
-local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.9, 0, 0, 32)
-tpBtn.Position = UDim2.new(0.05, 0, 0.44, 0)
-tpBtn.Text = "2. วาร์ปไปหาไอเทม"
-tpBtn.BackgroundColor3 = Color3.fromRGB(200, 130, 30)
-tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpBtn.Font = Enum.Font.SourceSansBold
-tpBtn.TextSize = 13
-tpBtn.Parent = container
-Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 5)
-
-local collectBtn = Instance.new("TextButton")
-collectBtn.Size = UDim2.new(0.9, 0, 0, 32)
-collectBtn.Position = UDim2.new(0.05, 0, 0.66, 0)
-collectBtn.Text = "3. สั่งกดเก็บ (Prompt / Touch)"
-collectBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-collectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-collectBtn.Font = Enum.Font.SourceSansBold
-collectBtn.TextSize = 13
-collectBtn.Parent = container
-Instance.new("UICorner", collectBtn).CornerRadius = UDim.new(0, 5)
+-- ปุ่มกดครั้งเดียวจบ
+local actionBtn = Instance.new("TextButton")
+actionBtn.Size = UDim2.new(0.9, 0, 0, 45)
+actionBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
+actionBtn.Text = "🚀 สแกน + วาร์ป + เก็บไอเทม (1 ชิ้น)"
+actionBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+actionBtn.Font = Enum.Font.SourceSansBold
+actionBtn.TextSize = 13
+actionBtn.Parent = container
+Instance.new("UICorner", actionBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
--- 3. ระบบย่อ/ปิด UI
+-- 3. ระบบย่อ / ปิด UI
 -- ==========================================
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        mainFrame.Size = UDim2.new(0, 300, 0, 30)
+        mainFrame.Size = UDim2.new(0, 280, 0, 30)
         container.Visible = false
         minimizeBtn.Text = "+"
     else
-        mainFrame.Size = UDim2.new(0, 300, 0, 240)
+        mainFrame.Size = UDim2.new(0, 280, 0, 150)
         container.Visible = true
         minimizeBtn.Text = "-"
     end
@@ -143,108 +121,73 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 4. ระบบการทำงาน 3 ขั้นตอน
+-- 4. ระบบทำงาน 1 Click (สแกน ➔ วาร์ป ➔ เก็บ)
 -- ==========================================
-local currentItem = nil
-
--- Step 1: สแกนหาไอเทมตัวแรกใน SpawnZone
-scanBtn.MouseButton1Click:Connect(function()
+actionBtn.MouseButton1Click:Connect(function()
     local spawnZone = getSpawnZone()
-    currentItem = nil
-
     if not spawnZone then
-        statusLabel.Text = "❌ ไม่พบ SpawnZone ในพิกัดที่ระบุ"
+        statusLabel.Text = "❌ ไม่พบ SpawnZone ใน Zone_47"
         statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         return
     end
 
-    -- ดึงไอเทมตัวแรกที่เจอใน Folder/Zone
+    -- 1. สแกนหาไอเทมชิ้นแรก
     local items = spawnZone:GetChildren()
-    if #items > 0 then
-        currentItem = items[1]
-        statusLabel.Text = "พบไอเทม: " .. currentItem.Name
-        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        print("[Scan] พบไอเทม:", currentItem.Name)
-    else
+    if #items == 0 then
         statusLabel.Text = "⚠️ ไม่พบไอเทมใน SpawnZone"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-    end
-end)
-
--- Step 2: วาร์ปไปหาไอเทม
-tpBtn.MouseButton1Click:Connect(function()
-    if not currentItem or not currentItem.Parent then
-        statusLabel.Text = "⚠️ กรุณาสแกนหาไอเทมก่อน หรือไอเทมหายไปแล้ว"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         return
     end
 
+    local targetItem = items[1]
+
+    -- 2. วาร์ปไปหาไอเทม
     local character = LocalPlayer.Character
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
-    if not hrp then return end
+    if hrp then
+        local itemCFrame = nil
+        if targetItem:IsA("Model") then
+            itemCFrame = targetItem.PrimaryPart and targetItem.PrimaryPart.CFrame or targetItem:GetPivot()
+        elseif targetItem:IsA("BasePart") then
+            itemCFrame = targetItem.CFrame
+        else
+            local part = targetItem:FindFirstChildWhichIsA("BasePart", true)
+            if part then itemCFrame = part.CFrame end
+        end
 
-    -- หาพิกัด CFrame ของไอเทม (รองรับทั้ง Model, Part และ MeshPart)
-    local itemCFrame = nil
-    if currentItem:IsA("Model") then
-        itemCFrame = currentItem.PrimaryPart and currentItem.PrimaryPart.CFrame or currentItem:GetPivot()
-    elseif currentItem:IsA("BasePart") then
-        itemCFrame = currentItem.CFrame
-    else
-        -- ถ้าไอเทมมี Part ซ่อนอยู่ข้างใน
-        local part = currentItem:FindFirstChildWhichIsA("BasePart", true)
-        if part then itemCFrame = part.CFrame end
+        if itemCFrame then
+            hrp.CFrame = itemCFrame + Vector3.new(0, 2, 0)
+        end
     end
 
-    if itemCFrame then
-        hrp.CFrame = itemCFrame + Vector3.new(0, 2, 0)
-        statusLabel.Text = "⚡ วาร์ปไปหา " .. currentItem.Name .. " แล้ว!"
-        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
-    else
-        statusLabel.Text = "❌ ไม่พบพิกัดของไอเทมนี้"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
-end)
+    -- ⏳ หน่วงเวลา 0.2 วินาทีให้ Server ซิงค์พิกัดตัวละคร
+    task.wait(0.2)
 
--- Step 3: สั่งกดเก็บไอเทม
-collectBtn.MouseButton1Click:Connect(function()
-    if not currentItem or not currentItem.Parent then
-        statusLabel.Text = "⚠️ ไม่พบไอเทมเป้าหมาย"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return
-    end
-
-    statusLabel.Text = "กำลังพยายามเก็บไอเทม..."
+    -- 3. สั่งเก็บไอเทม (ลองหาทั้ง Prompt และ Touch)
+    statusLabel.Text = "⚡ วาร์ปแล้ว กำลังเก็บ: " .. targetItem.Name
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
-    -- ค้นหา ProximityPrompt ข้างในไอเทม
-    local prompt = currentItem:FindFirstChildWhichIsA("ProximityPrompt", true)
+    local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
 
     if prompt then
-        -- แบบที่ 1: ถ้าไอเทมใช้ ProximityPrompt ในการเก็บ
         prompt:InputHoldBegin()
-        if prompt.HoldDuration > 0 then
-            task.wait(prompt.HoldDuration)
-        end
+        if prompt.HoldDuration > 0 then task.wait(prompt.HoldDuration) end
         prompt:InputHoldEnd()
-        
-        statusLabel.Text = "✅ Trigger ProximityPrompt สำเร็จ!"
+
+        statusLabel.Text = "✅ เก็บสำเร็จ! (Prompt): " .. targetItem.Name
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
-        -- แบบที่ 2: ถ้าเป็นไอเทมประเภทเดินชน (TouchInterest)
-        local character = LocalPlayer.Character
-        local hrp = character and character:FindFirstChild("HumanoidRootPart")
-        local itemPart = currentItem:IsA("BasePart") and currentItem or currentItem:FindFirstChildWhichIsA("BasePart", true)
-
-        if hrp and itemPart then
+        local itemPart = targetItem:IsA("BasePart") and targetItem or targetItem:FindFirstChildWhichIsA("BasePart", true)
+        if hrp and itemPart and firetouchinterest then
             firetouchinterest(hrp, itemPart, 0)
             task.wait(0.1)
             firetouchinterest(hrp, itemPart, 1)
-            
-            statusLabel.Text = "✅ สั่ง Touch (เดินชน) ไอเทมเรียบร้อย!"
+
+            statusLabel.Text = "✅ เก็บสำเร็จ! (Touch): " .. targetItem.Name
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         else
-            statusLabel.Text = "❌ ไม่พบวิธีเก็บ (ไม่มี Prompt หรือ Part ให้ชน)"
+            statusLabel.Text = "❌ ไม่พบวิธีเก็บไอเทมชิ้นนี้"
             statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         end
     end
