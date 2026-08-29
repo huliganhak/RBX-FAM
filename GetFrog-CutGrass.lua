@@ -6,8 +6,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ⚙️ ค่าเริ่มต้น (Default Values)
 -- ==========================================
 local TARGET_WORLD = "W5"       -- กำหนด World ที่ใช้งาน
-local waitFrogSpawn = 1       -- เวลารอโหลดกบ (วินาที)
-local catchDelay = 0.3          -- เวลาหน่วงหลังจับกบ (วินาที)
+local waitFrogSpawn = 0.5       -- เวลารอโหลดกบ (วินาที)
+local catchDelay = 0.2          -- เวลาหน่วงหลังจับกบ (วินาที)
 local loopDelay = 1.0           -- เวลาพักก่อนเริ่มลูปใหม่ (วินาที)
 
 -- ==========================================
