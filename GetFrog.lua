@@ -167,14 +167,20 @@ actionBtn.MouseButton1Click:Connect(function()
         end
 
         if frogCFrame then
-            hrp.CFrame = frogCFrame + Vector3.new(0, 3, 0)
+            hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0) -- วาร์ปไปเหนือหัวกบเล็กน้อย
         end
     end
 
-    -- 3. ยิง RemoteFunction สั่งจับกบ
-    statusLabel.Text = "⚡ วาร์ปแล้ว กำลังส่งจับ: " .. frogUUID
+    statusLabel.Text = "⚡ วาร์ปแล้ว กำลังรอซิงค์ตำแหน่ง..."
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
+    -- -------------------------------------------------------------
+    -- ⏳ [จุดสำคัญ] หน่วงเวลา 0.2 วินาทีเพื่อให้ Server รับรู้พิกัดวาร์ป
+    -- (ถ้ายังจับไม่ติด ลองปรับเพิ่มเป็น 0.3 หรือ 0.5 ดูครับ)
+    -- -------------------------------------------------------------
+    task.wait(0.2)
+
+    -- 3. ยิง RemoteFunction สั่งจับกบ
     task.spawn(function()
         local success, result = pcall(function()
             return catchRemote:InvokeServer(frogUUID)
