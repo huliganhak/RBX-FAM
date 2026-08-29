@@ -3,6 +3,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
+-- ⚙️ ตั้งค่าความเร็ว และโหมดทำงาน
+-- ==========================================
+local SCAN_INTERVAL = 0.2  -- เช็กกบทุกๆ กี่วินาที (0.2 วิ)
+local AUTO_CATCH = false    -- เปลี่ยนเป็น true ถ้าอยากให้ "จับอัตโนมัติ" ทันทีที่พบกบ
+
+-- ==========================================
 -- 1. อ้างอิง RemoteFunction (Knit)
 -- ==========================================
 local catchRemote = ReplicatedStorage
@@ -16,7 +22,7 @@ local catchRemote = ReplicatedStorage
     :WaitForChild("Catch")
 
 -- ==========================================
--- 2. สร้าง UI หน้าจอ
+-- 2. สร้าง UI หน้าจอ (ขยายความสูงรองรับปุ่มใหม่)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FrogOneClickUI"
@@ -24,7 +30,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 150)
+mainFrame.Size = UDim2.new(0, 280, 0, 190) -- ขยายความสูงเป็น 190
 mainFrame.Position = UDim2.new(0.5, -140, 0.35, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
@@ -81,9 +87,9 @@ container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 35)
-statusLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
-statusLabel.Text = "สถานะ: พร้อมทำงาน"
+statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+statusLabel.Position = UDim2.new(0.05, 0, 0.02, 0)
+statusLabel.Text = "สถานะ: รอเปิดการสแกน..."
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 12
 statusLabel.TextWrapped = true
@@ -91,10 +97,22 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- ปุ่มกดครั้งเดียวจบ
+-- ปุ่มเปิด/ปิด ระบบ Auto Scan
+local toggleScanBtn = Instance.new("TextButton")
+toggleScanBtn.Size = UDim2.new(0.9, 0, 0, 35)
+toggleScanBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
+toggleScanBtn.Text = "🔍 เปิด Auto Scan (เช็กทุก 0.2s)"
+toggleScanBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 180)
+toggleScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleScanBtn.Font = Enum.Font.SourceSansBold
+toggleScanBtn.TextSize = 13
+toggleScanBtn.Parent = container
+Instance.new("UICorner", toggleScanBtn).CornerRadius = UDim.new(0, 6)
+
+-- ปุ่มกดสแกน + วาร์ป + จับกบ (Manual Click)
 local actionBtn = Instance.new("TextButton")
 actionBtn.Size = UDim2.new(0.9, 0, 0, 45)
-actionBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
+actionBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
 actionBtn.Text = "🚀 สแกน + วาร์ป + จับกบ (1 ตัว)"
 actionBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -114,7 +132,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
         container.Visible = false
         minimizeBtn.Text = "+"
     else
-        mainFrame.Size = UDim2.new(0, 280, 0, 150)
+        mainFrame.Size = UDim2.new(0, 280, 0, 190)
         container.Visible = true
         minimizeBtn.Text = "-"
     end
@@ -125,34 +143,30 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 4. โค้ดทำงานรวม (Single Click)
+-- 4. ฟังก์ชันหลัก: สแกนหากบ + จับกบ
 -- ==========================================
-actionBtn.MouseButton1Click:Connect(function()
-    local eventFrogs = workspace:FindFirstChild("LocalEventFrogs")
-    if not eventFrogs then
-        statusLabel.Text = "❌ ไม่พบ LocalEventFrogs"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        return
-    end
+local isCatching = false
 
-    -- 1. สแกนหากบตัวแรก
-    local targetFrog = nil
+local function getFrogsList()
+    local eventFrogs = workspace:FindFirstChild("LocalEventFrogs")
+    if not eventFrogs then return {} end
+    
+    local frogs = {}
     for _, child in ipairs(eventFrogs:GetChildren()) do
         if string.sub(child.Name, 1, 5) == "Frog_" then
-            targetFrog = child
-            break
+            table.insert(frogs, child)
         end
     end
+    return frogs
+end
 
-    if not targetFrog then
-        statusLabel.Text = "⚠️ ไม่พบกบใน LocalEventFrogs"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return
-    end
+local function catchFrog(targetFrog)
+    if isCatching or not targetFrog then return end
+    isCatching = true
 
     local frogUUID = string.sub(targetFrog.Name, 6)
     
-    -- 2. วาร์ปไปตำแหน่งกบ
+    -- วาร์ปไปตำแหน่งกบ
     local character = LocalPlayer.Character
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
@@ -167,31 +181,80 @@ actionBtn.MouseButton1Click:Connect(function()
         end
 
         if frogCFrame then
-            hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0) -- วาร์ปไปเหนือหัวกบเล็กน้อย
+            hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0)
         end
     end
 
-    statusLabel.Text = "⚡ วาร์ปแล้ว กำลังรอซิงค์ตำแหน่ง..."
+    statusLabel.Text = "⚡ วาร์ปแล้ว กำลังรอซิงค์..."
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
-
-    -- -------------------------------------------------------------
-    -- ⏳ [จุดสำคัญ] หน่วงเวลา 0.2 วินาทีเพื่อให้ Server รับรู้พิกัดวาร์ป
-    -- (ถ้ายังจับไม่ติด ลองปรับเพิ่มเป็น 0.3 หรือ 0.5 ดูครับ)
-    -- -------------------------------------------------------------
     task.wait(0.2)
 
-    -- 3. ยิง RemoteFunction สั่งจับกบ
-    task.spawn(function()
-        local success, result = pcall(function()
-            return catchRemote:InvokeServer(frogUUID)
-        end)
-
-        if success then
-            statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 8) .. "..."
-            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            statusLabel.Text = "❌ จับไม่สำเร็จ (Error)"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        end
+    -- ยิง Remote
+    local success, result = pcall(function()
+        return catchRemote:InvokeServer(frogUUID)
     end)
+
+    if success then
+        statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 8)
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        statusLabel.Text = "❌ จับไม่สำเร็จ"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+
+    task.wait(0.3)
+    isCatching = false
+end
+
+-- ==========================================
+-- 5. ระบบ Loop เช็กกบอัตโนมัติ (เปิด/ปิด ได้)
+-- ==========================================
+local isScanning = false
+
+toggleScanBtn.MouseButton1Click:Connect(function()
+    isScanning = not isScanning
+    
+    if isScanning then
+        toggleScanBtn.Text = "🛑 ปิด Auto Scan"
+        toggleScanBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+        
+        -- เริ่ม Loop สแกนทุก 0.2 วิ
+        task.spawn(function()
+            while isScanning do
+                local frogs = getFrogsList()
+                local count = #frogs
+                
+                if count > 0 then
+                    statusLabel.Text = "🎯 พบกบในแมพ: " .. count .. " ตัว!"
+                    statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                    
+                    -- ถ้าเปิด AUTO_CATCH ให้มันจับให้อัตโนมัติเลย
+                    if AUTO_CATCH and not isCatching then
+                        catchFrog(frogs[1])
+                    end
+                else
+                    statusLabel.Text = "⚠️ ไม่พบกบใน LocalEventFrogs"
+                    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+                end
+                
+                task.wait(SCAN_INTERVAL)
+            end
+        end)
+    else
+        toggleScanBtn.Text = "🔍 เปิด Auto Scan (เช็กทุก 0.2s)"
+        toggleScanBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 180)
+        statusLabel.Text = "สถานะ: ปิดการสแกนแล้ว"
+        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    end
+end)
+
+-- ปุ่ม Manual Catch (กดมือเอง)
+actionBtn.MouseButton1Click:Connect(function()
+    local frogs = getFrogsList()
+    if #frogs > 0 then
+        catchFrog(frogs[1])
+    else
+        statusLabel.Text = "⚠️ ไม่พบกบใน LocalEventFrogs"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
 end)
