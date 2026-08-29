@@ -165,23 +165,30 @@ actionBtn.MouseButton1Click:Connect(function()
     task.wait(0.2)
 
     -- 3. สั่งเก็บไอเทม (ลองหาทั้ง Prompt และ Touch)
+    -- 3. สั่งเก็บไอเทมแบบ Instant (เร็วกว่าเดิม ไม่ต้องรอ HoldDuration)
     statusLabel.Text = "⚡ วาร์ปแล้ว กำลังเก็บ: " .. targetItem.Name
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
     local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
 
     if prompt then
-        prompt:InputHoldBegin()
-        if prompt.HoldDuration > 0 then task.wait(prompt.HoldDuration) end
-        prompt:InputHoldEnd()
+        -- ใช้ fireproximityprompt ข้ามเวลา HoldDuration ทันที
+        if fireproximityprompt then
+            fireproximityprompt(prompt)
+        else
+            -- เผื่อกรณีใช้ Executor ที่ไม่รองรับคำสั่งนี้ ให้ย้อนกลับไปใช้แบบเดิม
+            prompt:InputHoldBegin()
+            prompt:InputHoldEnd()
+        end
 
-        statusLabel.Text = "✅ เก็บสำเร็จ! (Prompt): " .. targetItem.Name
+        statusLabel.Text = "⚡ เก็บสำเร็จ (Instant Prompt): " .. targetItem.Name
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
+        -- ถ้าไม่มี Prompt ใช้ firetouchinterest สำหรับไอเทมแบบเดินชน
         local itemPart = targetItem:IsA("BasePart") and targetItem or targetItem:FindFirstChildWhichIsA("BasePart", true)
         if hrp and itemPart and firetouchinterest then
             firetouchinterest(hrp, itemPart, 0)
-            task.wait(0.1)
+            task.wait(0.05)
             firetouchinterest(hrp, itemPart, 1)
 
             statusLabel.Text = "✅ เก็บสำเร็จ! (Touch): " .. targetItem.Name
