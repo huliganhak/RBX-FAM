@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
@@ -14,18 +15,32 @@ local scanInterval = 1.0
 -- ==========================================
 -- 1. อ้างอิง RemoteFunction (Knit)
 -- ==========================================
-local catchRemote = ReplicatedStorage
+local knitServices = ReplicatedStorage
     :WaitForChild("Packages")
     :WaitForChild("_Index")
     :WaitForChild("acecateer_knit@1.7.2")
     :WaitForChild("knit")
     :WaitForChild("Services")
+
+local catchRemote = knitServices
     :WaitForChild("FrogEventService")
     :WaitForChild("RF")
     :WaitForChild("Catch")
 
+-- 🚀 Remote สำหรับวาร์ปกลับ Spawn
+local teleportToSpawnRemote = knitServices
+    :WaitForChild("BaseTeleportService")
+    :WaitForChild("RF")
+    :WaitForChild("TeleportToSpawn")
+
+local function teleportBackToSpawn()
+    pcall(function()
+        teleportToSpawnRemote:InvokeServer()
+    end)
+end
+
 -- ==========================================
--- 2. สร้าง UI แบบ Compact ดีไซน์ใหม่
+-- 2. สร้าง UI แบบ Compact + แสดงเวลา Event
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ZoneFrogFarmUI"
@@ -33,7 +48,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 310, 0, 315) -- ปรับขนาดให้พอดี ไม่บังจอ
+mainFrame.Size = UDim2.new(0, 310, 0, 335)
 mainFrame.Position = UDim2.new(0.5, -155, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 26)
 mainFrame.Active = true
@@ -90,26 +105,36 @@ container.Position = UDim2.new(0, 8, 0, 32)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- 📊 Info Section (กบสะสม / Zone / สถานะ)
+-- 📊 Info Section
 local infoFrame = Instance.new("Frame")
-infoFrame.Size = UDim2.new(1, 0, 0, 52)
+infoFrame.Size = UDim2.new(1, 0, 0, 68)
 infoFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 36)
 infoFrame.Parent = container
 Instance.new("UICorner", infoFrame).CornerRadius = UDim.new(0, 6)
 
+local timerLabel = Instance.new("TextLabel")
+timerLabel.Size = UDim2.new(1, 0, 0, 15)
+timerLabel.Position = UDim2.new(0, 0, 0, 3)
+timerLabel.Text = "⏳ Event: กำลังโหลด..."
+timerLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+timerLabel.TextSize = 11
+timerLabel.Font = Enum.Font.SourceSansBold
+timerLabel.BackgroundTransparency = 1
+timerLabel.Parent = infoFrame
+
 local frogsCountLabel = Instance.new("TextLabel")
-frogsCountLabel.Size = UDim2.new(1, 0, 0, 16)
-frogsCountLabel.Position = UDim2.new(0, 0, 0, 4)
+frogsCountLabel.Size = UDim2.new(1, 0, 0, 15)
+frogsCountLabel.Position = UDim2.new(0, 0, 0, 19)
 frogsCountLabel.Text = "🐸 จำนวนกบสะสม: 0"
 frogsCountLabel.TextColor3 = Color3.fromRGB(120, 255, 120)
-frogsCountLabel.TextSize = 12
+frogsCountLabel.TextSize = 11
 frogsCountLabel.Font = Enum.Font.SourceSansBold
 frogsCountLabel.BackgroundTransparency = 1
 frogsCountLabel.Parent = infoFrame
 
 local zoneLabel = Instance.new("TextLabel")
 zoneLabel.Size = UDim2.new(1, 0, 0, 15)
-zoneLabel.Position = UDim2.new(0, 0, 0, 20)
+zoneLabel.Position = UDim2.new(0, 0, 0, 35)
 zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
 zoneLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
 zoneLabel.TextSize = 11
@@ -119,7 +144,7 @@ zoneLabel.Parent = infoFrame
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 15)
-statusLabel.Position = UDim2.new(0, 0, 0, 35)
+statusLabel.Position = UDim2.new(0, 0, 0, 51)
 statusLabel.Text = "สถานะ: พร้อมใช้งาน"
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 statusLabel.TextSize = 11
@@ -127,7 +152,7 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = infoFrame
 
--- ⚙️ Settings Section (จัดเรียงแบบ 2 ช่องต่อบรรทัด)
+-- ⚙️ Settings Section
 local function createInputGroup(parent, pos, labelText, defaultVal)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0.485, 0, 0, 26)
@@ -162,18 +187,15 @@ local function createInputGroup(parent, pos, labelText, defaultVal)
     return input
 end
 
--- แถวที่ 1 ของการตั้งค่า
-local scanInput = createInputGroup(container, UDim2.new(0, 0, 0, 58), "🔍 หน่วงสแกน:", "1.0")
-local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 58), "⏳ รอโหลดกบ:", "1.0")
-
--- แถวที่ 2 ของการตั้งค่า
-local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 88), "⚡ หน่วงหลังจับ:", "1.0")
-local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 88), "💤 พักก่อนลูป:", "1.0")
+local scanInput = createInputGroup(container, UDim2.new(0, 0, 0, 74), "🔍 หน่วงสแกน:", "1.0")
+local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 74), "⏳ รอโหลดกบ:", "1.0")
+local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 104), "⚡ หน่วงหลังจับ:", "1.0")
+local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 104), "💤 พักก่อนลูป:", "1.0")
 
 -- 🔁 ปุ่มสลับลูปสำหรับโหมด 1 (Zone)
 local loopToggleBtn = Instance.new("TextButton")
 loopToggleBtn.Size = UDim2.new(1, 0, 0, 24)
-loopToggleBtn.Position = UDim2.new(0, 0, 0, 118)
+loopToggleBtn.Position = UDim2.new(0, 0, 0, 134)
 loopToggleBtn.Text = "🔁 ลูป Zone: ปิดอยู่ (ทำรอบเดียว)"
 loopToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
 loopToggleBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -185,7 +207,7 @@ Instance.new("UICorner", loopToggleBtn).CornerRadius = UDim.new(0, 5)
 -- 🔘 โซนปุ่มการทำงานหลัก
 local startZoneBtn = Instance.new("TextButton")
 startZoneBtn.Size = UDim2.new(1, 0, 0, 34)
-startZoneBtn.Position = UDim2.new(0, 0, 0, 147)
+startZoneBtn.Position = UDim2.new(0, 0, 0, 163)
 startZoneBtn.Text = "🚀 โหมด 1: เริ่มฟาร์มแบบไล่ Zone"
 startZoneBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 75)
 startZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -194,10 +216,9 @@ startZoneBtn.TextSize = 12
 startZoneBtn.Parent = container
 Instance.new("UICorner", startZoneBtn).CornerRadius = UDim.new(0, 6)
 
--- ปุ่มโหมด 2 วางคู่กัน ซ้าย-ขวา
 local startLoopScanBtn = Instance.new("TextButton")
 startLoopScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startLoopScanBtn.Position = UDim2.new(0, 0, 0, 186)
+startLoopScanBtn.Position = UDim2.new(0, 0, 0, 202)
 startLoopScanBtn.Text = "🔄 2.1 สแกน Loop"
 startLoopScanBtn.BackgroundColor3 = Color3.fromRGB(60, 110, 180)
 startLoopScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -208,7 +229,7 @@ Instance.new("UICorner", startLoopScanBtn).CornerRadius = UDim.new(0, 6)
 
 local startSingleScanBtn = Instance.new("TextButton")
 startSingleScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 186)
+startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 202)
 startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
 startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
 startSingleScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -218,8 +239,30 @@ startSingleScanBtn.Parent = container
 Instance.new("UICorner", startSingleScanBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
--- 3. ระบบอัปเดตจำนวนกบสะสม (Frogs Attribute)
+-- 3. ระบบดึงค่า Event Timer & Frogs Count
 -- ==========================================
+
+task.spawn(function()
+    local success, timerTextObj = pcall(function()
+        return Workspace:WaitForChild("Worlds")
+            :WaitForChild("World_5")
+            :WaitForChild("PondW5")
+            :WaitForChild("Pond")
+            :WaitForChild("EventBillboardGui")
+            :WaitForChild("Timer")
+    end)
+
+    if success and timerTextObj then
+        local function updateTimer()
+            timerLabel.Text = "⏳ Event: " .. tostring(timerTextObj.Text)
+        end
+        updateTimer()
+        timerTextObj:GetPropertyChangedSignal("Text"):Connect(updateTimer)
+    else
+        timerLabel.Text = "⏳ Event: ไม่พบตำแหน่ง Timer"
+    end
+end)
+
 local function updateFrogsDisplay()
     local frogsVal = LocalPlayer:GetAttribute("Frogs")
     if frogsVal == nil then
@@ -240,7 +283,7 @@ LocalPlayer:GetAttributeChangedSignal("Frogs"):Connect(updateFrogsDisplay)
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 260)
+    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 280)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
@@ -297,7 +340,7 @@ local function getObjectCFrame(obj)
 end
 
 local function getSortedZones()
-    local zonesFolder = workspace:FindFirstChild("Zones")
+    local zonesFolder = Workspace:FindFirstChild("Zones")
     if not zonesFolder then return {} end
     local worldFolder = zonesFolder:FindFirstChild(TARGET_WORLD)
     if not worldFolder then return {} end
@@ -315,7 +358,7 @@ local function getSortedZones()
 end
 
 local function getFrogsList()
-    local eventFrogs = workspace:FindFirstChild("LocalEventFrogs")
+    local eventFrogs = Workspace:FindFirstChild("LocalEventFrogs")
     if not eventFrogs then return {} end
     
     local frogs = {}
@@ -372,6 +415,7 @@ end
 -- 6. Main Loops / Functions
 -- ==========================================
 
+-- ฟังก์ชัน Reset พร้อมวาร์ปกลับ Spawn
 local function resetButtons()
     isFarming = false
     currentMode = ""
@@ -384,6 +428,13 @@ local function resetButtons()
     startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
     startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
 
+    statusLabel.Text = "🌀 กำลังวาร์ปกลับ Spawn..."
+    statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+    
+    -- เรียกใช้วาร์ปกลับ Spawn
+    teleportBackToSpawn()
+
+    task.wait(0.5)
     statusLabel.Text = "สถานะ: ทำงานเสร็จสิ้นแล้ว"
     statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 end
@@ -513,7 +564,6 @@ startZoneBtn.MouseButton1Click:Connect(function()
     if isFarming and currentMode == "Zone" then
         resetButtons()
     else
-        resetButtons()
         isFarming = true
         currentMode = "Zone"
         startZoneBtn.Text = "🛑 หยุดฟาร์ม (โหมด Zone)"
@@ -527,7 +577,6 @@ startLoopScanBtn.MouseButton1Click:Connect(function()
     if isFarming and currentMode == "LoopScan" then
         resetButtons()
     else
-        resetButtons()
         isFarming = true
         currentMode = "LoopScan"
         startLoopScanBtn.Text = "🛑 หยุด Loop"
@@ -541,7 +590,6 @@ startSingleScanBtn.MouseButton1Click:Connect(function()
     if isFarming and currentMode == "SingleScan" then
         resetButtons()
     else
-        resetButtons()
         isFarming = true
         currentMode = "SingleScan"
         startSingleScanBtn.Text = "🛑 กำลังทำ..."
