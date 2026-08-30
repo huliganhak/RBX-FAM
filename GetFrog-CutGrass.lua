@@ -49,7 +49,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 310, 0, 370) -- ปรับความสูงเพิ่มปุ่ม Next Zone
+mainFrame.Size = UDim2.new(0, 310, 0, 370)
 mainFrame.Position = UDim2.new(0.5, -155, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 26)
 mainFrame.Active = true
@@ -591,7 +591,7 @@ startZoneBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ⏭️ ปุ่ม Next Zone (กดข้ามไป Zone ถัดไปทันที)
+-- ⏭️ ปุ่ม Next Zone (กดไป Zone ถัดไป / ถ้าหมดแล้วจะวาร์ปกลับ Spawn และ Reset ให้เอง)
 nextZoneBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         local sortedZones = getSortedZones()
@@ -601,23 +601,27 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             return
         end
 
-        -- หากเกินลำดับสุดท้าย ให้วนกลับมา Zone 1
+        -- 🛑 ถ้า index เกินจำนวน Zone ที่มี (ไม่มี Zone ถัดไปแล้ว)
         if currentZoneIndex > #sortedZones then
-            currentZoneIndex = 1
+            statusLabel.Text = "🏠 ครบทุก Zone แล้ว -> วาร์ปกลับ Spawn"
+            statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+            
+            teleportBackToSpawn() -- วาร์ปกลับ Spawn
+            currentZoneIndex = 1  -- Reset ลำดับกลับไปเริ่ม Zone 1
+            zoneLabel.Text = "📍 Zone ปัจจุบัน: Spawn (Reset)"
+            return
         end
 
+        -- 🚀 หากยังมี Zone ถัดไป ให้วาร์ปและสแกนจับกบตามปกติ
         local targetZoneData = sortedZones[currentZoneIndex]
         statusLabel.Text = "⏭️ กำลังไป: " .. targetZoneData.name
         
-        -- ทำการฟาร์มเฉพาะ Zone นั้น
+        -- ฟาร์มเฉพาะ Zone ปัจจุบัน
         farmCurrentZoneOnly(targetZoneData)
 
         -- ขยับ Index เตรียมไว้สำหรับกดครั้งถัดไป
         currentZoneIndex = currentZoneIndex + 1
-        if currentZoneIndex > #sortedZones then
-            currentZoneIndex = 1
-        end
-
+        
         statusLabel.Text = "✅ Next Zone เสร็จสิ้น"
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     end)
