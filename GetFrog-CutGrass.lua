@@ -4,11 +4,11 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- ⚙️ ค่าเริ่มต้น (Default Values 1.0 วินาที)
+-- ⚙️ ค่าเริ่มต้น (ตั้ง Delay หลังเก็บกบเป็น 0.5 วินาที)
 -- ==========================================
 local TARGET_WORLD = "W5"
 local waitFrogSpawn = 1.0
-local catchDelay = 1.0
+local catchDelay = 0.5 -- ⏱️ หน่วง 0.5 วินาทีหลังกดเก็บกบ
 local loopDelay = 1.0
 local scanInterval = 1.0
 
@@ -189,7 +189,7 @@ end
 
 local scanInput = createInputGroup(container, UDim2.new(0, 0, 0, 74), "🔍 หน่วงสแกน:", "1.0")
 local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 74), "⏳ รอโหลดกบ:", "1.0")
-local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 104), "⚡ หน่วงหลังจับ:", "1.0")
+local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 104), "⚡ หน่วงหลังจับ:", "0.5") -- แสดงค่า 0.5 วินาที
 local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 104), "💤 พักก่อนลูป:", "1.0")
 
 -- 🔁 ปุ่มสลับลูปสำหรับโหมด 1 (Zone)
@@ -370,6 +370,7 @@ local function getFrogsList()
     return frogs
 end
 
+-- 🐸 ฟังก์ชันจับกบ (พร้อม Delay หลังเก็บกบ)
 local function catchSingleFrog(targetFrog, currentCount, totalCount)
     if not targetFrog or not targetFrog.Parent then return end
 
@@ -394,20 +395,22 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
     statusLabel.Text = string.format("⚡ วาร์ปจับกบ (%d/%d)...", currentCount, totalCount)
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
-    task.wait(0.2)
+    task.wait(0.1) -- รอตัวละครตั้งหลักเล็กน้อย
 
+    -- สั่ง Remote จับกบ
     local success, result = pcall(function()
         return catchRemote:InvokeServer(frogUUID)
     end)
 
     if success then
-        statusLabel.Text = "✅ จับสำเร็จ! UUID: " .. string.sub(frogUUID, 1, 6)
+        statusLabel.Text = string.format("✅ จับสำเร็จ (%d/%d) UUID: %s", currentCount, totalCount, string.sub(frogUUID, 1, 6))
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
         statusLabel.Text = "❌ จับไม่สำเร็จ (Error)"
         statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
 
+    -- ⏱️ Delay หลังกดเก็บกบ (รอก่อนไปตัวถัดไป)
     task.wait(catchDelay)
 end
 
@@ -415,7 +418,6 @@ end
 -- 6. Main Loops / Functions
 -- ==========================================
 
--- ฟังก์ชัน Reset พร้อมวาร์ปกลับ Spawn
 local function resetButtons()
     isFarming = false
     currentMode = ""
@@ -431,7 +433,6 @@ local function resetButtons()
     statusLabel.Text = "🌀 กำลังวาร์ปกลับ Spawn..."
     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
     
-    -- เรียกใช้วาร์ปกลับ Spawn
     teleportBackToSpawn()
 
     task.wait(0.5)
