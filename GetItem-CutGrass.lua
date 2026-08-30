@@ -2,8 +2,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
+-- Remote สำหรับ Auto Click
+local clickRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("acecateer_knit@1.7.2"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("StrengthService"):WaitForChild("RE"):WaitForChild("ClickRequested")
+
 -- ==========================================
--- 1. ฟังก์ชันวาร์ปกลับ Spawn (ค้นหาแบบ Dynamic ไม่พึ่งชื่อโฟลเดอร์แพ็กเกจ)
+-- 1. ฟังก์ชันวาร์ปกลับ Spawn
 -- ==========================================
 local function teleportToSpawn()
     local success, err = pcall(function()
@@ -52,7 +55,7 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI หลัก
+-- 3. สร้าง UI หลัก (ปรับความสูงให้รองรับเมนูใหม่)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoLoopZoneCollectorUI"
@@ -60,8 +63,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 310)
-mainFrame.Position = UDim2.new(0.5, -160, 0.25, 0)
+mainFrame.Size = UDim2.new(0, 320, 0, 420) -- ขยายความสูงเพิ่มรองรับ Auto Click
+mainFrame.Position = UDim2.new(0.5, -160, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -79,7 +82,7 @@ headerFrame.Parent = mainFrame
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "🤖 Auto Loop Zone Collector"
+titleLabel.Text = "🤖 Auto Collector & Clicker"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 13
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -119,11 +122,12 @@ container.Parent = mainFrame
 local selectedWorldName = "W5"
 local selectedZoneName = ""
 local autoLoopActive = false
+local autoClickActive = false
 
 -- World Dropdown
 local worldDropdownBtn = Instance.new("TextButton")
-worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 30)
-worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.04, 0)
+worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 28)
+worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.03, 0)
 worldDropdownBtn.Text = "World: W5 ▼"
 worldDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 worldDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -133,8 +137,8 @@ worldDropdownBtn.Parent = container
 Instance.new("UICorner", worldDropdownBtn).CornerRadius = UDim.new(0, 4)
 
 local worldScroll = Instance.new("ScrollingFrame")
-worldScroll.Size = UDim2.new(0.42, 0, 0, 110)
-worldScroll.Position = UDim2.new(0.05, 0, 0.16, 0)
+worldScroll.Size = UDim2.new(0.42, 0, 0, 100)
+worldScroll.Position = UDim2.new(0.05, 0, 0.11, 0)
 worldScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 worldScroll.Visible = false
 worldScroll.ZIndex = 10
@@ -144,8 +148,8 @@ local worldListLayout = Instance.new("UIListLayout", worldScroll)
 
 -- Zone Dropdown
 local zoneDropdownBtn = Instance.new("TextButton")
-zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 30)
-zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.04, 0)
+zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 28)
+zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.03, 0)
 zoneDropdownBtn.Text = "เลือก Zone ▼"
 zoneDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 zoneDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -155,8 +159,8 @@ zoneDropdownBtn.Parent = container
 Instance.new("UICorner", zoneDropdownBtn).CornerRadius = UDim.new(0, 4)
 
 local zoneScroll = Instance.new("ScrollingFrame")
-zoneScroll.Size = UDim2.new(0.45, 0, 0, 110)
-zoneScroll.Position = UDim2.new(0.5, 0, 0.16, 0)
+zoneScroll.Size = UDim2.new(0.45, 0, 0, 100)
+zoneScroll.Position = UDim2.new(0.5, 0, 0.11, 0)
 zoneScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 zoneScroll.Visible = false
 zoneScroll.ZIndex = 10
@@ -166,9 +170,9 @@ local zoneListLayout = Instance.new("UIListLayout", zoneScroll)
 
 -- Settings Input: Loop Delay
 local loopDelayLabel = Instance.new("TextLabel")
-loopDelayLabel.Size = UDim2.new(0.5, 0, 0, 22)
-loopDelayLabel.Position = UDim2.new(0.05, 0, 0.18, 0)
-loopDelayLabel.Text = "หน่วงซ้ำต่อรอบ (วิ):"
+loopDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
+loopDelayLabel.Position = UDim2.new(0.05, 0, 0.12, 0)
+loopDelayLabel.Text = "หน่วงซ้ำฟาร์ม (วิ):"
 loopDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 loopDelayLabel.TextSize = 11
 loopDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -176,8 +180,8 @@ loopDelayLabel.BackgroundTransparency = 1
 loopDelayLabel.Parent = container
 
 local loopDelayBox = Instance.new("TextBox")
-loopDelayBox.Size = UDim2.new(0.35, 0, 0, 22)
-loopDelayBox.Position = UDim2.new(0.6, 0, 0.18, 0)
+loopDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
+loopDelayBox.Position = UDim2.new(0.6, 0, 0.12, 0)
 loopDelayBox.Text = "0.5"
 loopDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 loopDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -188,8 +192,8 @@ Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 4)
 
 -- Settings Input: Return Spawn Delay
 local returnDelayLabel = Instance.new("TextLabel")
-returnDelayLabel.Size = UDim2.new(0.5, 0, 0, 22)
-returnDelayLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
+returnDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
+returnDelayLabel.Position = UDim2.new(0.05, 0, 0.19, 0)
 returnDelayLabel.Text = "หน่วงหลังวาร์ปกลับ (วิ):"
 returnDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 returnDelayLabel.TextSize = 11
@@ -198,8 +202,8 @@ returnDelayLabel.BackgroundTransparency = 1
 returnDelayLabel.Parent = container
 
 local returnDelayBox = Instance.new("TextBox")
-returnDelayBox.Size = UDim2.new(0.35, 0, 0, 22)
-returnDelayBox.Position = UDim2.new(0.6, 0, 0.28, 0)
+returnDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
+returnDelayBox.Position = UDim2.new(0.6, 0, 0.19, 0)
 returnDelayBox.Text = "3"
 returnDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 returnDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -210,8 +214,8 @@ Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 4)
 
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 30)
-statusLabel.Position = UDim2.new(0.05, 0, 0.40, 0)
+statusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+statusLabel.Position = UDim2.new(0.05, 0, 0.27, 0)
 statusLabel.Text = "สถานะ: พร้อมทำงาน"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 12
@@ -222,15 +226,57 @@ statusLabel.Parent = container
 
 -- Toggle Auto Loop Button
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.9, 0, 0, 45)
-toggleBtn.Position = UDim2.new(0.05, 0, 0.72, 0)
+toggleBtn.Size = UDim2.new(0.9, 0, 0, 38)
+toggleBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
 toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
 toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.TextSize = 14
+toggleBtn.TextSize = 13
 toggleBtn.Parent = container
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
+
+-- ------------------------------------------
+-- [โซนเพิ่มใหม่] AUTO CLICK STRENGTH
+-- ------------------------------------------
+local clickDivider = Instance.new("Frame")
+clickDivider.Size = UDim2.new(0.9, 0, 0, 1)
+clickDivider.Position = UDim2.new(0.05, 0, 0.48, 0)
+clickDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+clickDivider.BorderSizePixel = 0
+clickDivider.Parent = container
+
+local clickDelayLabel = Instance.new("TextLabel")
+clickDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
+clickDelayLabel.Position = UDim2.new(0.05, 0, 0.52, 0)
+clickDelayLabel.Text = "หน่วงเวลา Auto Click (วิ):"
+clickDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+clickDelayLabel.TextSize = 11
+clickDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+clickDelayLabel.BackgroundTransparency = 1
+clickDelayLabel.Parent = container
+
+local clickDelayBox = Instance.new("TextBox")
+clickDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
+clickDelayBox.Position = UDim2.new(0.6, 0, 0.52, 0)
+clickDelayBox.Text = "0.1"
+clickDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+clickDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+clickDelayBox.Font = Enum.Font.SourceSans
+clickDelayBox.TextSize = 11
+clickDelayBox.Parent = container
+Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 4)
+
+local toggleClickBtn = Instance.new("TextButton")
+toggleClickBtn.Size = UDim2.new(0.9, 0, 0, 38)
+toggleClickBtn.Position = UDim2.new(0.05, 0, 0.60, 0)
+toggleClickBtn.Text = "⚡ เปิดทำงาน Auto Click (Strength)"
+toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
+toggleClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleClickBtn.Font = Enum.Font.SourceSansBold
+toggleClickBtn.TextSize = 13
+toggleClickBtn.Parent = container
+Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
 -- 4. ระบบ Dropdown
@@ -276,7 +322,7 @@ local function refreshWorldList()
     end
 
     local zonesFolder = workspace:FindFirstChild("Zones")
-    if not zonesFolder then return end -- แก้ไขพิมพ์เกินตรงนี้เรียบร้อยครับ
+    if not zonesFolder then return end
 
     local worlds = {}
     for _, w in pairs(zonesFolder:GetChildren()) do
@@ -416,7 +462,7 @@ local function processSingleCollect()
 end
 
 -- ==========================================
--- 6. ระบบ Auto Loop
+-- 6. ระบบเปิด/ปิด Auto Loop เก็บของ
 -- ==========================================
 toggleBtn.MouseButton1Click:Connect(function()
     autoLoopActive = not autoLoopActive
@@ -436,8 +482,34 @@ toggleBtn.MouseButton1Click:Connect(function()
     else
         toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-        statusLabel.Text = "⏸️ หยุดการทำงานแล้ว"
+        statusLabel.Text = "⏸️ หยุดการทำงาน Auto Loop แล้ว"
         statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    end
+end)
+
+-- ==========================================
+-- 7. ระบบเปิด/ปิด Auto Click Strength (เพิ่มใหม่)
+-- ==========================================
+toggleClickBtn.MouseButton1Click:Connect(function()
+    autoClickActive = not autoClickActive
+
+    if autoClickActive then
+        toggleClickBtn.Text = "⏹️ หยุดทำงาน Auto Click"
+        toggleClickBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+
+        task.spawn(function()
+            while autoClickActive do
+                pcall(function()
+                    clickRemote:FireServer()
+                end)
+                
+                local clickWait = tonumber(clickDelayBox.Text) or 0.1
+                task.wait(clickWait)
+            end
+        end)
+    else
+        toggleClickBtn.Text = "⚡ เปิดทำงาน Auto Click (Strength)"
+        toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
     end
 end)
 
@@ -445,12 +517,13 @@ end)
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 30) or UDim2.new(0, 320, 0, 310)
+    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 30) or UDim2.new(0, 320, 0, 420)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
     autoLoopActive = false
+    autoClickActive = false
     screenGui:Destroy()
 end)
