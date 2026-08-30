@@ -296,7 +296,7 @@ LocalPlayer:GetAttributeChangedSignal("Frogs"):Connect(updateFrogsDisplay)
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 315)
+    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 370)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
@@ -420,11 +420,10 @@ end
 -- 6. Main Loops & Reset Systems
 -- ==========================================
 
--- 🏠 ฟังก์ชัน Reset (วาร์ปกลับ Home / Spawn และรีเซ็ต Index)
 local function resetButtons()
     isFarming = false
     currentMode = ""
-    currentZoneIndex = 1 -- 🔁 Reset ลำดับ Zone กลับจุดเริ่มต้น (Zone 1)
+    currentZoneIndex = 1
 
     startZoneBtn.Text = "🚀 โหมด 1: เริ่มฟาร์มแบบไล่ Zone"
     startZoneBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 75)
@@ -446,39 +445,7 @@ local function resetButtons()
     statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 end
 
--- ⏭️ ฟังก์ชันกระโดดไป Zone ถัดไป และทำการฟาร์ม 1 Zone
-local function farmCurrentZoneOnly(zoneData)
-    zoneLabel.Text = "📍 Zone ปัจจุบัน: " .. zoneData.name
-
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local zoneCFrame = getObjectCFrame(zoneData.object)
-
-    if hrp and zoneCFrame then
-        hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
-        statusLabel.Text = "🔍 กำลังสแกนหากบ..."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        
-        task.wait(waitFrogSpawn)
-
-        local frogs = getFrogsList()
-        if #frogs == 0 then
-            statusLabel.Text = "⚠️ ไม่พบกบใน Zone นี้"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
-            task.wait(0.2)
-        else
-            local totalFrogs = #frogs
-            statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
-            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            task.wait(0.1)
-
-            for i, frog in ipairs(frogs) do
-                catchSingleFrog(frog, i, totalFrogs)
-            end
-        end
-    end
-end
-
--- โหมด 1: ไล่ Zone แบบใช้ Index Dynamic
+-- โหมด 1: ไล่ Zone แบบอัตโนมัติ
 local function startZoneFarming()
     task.spawn(function()
         repeat
@@ -493,14 +460,37 @@ local function startZoneFarming()
                 if not isFarming or currentMode ~= "Zone" then break end
 
                 local zoneData = sortedZones[currentZoneIndex]
-                farmCurrentZoneOnly(zoneData)
+                zoneLabel.Text = "📍 Zone ปัจจุบัน: " .. zoneData.name
 
-                currentZoneIndex = currentZoneIndex + 1 -- เลื่อนไป Zone ถัดไป
+                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local zoneCFrame = getObjectCFrame(zoneData.object)
+
+                if hrp and zoneCFrame then
+                    hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
+                    statusLabel.Text = "🔍 กำลังสแกนหากบ..."
+                    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+                    
+                    task.wait(waitFrogSpawn)
+
+                    local frogs = getFrogsList()
+                    if #frogs > 0 then
+                        local totalFrogs = #frogs
+                        statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
+                        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                        task.wait(0.1)
+
+                        for i, frog in ipairs(frogs) do
+                            if not isFarming or currentMode ~= "Zone" then break end
+                            catchSingleFrog(frog, i, totalFrogs)
+                        end
+                    end
+                end
+
+                currentZoneIndex = currentZoneIndex + 1
             end
 
-            -- ทำครบทุก Zone แล้ว
             if isFarming and currentMode == "Zone" then
-                currentZoneIndex = 1 -- Reset Index กลับ Zone 1
+                currentZoneIndex = 1
 
                 if isLoopingEnabled then
                     statusLabel.Text = string.format("⏳ ครบรอบ! พักรอเริ่มลูปใหม่ (%.1f วิ)...", loopDelay)
@@ -591,7 +581,7 @@ startZoneBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ⏭️ ปุ่ม Next Zone (กดไป Zone ถัดไป / ถ้าหมดแล้วจะวาร์ปกลับ Spawn และ Reset ให้เอง)
+-- ⏭️ ปุ่ม Next Zone (วาร์ปเปลี่ยน Zone เท่านั้น ไม่สแกน/จับกบ)
 nextZoneBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         local sortedZones = getSortedZones()
@@ -601,29 +591,32 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             return
         end
 
-        -- 🛑 ถ้า index เกินจำนวน Zone ที่มี (ไม่มี Zone ถัดไปแล้ว)
+        -- 🛑 ถ้าเลย Zone สุดท้าย ให้วาร์ปกลับ Spawn และ Reset เป็น Zone 1
         if currentZoneIndex > #sortedZones then
-            statusLabel.Text = "🏠 ครบทุก Zone แล้ว -> วาร์ปกลับ Spawn"
+            statusLabel.Text = "🏠 เกิน Zone สุดท้าย -> กลับ Spawn"
             statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
             
-            teleportBackToSpawn() -- วาร์ปกลับ Spawn
-            currentZoneIndex = 1  -- Reset ลำดับกลับไปเริ่ม Zone 1
-            zoneLabel.Text = "📍 Zone ปัจจุบัน: Spawn (Reset)"
+            teleportBackToSpawn()
+            currentZoneIndex = 1
+            zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
+            statusLabel.Text = "สถานะ: วาร์ปกลับ Spawn (Reset Zone)"
             return
         end
 
-        -- 🚀 หากยังมี Zone ถัดไป ให้วาร์ปและสแกนจับกบตามปกติ
+        -- 🚀 วาร์ปไปตำแหน่ง Zone ถัดไปทันที
         local targetZoneData = sortedZones[currentZoneIndex]
-        statusLabel.Text = "⏭️ กำลังไป: " .. targetZoneData.name
-        
-        -- ฟาร์มเฉพาะ Zone ปัจจุบัน
-        farmCurrentZoneOnly(targetZoneData)
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local zoneCFrame = getObjectCFrame(targetZoneData.object)
 
-        -- ขยับ Index เตรียมไว้สำหรับกดครั้งถัดไป
+        if hrp and zoneCFrame then
+            hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
+            zoneLabel.Text = "📍 Zone ปัจจุบัน: " .. targetZoneData.name
+            statusLabel.Text = "📍 วาร์ปไป " .. targetZoneData.name .. " เรียบร้อย"
+            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        end
+
+        -- เพิ่มลำดับ Zone เตรียมไว้สำหรับการกดครั้งต่อไป
         currentZoneIndex = currentZoneIndex + 1
-        
-        statusLabel.Text = "✅ Next Zone เสร็จสิ้น"
-        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     end)
 end)
 
