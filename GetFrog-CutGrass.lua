@@ -41,7 +41,21 @@ local function teleportBackToSpawn()
 end
 
 -- ==========================================
--- 2. สร้าง UI
+-- 2. ฟังก์ชันช่วยเช็กจำนวนกบปัจจุบัน
+-- ==========================================
+local function getCurrentFrogCount()
+    local frogsVal = LocalPlayer:GetAttribute("Frogs")
+    if frogsVal == nil then
+        local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+        if leaderstats and leaderstats:FindFirstChild("Frogs") then
+            frogsVal = leaderstats.Frogs.Value
+        end
+    end
+    return frogsVal or 0
+end
+
+-- ==========================================
+-- 3. สร้าง UI
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ZoneFrogFarmUI"
@@ -252,7 +266,7 @@ startSingleScanBtn.Parent = container
 Instance.new("UICorner", startSingleScanBtn).CornerRadius = UDim.new(0, 6)
 
 -- ==========================================
--- 3. ระบบดึงค่า Event Timer & Frogs Count
+-- 4. ระบบดึงค่า Event Timer & Frogs Count
 -- ==========================================
 
 task.spawn(function()
@@ -277,21 +291,14 @@ task.spawn(function()
 end)
 
 local function updateFrogsDisplay()
-    local frogsVal = LocalPlayer:GetAttribute("Frogs")
-    if frogsVal == nil then
-        local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-        if leaderstats and leaderstats:FindFirstChild("Frogs") then
-            frogsVal = leaderstats.Frogs.Value
-        end
-    end
-    frogsCountLabel.Text = "🐸 จำนวนกบสะสม: " .. tostring(frogsVal or 0)
+    frogsCountLabel.Text = "🐸 จำนวนกบสะสม: " .. tostring(getCurrentFrogCount())
 end
 
 updateFrogsDisplay()
 LocalPlayer:GetAttributeChangedSignal("Frogs"):Connect(updateFrogsDisplay)
 
 -- ==========================================
--- 4. ระบบจัดการ UI Event
+-- 5. ระบบจัดการ UI Event
 -- ==========================================
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
@@ -340,7 +347,7 @@ loopDelayInput.FocusLost:Connect(function()
 end)
 
 -- ==========================================
--- 5. ฟังก์ชันค้นหา Zone และจับกบ
+-- 6. ฟังก์ชันค้นหา Zone และจับกบ (เพิ่มระบบยืนยันแต้ม)
 -- ==========================================
 local isFarming = false
 local currentMode = ""
@@ -383,6 +390,7 @@ local function getFrogsList()
     return frogs
 end
 
+-- 🌟 ฟังก์ชันจับกบพร้อมระบบรอเช็กแต้มยืนยัน
 local function catchSingleFrog(targetFrog, currentCount, totalCount)
     if not targetFrog or not targetFrog.Parent then return end
 
@@ -409,15 +417,42 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
 
     task.wait(0.1)
 
+    -- 📌 บันทึกแต้มกบก่อนทำการจับ
+    local initialCount = getCurrentFrogCount()
+
+    -- ส่งสัญญาณจับกบไปยัง Server
     pcall(function()
         catchRemote:InvokeServer(frogUUID)
     end)
+
+    -- 🔍 วนรอจนกว่าแต้มกบจะเพิ่มขึ้นจริง (ตั้งเวลา Timeout ไว้ที่ 2.0 วินาที)
+    statusLabel.Text = "⏳ กำลังรอเช็กแต้ม..."
+    statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+
+    local startTime = tick()
+    local caughtSuccess = false
+
+    while (tick() - startTime) < 2.0 do
+        if getCurrentFrogCount() > initialCount then
+            caughtSuccess = true
+            break
+        end
+        task.wait(0.05)
+    end
+
+    if caughtSuccess then
+        statusLabel.Text = "✅ จับสำเร็จ! แต้มขึ้นแล้ว"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        statusLabel.Text = "⚠️ หมดเวลารอแต้ม (ข้ามไปขั้นตอนถัดไป)"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
+    end
 
     task.wait(catchDelay)
 end
 
 -- ==========================================
--- 6. Main Loops & Reset Systems
+-- 7. Main Loops & Reset Systems
 -- ==========================================
 
 local function resetButtons()
@@ -534,11 +569,11 @@ local function startLoopScanFarming()
     end)
 end
 
--- โหมด 2.2: Single Scan
+-- โหมด 2.2: Single Scan (ค้นหา -> เลือกกบตัวแรกสุด 1 ตัว -> วาร์ปจับ + เช็กแต้ม -> จบการทำงาน)
 local function startSingleScanFarming()
     task.spawn(function()
         zoneLabel.Text = "📍 Zone ปัจจุบัน: Single Scan"
-        statusLabel.Text = "🔍 สแกนหากบครั้งเดียว..."
+        statusLabel.Text = "🔍 กำลังค้นหากบ..."
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         
         task.wait(0.1)
@@ -547,25 +582,28 @@ local function startSingleScanFarming()
         if #frogs == 0 then
             statusLabel.Text = "⚠️ ไม่พบกบ ณ ตอนนี้"
             statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
-            task.wait(1.2)
         else
-            local totalFrogs = #frogs
-            statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
+            local firstFrog = frogs[1]
+            statusLabel.Text = "🎯 พบกบ! กำลังวาร์ปไปจับตัวแรก..."
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            task.wait(0.1)
+            
+            -- วาร์ปจับและเช็กแต้ม
+            catchSingleFrog(firstFrog, 1, 1)
 
-            for i, frog in ipairs(frogs) do
-                if not isFarming or currentMode ~= "SingleScan" then break end
-                catchSingleFrog(frog, i, totalFrogs)
-            end
+            statusLabel.Text = "✅ จับกบตัวแรกเสร็จสิ้น (ตำแหน่งเดิม)"
+            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         end
 
-        resetButtons()
+        -- คืนค่าปุ่มโดยไม่วาร์ปกลับ Spawn
+        isFarming = false
+        currentMode = ""
+        startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
+        startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
     end)
 end
 
 -- ==========================================
--- 7. Event กดปุ่ม
+-- 8. Event กดปุ่ม
 -- ==========================================
 
 -- ปุ่ม 1: ไล่ Zone
@@ -591,7 +629,6 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             return
         end
 
-        -- 🛑 ถ้าเลย Zone สุดท้าย ให้วาร์ปกลับ Spawn และ Reset เป็น Zone 1
         if currentZoneIndex > #sortedZones then
             statusLabel.Text = "🏠 เกิน Zone สุดท้าย -> กลับ Spawn"
             statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
@@ -603,7 +640,6 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             return
         end
 
-        -- 🚀 วาร์ปไปตำแหน่ง Zone ถัดไปทันที
         local targetZoneData = sortedZones[currentZoneIndex]
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         local zoneCFrame = getObjectCFrame(targetZoneData.object)
@@ -615,7 +651,6 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         end
 
-        -- เพิ่มลำดับ Zone เตรียมไว้สำหรับการกดครั้งต่อไป
         currentZoneIndex = currentZoneIndex + 1
     end)
 end)
@@ -636,7 +671,11 @@ end)
 -- ปุ่ม 2.2: Single Scan
 startSingleScanBtn.MouseButton1Click:Connect(function()
     if isFarming and currentMode == "SingleScan" then
-        resetButtons()
+        isFarming = false
+        currentMode = ""
+        startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
+        startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
+        statusLabel.Text = "🛑 ยกเลิก Single Scan"
     else
         isFarming = true
         currentMode = "SingleScan"
