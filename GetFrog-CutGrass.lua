@@ -11,8 +11,8 @@ local waitFrogSpawn = 1.0
 local catchDelay = 0.5
 local loopDelay = 1.0
 local scanInterval = 1.0
-local warmUpTime = 0.25  -- 📌 ค่าเริ่มต้น หน่วงก่อนจับ
-local catchTimeout = 2.5  -- 📌 ค่าเริ่มต้น เวลารอแต้ม
+local warmUpTime = 0.25
+local catchTimeout = 2.5
 
 local currentZoneIndex = 1
 
@@ -57,7 +57,7 @@ local function getCurrentFrogCount()
 end
 
 -- ==========================================
--- 3. สร้าง UI (ขยายขนาดรองรับ Settings ใหม่)
+-- 3. สร้าง UI (ปรับขนาด Compact & Balanced)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ZoneFrogFarmUI"
@@ -65,8 +65,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 310, 0, 430) -- ปรับความสูง UI
-mainFrame.Position = UDim2.new(0.5, -155, 0.15, 0)
+mainFrame.Size = UDim2.new(0, 300, 0, 310) -- ลดความสูงลงให้พอดีกับเนื้อหา
+mainFrame.Position = UDim2.new(0.5, -150, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 26)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -77,102 +77,106 @@ Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
 -- Header Bar
 local headerFrame = Instance.new("Frame")
-headerFrame.Size = UDim2.new(1, 0, 0, 28)
+headerFrame.Size = UDim2.new(1, 0, 0, 26)
 headerFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 36)
 headerFrame.Parent = mainFrame
 Instance.new("UICorner", headerFrame).CornerRadius = UDim.new(0, 8)
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Position = UDim2.new(0, 8, 0, 0)
 titleLabel.Text = "🐸 Frog Farm Hub v2"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 13
+titleLabel.TextSize = 12
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.BackgroundTransparency = 1
 titleLabel.Parent = headerFrame
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-minimizeBtn.Position = UDim2.new(1, -50, 0, 3)
+minimizeBtn.Size = UDim2.new(0, 20, 0, 20)
+minimizeBtn.Position = UDim2.new(1, -46, 0, 3)
 minimizeBtn.Text = "-"
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeBtn.Font = Enum.Font.SourceSansBold
-minimizeBtn.TextSize = 14
+minimizeBtn.TextSize = 13
 minimizeBtn.Parent = headerFrame
 Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 22, 0, 22)
-closeBtn.Position = UDim2.new(1, -25, 0, 3)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -23, 0, 3)
 closeBtn.Text = "X"
 closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 12
+closeBtn.TextSize = 11
 closeBtn.Parent = headerFrame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
 
 -- Container
 local container = Instance.new("Frame")
-container.Size = UDim2.new(1, -16, 1, -36)
-container.Position = UDim2.new(0, 8, 0, 32)
+container.Size = UDim2.new(1, -12, 1, -32)
+container.Position = UDim2.new(0, 6, 0, 28)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- 📊 Info Section
+-- 📊 Info Section (ย่อให้ชิดแน่นแบบ 2 คอลัมน์)
 local infoFrame = Instance.new("Frame")
-infoFrame.Size = UDim2.new(1, 0, 0, 68)
+infoFrame.Size = UDim2.new(1, 0, 0, 40)
 infoFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 36)
 infoFrame.Parent = container
-Instance.new("UICorner", infoFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", infoFrame).CornerRadius = UDim.new(0, 5)
 
 local timerLabel = Instance.new("TextLabel")
-timerLabel.Size = UDim2.new(1, 0, 0, 15)
-timerLabel.Position = UDim2.new(0, 0, 0, 3)
+timerLabel.Size = UDim2.new(1, -8, 0, 14)
+timerLabel.Position = UDim2.new(0, 4, 0, 3)
 timerLabel.Text = "⏳ Event: กำลังโหลด..."
 timerLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-timerLabel.TextSize = 11
+timerLabel.TextSize = 10
 timerLabel.Font = Enum.Font.SourceSansBold
+timerLabel.TextXAlignment = Enum.TextXAlignment.Center
 timerLabel.BackgroundTransparency = 1
 timerLabel.Parent = infoFrame
 
 local frogsCountLabel = Instance.new("TextLabel")
-frogsCountLabel.Size = UDim2.new(1, 0, 0, 15)
-frogsCountLabel.Position = UDim2.new(0, 0, 0, 19)
-frogsCountLabel.Text = "🐸 จำนวนกบสะสม: 0"
+frogsCountLabel.Size = UDim2.new(0.5, -4, 0, 14)
+frogsCountLabel.Position = UDim2.new(0, 4, 0, 20)
+frogsCountLabel.Text = "🐸 สะสม: 0"
 frogsCountLabel.TextColor3 = Color3.fromRGB(120, 255, 120)
-frogsCountLabel.TextSize = 11
+frogsCountLabel.TextSize = 10
 frogsCountLabel.Font = Enum.Font.SourceSansBold
+frogsCountLabel.TextXAlignment = Enum.TextXAlignment.Left
 frogsCountLabel.BackgroundTransparency = 1
 frogsCountLabel.Parent = infoFrame
 
 local zoneLabel = Instance.new("TextLabel")
-zoneLabel.Size = UDim2.new(1, 0, 0, 15)
-zoneLabel.Position = UDim2.new(0, 0, 0, 35)
-zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
+zoneLabel.Size = UDim2.new(0.5, -4, 0, 14)
+zoneLabel.Position = UDim2.new(0.5, 0, 0, 20)
+zoneLabel.Text = "📍 Zone: -"
 zoneLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
-zoneLabel.TextSize = 11
+zoneLabel.TextSize = 10
 zoneLabel.Font = Enum.Font.SourceSansBold
+zoneLabel.TextXAlignment = Enum.TextXAlignment.Right
 zoneLabel.BackgroundTransparency = 1
 zoneLabel.Parent = infoFrame
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, 0, 0, 15)
-statusLabel.Position = UDim2.new(0, 0, 0, 51)
+statusLabel.Size = UDim2.new(1, 0, 0, 14)
+statusLabel.Position = UDim2.new(0, 0, 0, 42)
 statusLabel.Text = "สถานะ: พร้อมใช้งาน"
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-statusLabel.TextSize = 11
+statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.SourceSans
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.BackgroundTransparency = 1
-statusLabel.Parent = infoFrame
+statusLabel.Parent = container
 
--- ⚙️ Settings Section (เพิ่มช่อง Warm-up และ Timeout)
+-- ⚙️ Settings Section (6 ช่องแบบ 2 คอลัมน์ กระชับ)
 local function createInputGroup(parent, pos, labelText, defaultVal)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.485, 0, 0, 26)
+    frame.Size = UDim2.new(0.485, 0, 0, 22)
     frame.Position = pos
     frame.BackgroundColor3 = Color3.fromRGB(32, 32, 36)
     frame.Parent = parent
@@ -183,7 +187,7 @@ local function createInputGroup(parent, pos, labelText, defaultVal)
     lbl.Position = UDim2.new(0, 4, 0, 0)
     lbl.Text = labelText
     lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
-    lbl.TextSize = 10
+    lbl.TextSize = 9
     lbl.Font = Enum.Font.SourceSans
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.BackgroundTransparency = 1
@@ -197,78 +201,76 @@ local function createInputGroup(parent, pos, labelText, defaultVal)
     input.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     input.TextColor3 = Color3.fromRGB(255, 255, 255)
     input.Font = Enum.Font.SourceSansBold
-    input.TextSize = 11
+    input.TextSize = 10
     input.Parent = frame
     Instance.new("UICorner", input).CornerRadius = UDim.new(0, 3)
 
     return input
 end
 
-local scanInput = createInputGroup(container, UDim2.new(0, 0, 0, 74), "🔍 หน่วงสแกน:", "1.0")
-local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 74), "⏳ รอโหลดกบ:", "1.0")
-local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 104), "⚡ หน่วงหลังจับ:", "0.5")
-local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 104), "💤 พักก่อนลูป:", "1.0")
-
--- 📌 ช่องตั้งค่าใหม่ตามคำขอ
-local warmUpInput = createInputGroup(container, UDim2.new(0, 0, 0, 134), "🔥 หน่วงก่อนจับ:", "0.25")
-local timeoutInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 134), "⏱️ เวลารอแต้ม:", "2.5")
+local scanInput = createInputGroup(container, UDim2.new(0, 0, 0, 60), "🔍 หน่วงสแกน:", "1.0")
+local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 60), "⏳ รอโหลดกบ:", "1.0")
+local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 85), "⚡ หน่วงหลังจับ:", "0.5")
+local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 85), "💤 พักก่อนลูป:", "1.0")
+local warmUpInput = createInputGroup(container, UDim2.new(0, 0, 0, 110), "🔥 หน่วงก่อนจับ:", "0.25")
+local timeoutInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 110), "⏱️ เวลารอแต้ม:", "2.5")
 
 -- 🔁 ปุ่มสลับลูปสำหรับโหมด 1 (Zone)
 local loopToggleBtn = Instance.new("TextButton")
-loopToggleBtn.Size = UDim2.new(1, 0, 0, 24)
-loopToggleBtn.Position = UDim2.new(0, 0, 0, 166)
+loopToggleBtn.Size = UDim2.new(1, 0, 0, 22)
+loopToggleBtn.Position = UDim2.new(0, 0, 0, 137)
 loopToggleBtn.Text = "🔁 ลูป Zone: ปิดอยู่ (ทำรอบเดียว)"
-loopToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+loopToggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
 loopToggleBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 loopToggleBtn.Font = Enum.Font.SourceSansBold
-loopToggleBtn.TextSize = 11
+loopToggleBtn.TextSize = 10
 loopToggleBtn.Parent = container
-Instance.new("UICorner", loopToggleBtn).CornerRadius = UDim.new(0, 5)
+Instance.new("UICorner", loopToggleBtn).CornerRadius = UDim.new(0, 4)
 
 -- 🔘 โซนปุ่มการทำงานหลัก
 local startZoneBtn = Instance.new("TextButton")
-startZoneBtn.Size = UDim2.new(1, 0, 0, 34)
-startZoneBtn.Position = UDim2.new(0, 0, 0, 195)
+startZoneBtn.Size = UDim2.new(1, 0, 0, 30)
+startZoneBtn.Position = UDim2.new(0, 0, 0, 163)
 startZoneBtn.Text = "🚀 โหมด 1: เริ่มฟาร์มแบบไล่ Zone"
 startZoneBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 75)
 startZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 startZoneBtn.Font = Enum.Font.SourceSansBold
-startZoneBtn.TextSize = 12
+startZoneBtn.TextSize = 11
 startZoneBtn.Parent = container
-Instance.new("UICorner", startZoneBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", startZoneBtn).CornerRadius = UDim.new(0, 5)
 
 local nextZoneBtn = Instance.new("TextButton")
-nextZoneBtn.Size = UDim2.new(1, 0, 0, 28)
-nextZoneBtn.Position = UDim2.new(0, 0, 0, 234)
+nextZoneBtn.Size = UDim2.new(1, 0, 0, 24)
+nextZoneBtn.Position = UDim2.new(0, 0, 0, 197)
 nextZoneBtn.Text = "⏭️ ไป Zone ถัดไป (Next Zone)"
 nextZoneBtn.BackgroundColor3 = Color3.fromRGB(200, 130, 30)
 nextZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 nextZoneBtn.Font = Enum.Font.SourceSansBold
-nextZoneBtn.TextSize = 12
+nextZoneBtn.TextSize = 10
 nextZoneBtn.Parent = container
-Instance.new("UICorner", nextZoneBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", nextZoneBtn).CornerRadius = UDim.new(0, 5)
 
 local startLoopScanBtn = Instance.new("TextButton")
-startLoopScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startLoopScanBtn.Position = UDim2.new(0, 0, 0, 267)
+startLoopScanBtn.Size = UDim2.new(0.485, 0, 0, 28)
+startLoopScanBtn.Position = UDim2.new(0, 0, 0, 225)
 startLoopScanBtn.Text = "🔄 2.1 สแกน Loop"
 startLoopScanBtn.BackgroundColor3 = Color3.fromRGB(60, 110, 180)
 startLoopScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 startLoopScanBtn.Font = Enum.Font.SourceSansBold
-startLoopScanBtn.TextSize = 12
+startLoopScanBtn.TextSize = 10
 startLoopScanBtn.Parent = container
-Instance.new("UICorner", startLoopScanBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", startLoopScanBtn).CornerRadius = UDim.new(0, 5)
 
 local startSingleScanBtn = Instance.new("TextButton")
-startSingleScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 267)
+startSingleScanBtn.Size = UDim2.new(0.485, 0, 0, 28)
+startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 225)
 startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
 startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
 startSingleScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 startSingleScanBtn.Font = Enum.Font.SourceSansBold
-startSingleScanBtn.TextSize = 12
+startSingleScanBtn.TextSize = 10
 startSingleScanBtn.Parent = container
-Instance.new("UICorner", startSingleScanBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", startSingleScanBtn).CornerRadius = UDim.new(0, 5)
 
 -- ==========================================
 -- 4. ระบบดึงค่า Event Timer & Frogs Count
@@ -295,7 +297,7 @@ task.spawn(function()
 end)
 
 local function updateFrogsDisplay()
-    frogsCountLabel.Text = "🐸 จำนวนกบสะสม: " .. tostring(getCurrentFrogCount())
+    frogsCountLabel.Text = "🐸 สะสม: " .. tostring(getCurrentFrogCount())
 end
 
 updateFrogsDisplay()
@@ -307,7 +309,7 @@ LocalPlayer:GetAttributeChangedSignal("Frogs"):Connect(updateFrogsDisplay)
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 430)
+    mainFrame.Size = isMinimized and UDim2.new(0, 300, 0, 26) or UDim2.new(0, 300, 0, 310)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
@@ -325,7 +327,7 @@ loopToggleBtn.MouseButton1Click:Connect(function()
         loopToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
         loopToggleBtn.Text = "🔁 ลูป Zone: ปิดอยู่ (ทำรอบเดียว)"
-        loopToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+        loopToggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
         loopToggleBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
     end
 end)
@@ -404,7 +406,6 @@ local function getFrogsList()
     return frogs
 end
 
--- ฟังก์ชันจับกบ (ใช้ค่า warmUpTime และ catchTimeout ที่ตั้งค่าได้)
 local function catchSingleFrog(targetFrog, currentCount, totalCount)
     if not targetFrog or not targetFrog.Parent then return end
 
@@ -426,10 +427,9 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
         end
     end
 
-    statusLabel.Text = string.format("⚡ มาถึงกบ (%d/%d) รอซิงค์...", currentCount, totalCount)
+    statusLabel.Text = string.format("⚡ ถึงกบ (%d/%d) รอซิงค์...", currentCount, totalCount)
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
-    -- 📌 หน่วงเวลาก่อนจับตามที่ตั้งค่าไว้
     task.wait(warmUpTime)
 
     if hrp and targetFrog and targetFrog.Parent then
@@ -441,18 +441,17 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
 
     local initialCount = getCurrentFrogCount()
 
-    statusLabel.Text = string.format("⚡ ยิงคำสั่งจับ (%d/%d)...", currentCount, totalCount)
+    statusLabel.Text = string.format("⚡ สั่งจับ (%d/%d)...", currentCount, totalCount)
     pcall(function()
         catchRemote:InvokeServer(frogUUID)
     end)
 
-    statusLabel.Text = "⏳ กำลังรอเช็กแต้ม..."
+    statusLabel.Text = "⏳ รอเช็กแต้ม..."
     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
 
     local startTime = tick()
     local caughtSuccess = false
 
-    -- 📌 รอเช็กแต้มตามเวลา Catch Timeout ที่ตั้งค่าไว้
     while (tick() - startTime) < catchTimeout do
         if getCurrentFrogCount() > initialCount then
             caughtSuccess = true
@@ -462,10 +461,10 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
     end
 
     if caughtSuccess then
-        statusLabel.Text = "✅ จับสำเร็จ! แต้มขึ้นแล้ว"
+        statusLabel.Text = "✅ จับสำเร็จ!"
         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
-        statusLabel.Text = "⚠️ แต้มยังไม่ขึ้น (หมดเวลารอ)"
+        statusLabel.Text = "⚠️ แต้มไม่ขึ้น (Timeout)"
         statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
     end
 
@@ -490,24 +489,23 @@ local function resetButtons()
     startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
     startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
 
-    statusLabel.Text = "🌀 กำลังวาร์ปกลับ Spawn..."
+    statusLabel.Text = "🌀 กลับ Spawn..."
     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
     
     teleportBackToSpawn()
 
     task.wait(0.5)
-    zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
-    statusLabel.Text = "สถานะ: กลับ Spawn แล้ว (Reset Zone)"
+    zoneLabel.Text = "📍 Zone: -"
+    statusLabel.Text = "สถานะ: กลับ Spawn แล้ว"
     statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 end
 
--- โหมด 1: ไล่ Zone แบบอัตโนมัติ (ปรับ Logic ให้วาร์ปกลับ Spawn แล้วค่อยพักรอ)
 local function startZoneFarming()
     task.spawn(function()
         repeat
             local sortedZones = getSortedZones()
             if #sortedZones == 0 then
-                statusLabel.Text = "❌ ไม่พบ Zone ใน " .. TARGET_WORLD
+                statusLabel.Text = "❌ ไม่พบ Zone"
                 statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
                 break
             end
@@ -516,14 +514,14 @@ local function startZoneFarming()
                 if not isFarming or currentMode ~= "Zone" then break end
 
                 local zoneData = sortedZones[currentZoneIndex]
-                zoneLabel.Text = "📍 Zone ปัจจุบัน: " .. zoneData.name
+                zoneLabel.Text = "📍 Zone: " .. zoneData.name
 
                 local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 local zoneCFrame = getObjectCFrame(zoneData.object)
 
                 if hrp and zoneCFrame then
                     hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
-                    statusLabel.Text = "🔍 กำลังสแกนหากบ..."
+                    statusLabel.Text = "🔍 สแกนหากบ..."
                     statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
                     
                     task.wait(waitFrogSpawn)
@@ -531,7 +529,7 @@ local function startZoneFarming()
                     local frogs = getFrogsList()
                     if #frogs > 0 then
                         local totalFrogs = #frogs
-                        statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
+                        statusLabel.Text = string.format("🐸 พบ %d ตัว! กำลังเก็บ...", totalFrogs)
                         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
                         task.wait(0.1)
 
@@ -545,18 +543,15 @@ local function startZoneFarming()
                 currentZoneIndex = currentZoneIndex + 1
             end
 
-            -- 📌 เมื่อเก็บครบทุก Zone แล้ว
             if isFarming and currentMode == "Zone" then
                 currentZoneIndex = 1
 
                 if isLoopingEnabled then
-                    -- 1. วาร์ปกลับ Spawn ทันที
-                    statusLabel.Text = "🏠 ครบทุก Zone -> วาร์ปกลับ Spawn..."
+                    statusLabel.Text = "🏠 ครบ Zone -> วาร์ปกลับ Spawn..."
                     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
                     teleportBackToSpawn()
 
-                    -- 2. ยืนพักรอที่ Spawn ตามเวลา loopDelay
-                    statusLabel.Text = string.format("⏳ พักรอที่ Spawn (%.1f วิ) ก่อนเริ่มรอบใหม่...", loopDelay)
+                    statusLabel.Text = string.format("⏳ พักรอ (%.1f วิ) ก่อนเริ่มรอบใหม่...", loopDelay)
                     statusLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
                     task.wait(loopDelay)
                 end
@@ -568,12 +563,11 @@ local function startZoneFarming()
     end)
 end
 
--- โหมด 2.1: Loop Scan
 local function startLoopScanFarming()
     task.spawn(function()
-        zoneLabel.Text = "📍 Zone ปัจจุบัน: Loop Scan"
+        zoneLabel.Text = "📍 Zone: Loop Scan"
         while isFarming and currentMode == "LoopScan" do
-            statusLabel.Text = string.format("🔍 สแกนหากบ (หน่วง %.1f วินาที)...", scanInterval)
+            statusLabel.Text = string.format("🔍 สแกน (หน่วง %.1f วิ)...", scanInterval)
             statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
             
             task.wait(scanInterval)
@@ -582,7 +576,7 @@ local function startLoopScanFarming()
             local frogs = getFrogsList()
             if #frogs > 0 then
                 local totalFrogs = #frogs
-                statusLabel.Text = string.format("🐸 พบกบ %d ตัว! กำลังเก็บ...", totalFrogs)
+                statusLabel.Text = string.format("🐸 พบ %d ตัว! กำลังเก็บ...", totalFrogs)
                 statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
                 task.wait(0.1)
 
@@ -597,11 +591,10 @@ local function startLoopScanFarming()
     end)
 end
 
--- โหมด 2.2: Single Scan
 local function startSingleScanFarming()
     task.spawn(function()
-        zoneLabel.Text = "📍 Zone ปัจจุบัน: Single Scan"
-        statusLabel.Text = "🔍 กำลังค้นหากบ..."
+        zoneLabel.Text = "📍 Zone: Single Scan"
+        statusLabel.Text = "🔍 ค้นหากบ..."
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         
         task.wait(0.1)
@@ -612,12 +605,12 @@ local function startSingleScanFarming()
             statusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
         else
             local firstFrog = frogs[1]
-            statusLabel.Text = "🎯 พบกบ! กำลังวาร์ปไปจับ..."
+            statusLabel.Text = "🎯 พบกบ! วาร์ปไปจับ..."
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
             
             catchSingleFrog(firstFrog, 1, 1)
 
-            statusLabel.Text = "✅ เสร็จสิ้นการสแกน Single"
+            statusLabel.Text = "✅ เสร็จสิ้น Single Scan"
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         end
 
@@ -648,7 +641,7 @@ nextZoneBtn.MouseButton1Click:Connect(function()
     task.spawn(function()
         local sortedZones = getSortedZones()
         if #sortedZones == 0 then
-            statusLabel.Text = "❌ ไม่พบ Zone ใน " .. TARGET_WORLD
+            statusLabel.Text = "❌ ไม่พบ Zone"
             statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
             return
         end
@@ -659,8 +652,8 @@ nextZoneBtn.MouseButton1Click:Connect(function()
             
             teleportBackToSpawn()
             currentZoneIndex = 1
-            zoneLabel.Text = "📍 Zone ปัจจุบัน: -"
-            statusLabel.Text = "สถานะ: วาร์ปกลับ Spawn (Reset Zone)"
+            zoneLabel.Text = "📍 Zone: -"
+            statusLabel.Text = "สถานะ: กลับ Spawn แล้ว"
             return
         end
 
@@ -670,8 +663,8 @@ nextZoneBtn.MouseButton1Click:Connect(function()
 
         if hrp and zoneCFrame then
             hrp.CFrame = zoneCFrame + Vector3.new(0, 3, 0)
-            zoneLabel.Text = "📍 Zone ปัจจุบัน: " .. targetZoneData.name
-            statusLabel.Text = "📍 วาร์ปไป " .. targetZoneData.name .. " เรียบร้อย"
+            zoneLabel.Text = "📍 Zone: " .. targetZoneData.name
+            statusLabel.Text = "📍 วาร์ปไป " .. targetZoneData.name
             statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         end
 
