@@ -11,8 +11,10 @@ local waitFrogSpawn = 1.0
 local catchDelay = 0.5
 local loopDelay = 1.0
 local scanInterval = 1.0
+local warmUpTime = 0.25  -- 📌 ค่าเริ่มต้น หน่วงก่อนจับ
+local catchTimeout = 2.5  -- 📌 ค่าเริ่มต้น เวลารอแต้ม
 
-local currentZoneIndex = 1 -- 📍 ตัวแปรเก็บลำดับ Zone ปัจจุบัน
+local currentZoneIndex = 1
 
 -- ==========================================
 -- 1. อ้างอิง RemoteFunction (Knit)
@@ -55,7 +57,7 @@ local function getCurrentFrogCount()
 end
 
 -- ==========================================
--- 3. สร้าง UI
+-- 3. สร้าง UI (ขยายขนาดรองรับ Settings ใหม่)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ZoneFrogFarmUI"
@@ -63,8 +65,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 310, 0, 370)
-mainFrame.Position = UDim2.new(0.5, -155, 0.2, 0)
+mainFrame.Size = UDim2.new(0, 310, 0, 430) -- ปรับความสูง UI
+mainFrame.Position = UDim2.new(0.5, -155, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 26)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -83,7 +85,7 @@ Instance.new("UICorner", headerFrame).CornerRadius = UDim.new(0, 8)
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "🐸 Frog Farm Hub"
+titleLabel.Text = "🐸 Frog Farm Hub v2"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 13
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -167,7 +169,7 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = infoFrame
 
--- ⚙️ Settings Section
+-- ⚙️ Settings Section (เพิ่มช่อง Warm-up และ Timeout)
 local function createInputGroup(parent, pos, labelText, defaultVal)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0.485, 0, 0, 26)
@@ -207,10 +209,14 @@ local spawnInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 74), "⏳ 
 local catchInput = createInputGroup(container, UDim2.new(0, 0, 0, 104), "⚡ หน่วงหลังจับ:", "0.5")
 local loopDelayInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 104), "💤 พักก่อนลูป:", "1.0")
 
+-- 📌 ช่องตั้งค่าใหม่ตามคำขอ
+local warmUpInput = createInputGroup(container, UDim2.new(0, 0, 0, 134), "🔥 หน่วงก่อนจับ:", "0.25")
+local timeoutInput = createInputGroup(container, UDim2.new(0.515, 0, 0, 134), "⏱️ เวลารอแต้ม:", "2.5")
+
 -- 🔁 ปุ่มสลับลูปสำหรับโหมด 1 (Zone)
 local loopToggleBtn = Instance.new("TextButton")
 loopToggleBtn.Size = UDim2.new(1, 0, 0, 24)
-loopToggleBtn.Position = UDim2.new(0, 0, 0, 134)
+loopToggleBtn.Position = UDim2.new(0, 0, 0, 166)
 loopToggleBtn.Text = "🔁 ลูป Zone: ปิดอยู่ (ทำรอบเดียว)"
 loopToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
 loopToggleBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -222,7 +228,7 @@ Instance.new("UICorner", loopToggleBtn).CornerRadius = UDim.new(0, 5)
 -- 🔘 โซนปุ่มการทำงานหลัก
 local startZoneBtn = Instance.new("TextButton")
 startZoneBtn.Size = UDim2.new(1, 0, 0, 34)
-startZoneBtn.Position = UDim2.new(0, 0, 0, 163)
+startZoneBtn.Position = UDim2.new(0, 0, 0, 195)
 startZoneBtn.Text = "🚀 โหมด 1: เริ่มฟาร์มแบบไล่ Zone"
 startZoneBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 75)
 startZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -231,10 +237,9 @@ startZoneBtn.TextSize = 12
 startZoneBtn.Parent = container
 Instance.new("UICorner", startZoneBtn).CornerRadius = UDim.new(0, 6)
 
--- ⏭️ ปุ่ม Next Zone
 local nextZoneBtn = Instance.new("TextButton")
 nextZoneBtn.Size = UDim2.new(1, 0, 0, 28)
-nextZoneBtn.Position = UDim2.new(0, 0, 0, 202)
+nextZoneBtn.Position = UDim2.new(0, 0, 0, 234)
 nextZoneBtn.Text = "⏭️ ไป Zone ถัดไป (Next Zone)"
 nextZoneBtn.BackgroundColor3 = Color3.fromRGB(200, 130, 30)
 nextZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -245,7 +250,7 @@ Instance.new("UICorner", nextZoneBtn).CornerRadius = UDim.new(0, 6)
 
 local startLoopScanBtn = Instance.new("TextButton")
 startLoopScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startLoopScanBtn.Position = UDim2.new(0, 0, 0, 235)
+startLoopScanBtn.Position = UDim2.new(0, 0, 0, 267)
 startLoopScanBtn.Text = "🔄 2.1 สแกน Loop"
 startLoopScanBtn.BackgroundColor3 = Color3.fromRGB(60, 110, 180)
 startLoopScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -256,7 +261,7 @@ Instance.new("UICorner", startLoopScanBtn).CornerRadius = UDim.new(0, 6)
 
 local startSingleScanBtn = Instance.new("TextButton")
 startSingleScanBtn.Size = UDim2.new(0.485, 0, 0, 34)
-startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 235)
+startSingleScanBtn.Position = UDim2.new(0.515, 0, 0, 267)
 startSingleScanBtn.Text = "🎯 2.2 สแกน Single"
 startSingleScanBtn.BackgroundColor3 = Color3.fromRGB(130, 80, 180)
 startSingleScanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -268,7 +273,6 @@ Instance.new("UICorner", startSingleScanBtn).CornerRadius = UDim.new(0, 6)
 -- ==========================================
 -- 4. ระบบดึงค่า Event Timer & Frogs Count
 -- ==========================================
-
 task.spawn(function()
     local success, timerTextObj = pcall(function()
         return Workspace:WaitForChild("Worlds")
@@ -303,7 +307,7 @@ LocalPlayer:GetAttributeChangedSignal("Frogs"):Connect(updateFrogsDisplay)
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 370)
+    mainFrame.Size = isMinimized and UDim2.new(0, 310, 0, 28) or UDim2.new(0, 310, 0, 430)
     container.Visible = not isMinimized
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
@@ -344,6 +348,16 @@ end)
 loopDelayInput.FocusLost:Connect(function()
     local num = tonumber(loopDelayInput.Text)
     if num and num >= 0 then loopDelay = num else loopDelayInput.Text = tostring(loopDelay) end
+end)
+
+warmUpInput.FocusLost:Connect(function()
+    local num = tonumber(warmUpInput.Text)
+    if num and num >= 0 then warmUpTime = num else warmUpInput.Text = tostring(warmUpTime) end
+end)
+
+timeoutInput.FocusLost:Connect(function()
+    local num = tonumber(timeoutInput.Text)
+    if num and num >= 0 then catchTimeout = num else timeoutInput.Text = tostring(catchTimeout) end
 end)
 
 -- ==========================================
@@ -390,7 +404,7 @@ local function getFrogsList()
     return frogs
 end
 
--- 🌟 ฟังก์ชันจับกบ (ปรับแก้เพิ่มเวลา Warm-up ป้องกันข้ามคำสั่ง)
+-- ฟังก์ชันจับกบ (ใช้ค่า warmUpTime และ catchTimeout ที่ตั้งค่าได้)
 local function catchSingleFrog(targetFrog, currentCount, totalCount)
     if not targetFrog or not targetFrog.Parent then return end
 
@@ -408,18 +422,16 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
         end
 
         if frogCFrame then
-            -- 1. วาร์ปไปหาตำแหน่งกบ
             hrp.CFrame = frogCFrame + Vector3.new(0, 2, 0)
         end
     end
 
-    statusLabel.Text = string.format("⚡ มาถึงกบ (%d/%d) รอซิงค์ตำแหน่ง...", currentCount, totalCount)
+    statusLabel.Text = string.format("⚡ มาถึงกบ (%d/%d) รอซิงค์...", currentCount, totalCount)
     statusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 
-    -- 📌 หน่วงเวลา 0.25 วินาทีเพื่อให้ Server รับรู้ว่าตัวละครยืนอยู่ตรงกบจริงๆ แล้ว
-    task.wait(0.25)
+    -- 📌 หน่วงเวลาก่อนจับตามที่ตั้งค่าไว้
+    task.wait(warmUpTime)
 
-    -- ย้ำตำแหน่งอีกรอบสั้นๆ
     if hrp and targetFrog and targetFrog.Parent then
         local currentFrogCFrame = getObjectCFrame(targetFrog)
         if currentFrogCFrame then
@@ -429,20 +441,19 @@ local function catchSingleFrog(targetFrog, currentCount, totalCount)
 
     local initialCount = getCurrentFrogCount()
 
-    -- 2. ส่งคำสั่งจับ
     statusLabel.Text = string.format("⚡ ยิงคำสั่งจับ (%d/%d)...", currentCount, totalCount)
     pcall(function()
         catchRemote:InvokeServer(frogUUID)
     end)
 
-    -- 3. วนรอจนกว่าแต้มจะเพิ่มขึ้นจริง (ให้เวลาถึง 2.5 วินาที)
     statusLabel.Text = "⏳ กำลังรอเช็กแต้ม..."
     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
 
     local startTime = tick()
     local caughtSuccess = false
 
-    while (tick() - startTime) < 2.5 do
+    -- 📌 รอเช็กแต้มตามเวลา Catch Timeout ที่ตั้งค่าไว้
+    while (tick() - startTime) < catchTimeout do
         if getCurrentFrogCount() > initialCount then
             caughtSuccess = true
             break
@@ -490,7 +501,7 @@ local function resetButtons()
     statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 end
 
--- โหมด 1: ไล่ Zone แบบอัตโนมัติ
+-- โหมด 1: ไล่ Zone แบบอัตโนมัติ (ปรับ Logic ให้วาร์ปกลับ Spawn แล้วค่อยพักรอ)
 local function startZoneFarming()
     task.spawn(function()
         repeat
@@ -534,12 +545,19 @@ local function startZoneFarming()
                 currentZoneIndex = currentZoneIndex + 1
             end
 
+            -- 📌 เมื่อเก็บครบทุก Zone แล้ว
             if isFarming and currentMode == "Zone" then
                 currentZoneIndex = 1
 
                 if isLoopingEnabled then
-                    statusLabel.Text = string.format("⏳ ครบรอบ! พักรอเริ่มลูปใหม่ (%.1f วิ)...", loopDelay)
+                    -- 1. วาร์ปกลับ Spawn ทันที
+                    statusLabel.Text = "🏠 ครบทุก Zone -> วาร์ปกลับ Spawn..."
                     statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+                    teleportBackToSpawn()
+
+                    -- 2. ยืนพักรอที่ Spawn ตามเวลา loopDelay
+                    statusLabel.Text = string.format("⏳ พักรอที่ Spawn (%.1f วิ) ก่อนเริ่มรอบใหม่...", loopDelay)
+                    statusLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
                     task.wait(loopDelay)
                 end
             end
