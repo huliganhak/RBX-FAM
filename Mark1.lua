@@ -8,7 +8,7 @@ if not (button and (button:IsA("TextButton") or button:IsA("ImageButton"))) then
 	button = script:FindFirstAncestorOfClass("TextButton") or script:FindFirstAncestorOfClass("ImageButton")
 end
 
--- หากยังหาปุ่มไม่พบ จะสร้าง UI ใหม่ให้อัตโนมัติบนหน้าจอ
+-- หากหาปุ่มเดิมไม่พบ จะสร้าง UI ใหม่ให้อยู่ตำแหน่งที่เหมาะสม
 if not button then
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "AutoStageTeleportGui"
@@ -18,7 +18,11 @@ if not button then
 	local newButton = Instance.new("TextButton")
 	newButton.Name = "TeleportButton"
 	newButton.Size = UDim2.new(0, 160, 0, 45)
-	newButton.Position = UDim2.new(0.85, 0, 0.75, 0)
+	
+	-- ปรับตำแหน่งและ AnchorPoint ใหม่เพื่อไม่ให้หลุดขอบจอ
+	newButton.AnchorPoint = Vector2.new(1, 0.5) -- ใช้ขอบขวาของปุ่มเป็นจุดอ้างอิง
+	newButton.Position = UDim2.new(0.95, -20, 0.6, 0) -- ขยับเข้ามาจากขอบขวา 20 พิกเซล
+	
 	newButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 	newButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	newButton.TextScaled = true
@@ -33,7 +37,7 @@ if not button then
 	button = newButton
 end
 
--- 2. ฟังก์ชันอัปเดตข้อความบนปุ่มแบบปลอดภัย
+-- 2. ฟังก์ชันอัปเดตข้อความบนปุ่ม
 local function updateButtonText(text)
 	if button:IsA("TextButton") then
 		button.Text = text
@@ -88,7 +92,7 @@ local function teleportToNextStage()
 	end
 
 	if #sortedStages == 0 then
-		updateButtonText("No Stages Found")
+		updateButtonText("No Stages")
 		return
 	end
 
