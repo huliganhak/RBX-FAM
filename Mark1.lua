@@ -1,21 +1,58 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- ค้นหาปุ่มกดอัตโนมัติ (หากสคริปต์ไม่ได้อยู่ใน TextButton โดยตรง)
+-- 1. ค้นหาปุ่มกด หรือสร้างขึ้นมาใหม่หากหาไม่พบ
 local button = script.Parent
-if not button:IsA("TextButton") and not button:IsA("ImageButton") then
+if not (button and (button:IsA("TextButton") or button:IsA("ImageButton"))) then
 	button = script:FindFirstAncestorOfClass("TextButton") or script:FindFirstAncestorOfClass("ImageButton")
 end
 
--- รอให้ Map3 และ Stages โหลดเสร็จ
+-- หากยังหาปุ่มไม่พบ จะสร้าง UI ใหม่ให้อัตโนมัติบนหน้าจอ
+if not button then
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "AutoStageTeleportGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = playerGui
+
+	local newButton = Instance.new("TextButton")
+	newButton.Name = "TeleportButton"
+	newButton.Size = UDim2.new(0, 160, 0, 45)
+	newButton.Position = UDim2.new(0.85, 0, 0.75, 0)
+	newButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	newButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	newButton.TextScaled = true
+	newButton.Font = Enum.Font.GothamBold
+	newButton.Text = "Loading..."
+	newButton.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = newButton
+
+	button = newButton
+end
+
+-- 2. ฟังก์ชันอัปเดตข้อความบนปุ่มแบบปลอดภัย
+local function updateButtonText(text)
+	if button:IsA("TextButton") then
+		button.Text = text
+	elseif button:FindFirstChildOfClass("TextLabel") then
+		button:FindFirstChildOfClass("TextLabel").Text = text
+	end
+end
+
+-- 3. ค้นหา Map3 และ Stages
 local map3 = workspace:WaitForChild("Map3", 10)
 if not map3 then 
+	updateButtonText("No Map3")
 	warn("ไม่พบ workspace.Map3") 
 	return 
 end
 
 local stagesFolder = map3:WaitForChild("Stages", 10)
 if not stagesFolder then 
+	updateButtonText("No Stages")
 	warn("ไม่พบ workspace.Map3.Stages") 
 	return 
 end
@@ -23,24 +60,11 @@ end
 local sortedStages = {}
 local currentIndex = 1
 
--- ฟังก์ชันเปลี่ยนข้อความบนปุ่มแบบปลอดภัย
-local function setButtonText(text)
-	if button and (button:IsA("TextButton") or button:FindFirstChildOfClass("TextLabel")) then
-		if button:IsA("TextButton") then
-			button.Text = text
-		elseif button:FindFirstChildOfClass("TextLabel") then
-			button:FindFirstChildOfClass("TextLabel").Text = text
-		end
-	end
-end
-
--- ฟังก์ชันดึง Stage และเรียงลำดับ
+-- 4. ดึงข้อมูลและเรียงลำดับด่านจากน้อยไปมาก
 local function loadAndSortStages()
 	sortedStages = {}
-	
 	for _, stageFolder in ipairs(stagesFolder:GetChildren()) do
-		local stageName = stageFolder.Name
-		local stageNumStr = string.match(stageName, "%d+")
+		local stageNumStr = string.match(stageFolder.Name, "%d+")
 		if stageNumStr then
 			local stageNum = tonumber(stageNumStr)
 			if stageNum then
@@ -57,14 +81,14 @@ local function loadAndSortStages()
 	end)
 end
 
--- ฟังก์ชัน Warp ไปยัง Stage ถัดไป
+-- 5. ระบบ Teleport
 local function teleportToNextStage()
 	if #sortedStages == 0 then
 		loadAndSortStages()
 	end
 
 	if #sortedStages == 0 then
-		warn("ไม่มีด่านให้วาป")
+		updateButtonText("No Stages Found")
 		return
 	end
 
@@ -78,32 +102,30 @@ local function teleportToNextStage()
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 
 	if spawnPart and hrp then
-		-- วาปตัวละครไปตำแหน่ง Spawn
+		-- วาปตัวละครไปที่ Spawn
 		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3, 0)
 		
-		-- ขยับไป Stage ถัดไป
+		-- เลื่อนไป Stage ถัดไป
 		currentIndex = currentIndex + 1
 		if currentIndex > #sortedStages then
 			currentIndex = 1
 		end
 		
-		-- อัปเดตข้อความปุ่ม
+		-- แสดงเลข Stage ถัดไปบนปุ่ม
 		local nextStageNum = sortedStages[currentIndex].number
-		setButtonText("Next Stage (" .. nextStageNum .. ")")
+		updateButtonText("Next: Stage " .. nextStageNum)
 	else
-		warn("ไม่พบ Spawn ใน " .. stageFolder.Name .. " หรือตัวละครยังไม่พร้อม")
+		warn("ไม่พบ Spawn ใน " .. stageFolder.Name)
 	end
 end
 
--- เริ่มต้นทำงาน
+-- เริ่มทำงาน
 loadAndSortStages()
 
 if #sortedStages > 0 then
-	setButtonText("Go to Stage (" .. sortedStages[1].number .. ")")
+	updateButtonText("Go Stage " .. sortedStages[1].number)
+else
+	updateButtonText("No Stages")
 end
 
-if button then
-	button.MouseButton1Click:Connect(teleportToNextStage)
-else
-	warn("ไม่พบ TextButton สำหรับผูกคำสั่งกด")
-end
+button.MouseButton1Click:Connect(teleportToNextStage)
