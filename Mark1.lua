@@ -16,154 +16,134 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 2. Main Frame (หน้าต่างหลักสไตล์ Hub)
+-- 2. Main Frame (ย่อขนาดให้เล็กลงและกระชับสุดๆ)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 360, 0, 240)
-mainFrame.Position = UDim2.new(0.5, -180, 0.4, -120) -- เด้งขึ้นกลางจอ
+mainFrame.Size = UDim2.new(0, 220, 0, 105)
+mainFrame.Position = UDim2.new(0.85, -110, 0.4, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
--- 3. Top Title Bar (แถบด้านบน)
+-- 3. Top Title Bar (แถบด้านบนพร้อมปุ่มพับ-ปิด)
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 38)
+topBar.Size = UDim2.new(1, 0, 0, 28)
 topBar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 topBar.BorderSizePixel = 0
 topBar.Parent = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
-titleLabel.Size = UDim2.new(1, -90, 1, 0)
-titleLabel.Position = UDim2.new(0, 12, 0, 0)
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Position = UDim2.new(0, 8, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "🚀 Stage Warp Hub v1.0"
+titleLabel.Text = "🚀 Stage Warp"
 titleLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
-titleLabel.TextSize = 14
+titleLabel.TextSize = 12
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = topBar
 
 -- ปุ่มพับ (-)
 local minBtn = Instance.new("TextButton")
 minBtn.Name = "MinButton"
-minBtn.Size = UDim2.new(0, 26, 0, 26)
-minBtn.Position = UDim2.new(1, -62, 0, 6)
+minBtn.Size = UDim2.new(0, 20, 0, 20)
+minBtn.Position = UDim2.new(1, -46, 0, 4)
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 minBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 minBtn.Font = Enum.Font.GothamBold
 minBtn.Text = "-"
-minBtn.TextSize = 16
+minBtn.TextSize = 14
 minBtn.Parent = topBar
 
 local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minBtn
 
--- ปุ่มปิด (X) สีแดงสดแบบในรูป
+-- ปุ่มปิด (X)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
-closeBtn.Size = UDim2.new(0, 26, 0, 26)
-closeBtn.Position = UDim2.new(1, -32, 0, 6)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -24, 0, 4)
 closeBtn.BackgroundColor3 = Color3.fromRGB(225, 50, 65)
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Text = "X"
-closeBtn.TextSize = 12
+closeBtn.TextSize = 10
 closeBtn.Parent = topBar
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- 4. Status Panel (กล่องแสดงสถานะกลางหน้าจอ)
-local statusFrame = Instance.new("Frame")
-statusFrame.Name = "StatusFrame"
-statusFrame.Size = UDim2.new(1, -24, 0, 85)
-statusFrame.Position = UDim2.new(0, 12, 0, 48)
-statusFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-statusFrame.BorderSizePixel = 0
-statusFrame.Parent = mainFrame
-
-local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 8)
-statusCorner.Parent = statusFrame
-
-local currentStageLabel = Instance.new("TextLabel")
-currentStageLabel.Size = UDim2.new(1, 0, 0, 25)
-currentStageLabel.Position = UDim2.new(0, 0, 0, 12)
-currentStageLabel.BackgroundTransparency = 1
-currentStageLabel.Font = Enum.Font.GothamBold
-currentStageLabel.Text = "📍 Target Stage: -"
-currentStageLabel.TextColor3 = Color3.fromRGB(85, 205, 255)
-currentStageLabel.TextSize = 14
-currentStageLabel.Parent = statusFrame
-
+-- 4. Status Bar (แสดงข้อมูล Stage ปัจจุบัน)
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, 0, 0, 20)
-statusLabel.Position = UDim2.new(0, 0, 0, 45)
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -16, 0, 20)
+statusLabel.Position = UDim2.new(0, 8, 0, 32)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.Text = "สถานะ: พร้อมใช้งาน"
-statusLabel.TextColor3 = Color3.fromRGB(160, 220, 160)
-statusLabel.TextSize = 12
-statusLabel.Parent = statusFrame
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.Text = "📍 Stage: - (0/0)"
+statusLabel.TextColor3 = Color3.fromRGB(85, 205, 255)
+statusLabel.TextSize = 11
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
 
--- 5. Control Buttons (การ์ดปุ่มกดด้านล่าง 2 ปุ่มคู่กัน)
+-- 5. Control Buttons (ปุ่ม Teleport และ Reset แบบคอมแพกต์)
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
-nextBtn.Size = UDim2.new(0.5, -18, 0, 42)
-nextBtn.Position = UDim2.new(0, 12, 0, 142)
+nextBtn.Size = UDim2.new(1, -50, 0, 36)
+nextBtn.Position = UDim2.new(0, 8, 0, 58)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 nextBtn.Font = Enum.Font.GothamBold
 nextBtn.Text = "⚡ Teleport Next"
 nextBtn.TextColor3 = Color3.fromRGB(245, 245, 245)
-nextBtn.TextSize = 12
+nextBtn.TextSize = 11
 nextBtn.Parent = mainFrame
 
 local nextCorner = Instance.new("UICorner")
-nextCorner.CornerRadius = UDim.new(0, 8)
+nextCorner.CornerRadius = UDim.new(0, 6)
 nextCorner.Parent = nextBtn
 
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetButton"
-resetBtn.Size = UDim2.new(0.5, -18, 0, 42)
-resetBtn.Position = UDim2.new(0.5, 6, 0, 142)
+resetBtn.Size = UDim2.new(0, 36, 0, 36)
+resetBtn.Position = UDim2.new(1, -44, 0, 58)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 resetBtn.Font = Enum.Font.GothamBold
-resetBtn.Text = "🔄 Reset to First"
+resetBtn.Text = "🔄"
 resetBtn.TextColor3 = Color3.fromRGB(245, 245, 245)
-resetBtn.TextSize = 12
+resetBtn.TextSize = 14
 resetBtn.Parent = mainFrame
 
 local resetCorner = Instance.new("UICorner")
-resetCorner.CornerRadius = UDim.new(0, 8)
+resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 6. ปุ่มมินิเปิดกลับ (ลอยขอบจอเวลาพับ)
+-- 6. ปุ่มเปิดมินิ (เมื่อพับหน้าจอ)
 local openBtn = Instance.new("TextButton")
 openBtn.Name = "OpenButton"
-openBtn.Size = UDim2.new(0, 120, 0, 32)
-openBtn.Position = UDim2.new(1, -130, 0, 15)
+openBtn.Size = UDim2.new(0, 85, 0, 26)
+openBtn.Position = UDim2.new(1, -95, 0, 10)
 openBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 openBtn.Font = Enum.Font.GothamBold
-openBtn.Text = "🚀 Open Hub"
+openBtn.Text = "🚀 Stage"
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openBtn.TextSize = 12
+openBtn.TextSize = 11
 openBtn.Visible = false
 openBtn.Parent = screenGui
 
 local openCorner = Instance.new("UICorner")
-openCorner.CornerRadius = UDim.new(0, 8)
+openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 7. ระบบ Drag หน้าจอ (ลากเคลื่อนย้าย Hub ได้ด้วยเมาส์)
+-- 7. ระบบ Drag
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -191,7 +171,7 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 8. Teleport & Stage Logic
+-- 8. Teleport & Logic
 local map3 = workspace:WaitForChild("Map3", 10)
 local stagesFolder = map3 and map3:WaitForChild("Stages", 10)
 
@@ -217,14 +197,12 @@ end
 
 local function updateUI()
 	if #sortedStages == 0 then
-		currentStageLabel.Text = "📍 Target Stage: ไม่พบด่าน"
-		statusLabel.Text = "สถานะ: ข้อผิดพลาด (ไม่พบ Map3)"
+		statusLabel.Text = "📍 Stage: ไม่พบข้อมูล"
 		statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 	else
 		local currentNum = sortedStages[currentIndex] and sortedStages[currentIndex].number or "-"
-		currentStageLabel.Text = "📍 Target Stage: Stage " .. currentNum
-		statusLabel.Text = "สถานะ: พร้อมใช้งาน (" .. currentIndex .. "/" .. #sortedStages .. ")"
-		statusLabel.TextColor3 = Color3.fromRGB(160, 220, 160)
+		statusLabel.Text = "📍 Target: Stage " .. currentNum .. " (" .. currentIndex .. "/" .. #sortedStages .. ")"
+		statusLabel.TextColor3 = Color3.fromRGB(85, 205, 255)
 	end
 end
 
@@ -248,7 +226,7 @@ local function teleportToNextStage()
 	end
 end
 
--- Window Control Events
+-- Events
 minBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 	openBtn.Visible = true
@@ -270,6 +248,6 @@ end)
 
 nextBtn.MouseButton1Click:Connect(teleportToNextStage)
 
--- Initial Run
+-- Run
 loadAndSortStages()
 updateUI()
