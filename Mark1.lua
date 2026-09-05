@@ -4,14 +4,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- เคลียร์ UI เก่า
+-- 1. เคลียร์ UI เก่า
 for _, oldGui in ipairs(playerGui:GetChildren()) do
 	if oldGui.Name == "StageWarpHubGui" or oldGui.Name == "TrainingTeleportGui" then
 		oldGui:Destroy()
 	end
 end
 
--- รายชื่อ Train 1 - 5
+-- ข้อมูล Map ที่เลือกได้ (Map3 - Map5)
+local mapList = {
+	{ Name = "Map 3", WorkspaceName = "Map3" },
+	{ Name = "Map 4", WorkspaceName = "Map4" },
+	{ Name = "Map 5", WorkspaceName = "Map5" },
+}
+
+-- ข้อมูล Training Zone (Train 1 - 5)
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -20,21 +27,25 @@ local trainLocations = {
 	{ Name = "Train 5", Path = {"Map5", "TrainingZone", "TrainingZone37"} },
 }
 
+local selectedMapIndex = 1
 local selectedTrainIndex = 1
+local sortedStages = {}
+local currentIndex = 1
+
 local autoClickActive = false
 local autoRebirthActive = false
 
--- 1. ScreenGui
+-- 2. ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 2. Main Frame (ขยายความสูงรองรับ Auto Rebirth)
+-- 3. Main Frame (ปรับขนาดรองรับ 2 Dropdown)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 220)
-mainFrame.Position = UDim2.new(0.85, -115, 0.25, 0)
+mainFrame.Size = UDim2.new(0, 230, 0, 250)
+mainFrame.Position = UDim2.new(0.85, -115, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = false
@@ -44,7 +55,7 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
--- 3. Top Title Bar
+-- 4. Top Title Bar
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.Size = UDim2.new(1, 0, 0, 28)
@@ -58,13 +69,12 @@ titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Position = UDim2.new(0, 8, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "🚀 Stage Warp Hub"
+titleLabel.Text = "🚀 Multi-Map Warp Hub"
 titleLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
 titleLabel.TextSize = 11
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = topBar
 
--- ปุ่มพับ (-)
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0, 20, 0, 20)
 minBtn.Position = UDim2.new(1, -46, 0, 4)
@@ -79,7 +89,6 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minBtn
 
--- ปุ่มปิด (X)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 20, 0, 20)
 closeBtn.Position = UDim2.new(1, -24, 0, 4)
@@ -94,11 +103,45 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- 4. Status Bar
+-- 5. Dropdown เลือก Map (Map 3 - Map 5)
+local mapDropdownBtn = Instance.new("TextButton")
+mapDropdownBtn.Name = "MapDropdownBtn"
+mapDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
+mapDropdownBtn.Position = UDim2.new(0, 8, 0, 32)
+mapDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+mapDropdownBtn.Font = Enum.Font.GothamBold
+mapDropdownBtn.Text = "🗺️ Select: Map 3 ▼"
+mapDropdownBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
+mapDropdownBtn.TextSize = 10
+mapDropdownBtn.Parent = mainFrame
+
+local mapDropdownCorner = Instance.new("UICorner")
+mapDropdownCorner.CornerRadius = UDim.new(0, 6)
+mapDropdownCorner.Parent = mapDropdownBtn
+
+local mapListFrame = Instance.new("Frame")
+mapListFrame.Name = "MapListFrame"
+mapListFrame.Size = UDim2.new(1, -16, 0, 70)
+mapListFrame.Position = UDim2.new(0, 8, 0, 60)
+mapListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mapListFrame.BorderSizePixel = 0
+mapListFrame.Visible = false
+mapListFrame.ZIndex = 30
+mapListFrame.Parent = mainFrame
+
+local mapListCorner = Instance.new("UICorner")
+mapListCorner.CornerRadius = UDim.new(0, 6)
+mapListCorner.Parent = mapListFrame
+
+local mapListLayout = Instance.new("UIListLayout")
+mapListLayout.Padding = UDim.new(0, 2)
+mapListLayout.Parent = mapListFrame
+
+-- 6. Status Bar
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -16, 0, 18)
-statusLabel.Position = UDim2.new(0, 8, 0, 32)
+statusLabel.Position = UDim2.new(0, 8, 0, 62)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Font = Enum.Font.GothamBold
 statusLabel.Text = "📍 Target: Stage - (0/0)"
@@ -107,11 +150,11 @@ statusLabel.TextSize = 11
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
--- 5. Stage Warp & Reset Buttons
+-- 7. Stage Warp & Reset Buttons
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
-nextBtn.Size = UDim2.new(1, -48, 0, 30)
-nextBtn.Position = UDim2.new(0, 8, 0, 52)
+nextBtn.Size = UDim2.new(1, -48, 0, 28)
+nextBtn.Position = UDim2.new(0, 8, 0, 82)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 nextBtn.Font = Enum.Font.GothamBold
 nextBtn.Text = "⚡ Teleport Next"
@@ -125,39 +168,39 @@ nextCorner.Parent = nextBtn
 
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetButton"
-resetBtn.Size = UDim2.new(0, 30, 0, 30)
-resetBtn.Position = UDim2.new(1, -38, 0, 52)
+resetBtn.Size = UDim2.new(0, 28, 0, 28)
+resetBtn.Position = UDim2.new(1, -36, 0, 82)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 resetBtn.Font = Enum.Font.GothamBold
 resetBtn.Text = "🔄"
 resetBtn.TextColor3 = Color3.fromRGB(245, 245, 245)
-resetBtn.TextSize = 13
+resetBtn.TextSize = 12
 resetBtn.Parent = mainFrame
 
 local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 6. Training Dropdown
-local dropdownBtn = Instance.new("TextButton")
-dropdownBtn.Name = "DropdownBtn"
-dropdownBtn.Size = UDim2.new(1, -48, 0, 28)
-dropdownBtn.Position = UDim2.new(0, 8, 0, 88)
-dropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-dropdownBtn.Font = Enum.Font.GothamBold
-dropdownBtn.Text = "🏋️ Select: Train 1 ▼"
-dropdownBtn.TextColor3 = Color3.fromRGB(200, 220, 255)
-dropdownBtn.TextSize = 10
-dropdownBtn.Parent = mainFrame
+-- 8. Training Dropdown
+local trainDropdownBtn = Instance.new("TextButton")
+trainDropdownBtn.Name = "TrainDropdownBtn"
+trainDropdownBtn.Size = UDim2.new(1, -48, 0, 26)
+trainDropdownBtn.Position = UDim2.new(0, 8, 0, 116)
+trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+trainDropdownBtn.Font = Enum.Font.GothamBold
+trainDropdownBtn.Text = "🏋️ Select: Train 1 ▼"
+trainDropdownBtn.TextColor3 = Color3.fromRGB(200, 220, 255)
+trainDropdownBtn.TextSize = 10
+trainDropdownBtn.Parent = mainFrame
 
-local dropdownCorner = Instance.new("UICorner")
-dropdownCorner.CornerRadius = UDim.new(0, 6)
-dropdownCorner.Parent = dropdownBtn
+local trainDropdownCorner = Instance.new("UICorner")
+trainDropdownCorner.CornerRadius = UDim.new(0, 6)
+trainDropdownCorner.Parent = trainDropdownBtn
 
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Name = "TrainWarpBtn"
-trainWarpBtn.Size = UDim2.new(0, 30, 0, 28)
-trainWarpBtn.Position = UDim2.new(1, -38, 0, 88)
+trainWarpBtn.Size = UDim2.new(0, 28, 0, 26)
+trainWarpBtn.Position = UDim2.new(1, -36, 0, 116)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
 trainWarpBtn.Font = Enum.Font.GothamBold
 trainWarpBtn.Text = "GO"
@@ -169,48 +212,28 @@ local trainWarpCorner = Instance.new("UICorner")
 trainWarpCorner.CornerRadius = UDim.new(0, 6)
 trainWarpCorner.Parent = trainWarpBtn
 
--- List Dropdown
-local listFrame = Instance.new("Frame")
-listFrame.Name = "ListFrame"
-listFrame.Size = UDim2.new(1, -48, 0, 115)
-listFrame.Position = UDim2.new(0, 8, 0, 118)
-listFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-listFrame.BorderSizePixel = 0
-listFrame.Visible = false
-listFrame.ZIndex = 20
-listFrame.Parent = mainFrame
+local trainListFrame = Instance.new("Frame")
+trainListFrame.Name = "TrainListFrame"
+trainListFrame.Size = UDim2.new(1, -48, 0, 115)
+trainListFrame.Position = UDim2.new(0, 8, 0, 144)
+trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+trainListFrame.BorderSizePixel = 0
+trainListFrame.Visible = false
+trainListFrame.ZIndex = 20
+trainListFrame.Parent = mainFrame
 
-local listCorner = Instance.new("UICorner")
-listCorner.CornerRadius = UDim.new(0, 6)
-listCorner.Parent = listFrame
+local trainListCorner = Instance.new("UICorner")
+trainListCorner.CornerRadius = UDim.new(0, 6)
+trainListCorner.Parent = trainListFrame
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 2)
-UIListLayout.Parent = listFrame
+local trainListLayout = Instance.new("UIListLayout")
+trainListLayout.Padding = UDim.new(0, 2)
+trainListLayout.Parent = trainListFrame
 
-for i, item in ipairs(trainLocations) do
-	local itemBtn = Instance.new("TextButton")
-	itemBtn.Size = UDim2.new(1, 0, 0, 21)
-	itemBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-	itemBtn.Font = Enum.Font.Gotham
-	itemBtn.Text = item.Name
-	itemBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-	itemBtn.TextSize = 10
-	itemBtn.ZIndex = 21
-	itemBtn.Parent = listFrame
-	
-	itemBtn.MouseButton1Click:Connect(function()
-		selectedTrainIndex = i
-		dropdownBtn.Text = "🏋️ Select: " .. item.Name .. " ▼"
-		listFrame.Visible = false
-	end)
-end
-
--- 7. ปุ่ม Auto Click (Loop)
+-- 9. Auto Buttons (Click & Rebirth)
 local clickToggleBtn = Instance.new("TextButton")
-clickToggleBtn.Name = "ClickToggleBtn"
-clickToggleBtn.Size = UDim2.new(1, -16, 0, 28)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 122)
+clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+clickToggleBtn.Position = UDim2.new(0, 8, 0, 150)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Auto Click: OFF"
@@ -222,11 +245,9 @@ local clickToggleCorner = Instance.new("UICorner")
 clickToggleCorner.CornerRadius = UDim.new(0, 6)
 clickToggleCorner.Parent = clickToggleBtn
 
--- 8. ปุ่ม Auto Rebirth (Loop)
 local rebirthToggleBtn = Instance.new("TextButton")
-rebirthToggleBtn.Name = "RebirthToggleBtn"
-rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 28)
-rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 155)
+rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 182)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
@@ -238,13 +259,13 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- 9. ปุ่มเปิดมินิ (เวลาพับ)
+-- 10. Open Button (Minimizing)
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
 openBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 openBtn.Font = Enum.Font.GothamBold
-openBtn.Text = "🚀 Stage"
+openBtn.Text = "🚀 Hub"
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openBtn.TextSize = 11
 openBtn.Visible = false
@@ -254,7 +275,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 10. Drag Window System
+-- 11. Drag Window System
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -282,30 +303,34 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 11. Stage & Teleport Logic
-local map3 = workspace:WaitForChild("Map3", 10)
-local stagesFolder = map3 and map3:WaitForChild("Stages", 10)
-local sortedStages = {}
-local currentIndex = 1
-
+-- 12. Dynamic Map & Stage Logic
 local function loadAndSortStages()
 	sortedStages = {}
-	if not stagesFolder then return end
-	for _, stageFolder in ipairs(stagesFolder:GetChildren()) do
-		local stageNumStr = string.match(stageFolder.Name, "%d+")
-		if stageNumStr then
-			local stageNum = tonumber(stageNumStr)
-			if stageNum then
-				table.insert(sortedStages, { number = stageNum, folder = stageFolder })
+	currentIndex = 1
+	
+	local currentMapData = mapList[selectedMapIndex]
+	if not currentMapData then return end
+	
+	local targetMapFolder = workspace:FindFirstChild(currentMapData.WorkspaceName)
+	local stagesFolder = targetMapFolder and targetMapFolder:FindFirstChild("Stages")
+
+	if stagesFolder then
+		for _, stageFolder in ipairs(stagesFolder:GetChildren()) do
+			local stageNumStr = string.match(stageFolder.Name, "%d+")
+			if stageNumStr then
+				local stageNum = tonumber(stageNumStr)
+				if stageNum then
+					table.insert(sortedStages, { number = stageNum, folder = stageFolder })
+				end
 			end
 		end
+		table.sort(sortedStages, function(a, b) return a.number < b.number end)
 	end
-	table.sort(sortedStages, function(a, b) return a.number < b.number end)
 end
 
 local function updateUI()
 	if #sortedStages == 0 then
-		statusLabel.Text = "📍 Stage: ไม่พบข้อมูล"
+		statusLabel.Text = "📍 Stage: ไม่พบข้อมูลด่าน"
 		statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 	else
 		local currentNum = sortedStages[currentIndex] and sortedStages[currentIndex].number or "-"
@@ -314,6 +339,47 @@ local function updateUI()
 	end
 end
 
+-- สร้างรายการ Map เลือกได้ (Map 3 - 5)
+for i, item in ipairs(mapList) do
+	local itemBtn = Instance.new("TextButton")
+	itemBtn.Size = UDim2.new(1, 0, 0, 20)
+	itemBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+	itemBtn.Font = Enum.Font.Gotham
+	itemBtn.Text = item.Name
+	itemBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+	itemBtn.TextSize = 10
+	itemBtn.ZIndex = 31
+	itemBtn.Parent = mapListFrame
+	
+	itemBtn.MouseButton1Click:Connect(function()
+		selectedMapIndex = i
+		mapDropdownBtn.Text = "🗺️ Select: " .. item.Name .. " ▼"
+		mapListFrame.Visible = false
+		loadAndSortStages()
+		updateUI()
+	end)
+end
+
+-- สร้างรายการ Train (1 - 5)
+for i, item in ipairs(trainLocations) do
+	local itemBtn = Instance.new("TextButton")
+	itemBtn.Size = UDim2.new(1, 0, 0, 21)
+	itemBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+	itemBtn.Font = Enum.Font.Gotham
+	itemBtn.Text = item.Name
+	itemBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+	itemBtn.TextSize = 10
+	itemBtn.ZIndex = 21
+	itemBtn.Parent = trainListFrame
+	
+	itemBtn.MouseButton1Click:Connect(function()
+		selectedTrainIndex = i
+		trainDropdownBtn.Text = "🏋️ Select: " .. item.Name .. " ▼"
+		trainListFrame.Visible = false
+	end)
+end
+
+-- Teleport Stage Logic
 local function teleportToNextStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
@@ -368,7 +434,7 @@ local function teleportToTrain()
 	end
 end
 
--- 12. Auto Click Loop
+-- Loops System
 task.spawn(function()
 	while true do
 		if autoClickActive then
@@ -380,7 +446,6 @@ task.spawn(function()
 	end
 end)
 
--- 13. Auto Rebirth Loop
 task.spawn(function()
 	while true do
 		if autoRebirthActive then
@@ -388,41 +453,35 @@ task.spawn(function()
 				ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("RequestRebirth"):InvokeServer()
 			end)
 		end
-		task.wait(0.5) -- ตั้งเวลาหน่วงยิง InvokeServer ทุกๆ 0.5 วินาที
+		task.wait(0.5)
 	end
 end)
 
--- Events Binding
-dropdownBtn.MouseButton1Click:Connect(function()
-	listFrame.Visible = not listFrame.Visible
+-- Events
+mapDropdownBtn.MouseButton1Click:Connect(function()
+	mapListFrame.Visible = not mapListFrame.Visible
+	trainListFrame.Visible = false
+end)
+
+trainDropdownBtn.MouseButton1Click:Connect(function()
+	trainListFrame.Visible = not trainListFrame.Visible
+	mapListFrame.Visible = false
 end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
 
 clickToggleBtn.MouseButton1Click:Connect(function()
 	autoClickActive = not autoClickActive
-	if autoClickActive then
-		clickToggleBtn.Text = "🖱️ Auto Click: ON"
-		clickToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
-		clickToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
-	else
-		clickToggleBtn.Text = "🖱️ Auto Click: OFF"
-		clickToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-	end
+	clickToggleBtn.Text = autoClickActive and "🖱️ Auto Click: ON" or "🖱️ Auto Click: OFF"
+	clickToggleBtn.TextColor3 = autoClickActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+	clickToggleBtn.BackgroundColor3 = autoClickActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
 rebirthToggleBtn.MouseButton1Click:Connect(function()
 	autoRebirthActive = not autoRebirthActive
-	if autoRebirthActive then
-		rebirthToggleBtn.Text = "♻️ Auto Rebirth: ON"
-		rebirthToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
-		rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
-	else
-		rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
-		rebirthToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-	end
+	rebirthToggleBtn.Text = autoRebirthActive and "♻️ Auto Rebirth: ON" or "♻️ Auto Rebirth: OFF"
+	rebirthToggleBtn.TextColor3 = autoRebirthActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+	rebirthToggleBtn.BackgroundColor3 = autoRebirthActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
 nextBtn.MouseButton1Click:Connect(teleportToNextStage)
@@ -434,7 +493,8 @@ end)
 
 minBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
-	listFrame.Visible = false
+	mapListFrame.Visible = false
+	trainListFrame.Visible = false
 	openBtn.Visible = true
 end)
 
@@ -449,6 +509,6 @@ closeBtn.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
 end)
 
--- Start
+-- Initial Load
 loadAndSortStages()
 updateUI()
