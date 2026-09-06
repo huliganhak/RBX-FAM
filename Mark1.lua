@@ -31,11 +31,11 @@ local trainLocations = {
 	{ Name = "Train 5", Path = {"Map5", "TrainingZone", "TrainingZone37"} },
 }
 
-local selectedMapIndex = 1
+local selectedMapIndex = 3 -- เริ่มต้น Map 5 ตามหน้าจอ
 local selectedTrainIndex = 1
 local sortedStages = {}
 local currentIndex = 1
-local targetEndStageIndex = nil -- Stage ปลายทางที่เลือกจาก ListBox
+local targetEndStageIndex = nil
 
 local autoLoopActive = false
 local autoClickActive = false
@@ -51,7 +51,7 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ขยายขนาดรองรับ ListBox และ ปุ่ม Start/Stop)
+-- 3. Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 230, 0, 395)
@@ -120,7 +120,7 @@ mapDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
 mapDropdownBtn.Position = UDim2.new(0, 8, 0, 32)
 mapDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 mapDropdownBtn.Font = Enum.Font.GothamBold
-mapDropdownBtn.Text = "🗺️ Select: Map 3 ▼"
+mapDropdownBtn.Text = "🗺️ Select: Map 5 ▼"
 mapDropdownBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
 mapDropdownBtn.TextSize = 10
 mapDropdownBtn.Parent = mainFrame
@@ -172,7 +172,7 @@ stageStateLabel.TextSize = 10
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- 7. Stage Control Buttons (Claim / Tp Next / Reset)
+-- 7. Stage Control Buttons
 local claimBtn = Instance.new("TextButton")
 claimBtn.Name = "ClaimButton"
 claimBtn.Size = UDim2.new(0, 55, 0, 26)
@@ -218,7 +218,7 @@ local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 8. Target End Stage Dropdown (ListBox ดึงรายการด่าน)
+-- 8. Target End Stage Dropdown
 local targetStageDropdownBtn = Instance.new("TextButton")
 targetStageDropdownBtn.Name = "TargetStageDropdownBtn"
 targetStageDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
@@ -376,7 +376,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- 13. Open Button (Minimizing)
+-- 13. Open Button
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -544,12 +544,13 @@ local function teleportToNextStage()
 	end
 end
 
--- Claim Logic (วาปไป Pad.Free แล้ว Reset กลับเริ่ม 1)
 local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
 
-	local currentStageData = sortedStages[currentIndex]
+	-- ใช้ด่านปัจจุบัน (หรือด่านก่อนหน้าถ้าเพิ่งวาปไป)
+	local targetIdx = currentIndex
+	local currentStageData = sortedStages[targetIdx]
 	if not currentStageData then return end
 
 	local padFolder = currentStageData.folder:FindFirstChild("Pad")
@@ -571,7 +572,7 @@ local function claimTargetStage()
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
 			
-			-- สั่ง Reset ลำดับด่าน
+			-- สั่ง Reset กลับไปเริ่มด่านแรก
 			currentIndex = 1
 			updateUI()
 		end
@@ -600,7 +601,7 @@ local function teleportToTrain()
 		if targetObj:IsA("BasePart") then
 			targetCFrame = targetObj.CFrame
 		elseif targetObj:IsA("Model") then
-			targetCFrame = targetObj:GetPivot()
+			targetObj:GetPivot()
 		else
 			local firstPart = targetObj:FindFirstChildWhichIsA("BasePart", true)
 			if firstPart then targetCFrame = firstPart.CFrame end
@@ -612,16 +613,15 @@ local function teleportToTrain()
 	end
 end
 
--- 16. Stage Status Detection & Auto Loop Controller
+-- 16. Corrected Stage Status Detection & Auto Loop
 local isStageClear = false
 
 task.spawn(function()
 	while true do
-		local success, err = pcall(function()
-			local lastWarpedIndex = currentIndex - 1
-			if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
-			
-			local currentStageData = sortedStages[lastWarpedIndex]
+		pcall(function()
+			-- ตรวจสอบด่านที่เรากำลังยืนอยู่ / โฟกัสอยู่
+			local targetCheckIdx = currentIndex
+			local currentStageData = sortedStages[targetCheckIdx]
 			
 			if currentStageData and currentStageData.folder then
 				local barrierFolder = currentStageData.folder:FindFirstChild("Barrier")
@@ -639,9 +639,10 @@ task.spawn(function()
 						isStageClear = true
 					end
 				else
-					stageStateLabel.Text = "👾 Status: Unknown"
-					stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-					isStageClear = false
+					-- หากไม่มี InfoGui แปลว่าด่านนั้นเคลียร์แล้ว
+					stageStateLabel.Text = "👾 Status: Clear"
+					stageStateLabel.TextColor3 = Color3.fromRGB(85, 255, 120)
+					isStageClear = true
 				end
 			else
 				stageStateLabel.Text = "👾 Status: Unknown"
@@ -649,36 +650,26 @@ task.spawn(function()
 				isStageClear = false
 			end
 		end)
-		
-		if not success then
-			stageStateLabel.Text = "👾 Status: Unknown"
-			stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-			isStageClear = false
-		end
-		
 		task.wait(0.2)
 	end
 end)
 
--- Auto Loop Thread
+-- Auto Loop Execution Thread
 task.spawn(function()
 	while true do
 		if autoLoopActive then
 			if isStageClear then
-				local lastWarpedIndex = currentIndex - 1
-				if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
-
-				-- ถ้าถึง Stage ปลายทางที่กำหนดไว้ใน ListBox แล้วให้ Claim
-				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
+				-- ตรวจจับว่าเป็นด่านเป้าหมายที่ตั้งค่าใน ListBox ไว้หรือไม่
+				if targetEndStageIndex and currentIndex == targetEndStageIndex then
 					claimTargetStage()
-					task.wait(1.5) -- หน่วงเวลาหลัง Claim ก่อนไปต่อ
+					task.wait(2) -- รอรับของแล้ว Reset
 				else
 					teleportToNextStage()
-					task.wait(0.5) -- หน่วงเวลาหลัง Teleport Next
+					task.wait(1) -- ระยะเวลาคูลดาวน์ก่อนย้ายไปด่านถัดไป
 				end
 			end
 		end
-		task.wait(0.3)
+		task.wait(0.5)
 	end
 end)
 
@@ -783,13 +774,6 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: ON"
 		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
 		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
-		
-		pcall(function()
-			local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
-			if targetScript then
-				targetScript:Destroy()
-			end
-		end)
 	else
 		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
 		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
