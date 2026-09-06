@@ -20,6 +20,7 @@ local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
 	{ Name = "Map 5", WorkspaceName = "Map5" },
+	{ Name = "Map 6", WorkspaceName = "Map5" },
 }
 
 -- ข้อมูล Training Zone (Train 1 - 5)
@@ -29,6 +30,7 @@ local trainLocations = {
 	{ Name = "Train 3", Path = {"Map3", "TrainingZone", "TrainingZone19"} },
 	{ Name = "Train 4", Path = {"Map4", "TrainingZone", "TrainingZone28"} },
 	{ Name = "Train 5", Path = {"Map5", "TrainingZone", "TrainingZone37"} },
+	{ Name = "Train 5", Path = {"Map6", "TrainingZone", "TrainingZone46"} },
 }
 
 local selectedMapIndex = 1
