@@ -15,7 +15,7 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
--- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 5)
+-- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 6)
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
@@ -23,7 +23,7 @@ local mapList = {
 	{ Name = "Map 6", WorkspaceName = "Map6" },
 }
 
--- ข้อมูล Training Zone (Train 1 - 5)
+-- ข้อมูล Training Zone (Train 1 - 6)
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -133,7 +133,7 @@ mapDropdownCorner.Parent = mapDropdownBtn
 
 local mapListFrame = Instance.new("Frame")
 mapListFrame.Name = "MapListFrame"
-mapListFrame.Size = UDim2.new(1, -16, 0, 70)
+mapListFrame.Size = UDim2.new(1, -16, 0, 92) -- ขยายความสูงรองรับ Map 6
 mapListFrame.Position = UDim2.new(0, 8, 0, 60)
 mapListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 mapListFrame.BorderSizePixel = 0
@@ -304,7 +304,7 @@ trainWarpCorner.Parent = trainWarpBtn
 
 local trainListFrame = Instance.new("Frame")
 trainListFrame.Name = "TrainListFrame"
-trainListFrame.Size = UDim2.new(1, -48, 0, 115)
+trainListFrame.Size = UDim2.new(1, -48, 0, 138) -- ขยายความสูงรองรับ Train 6
 trainListFrame.Position = UDim2.new(0, 8, 0, 222)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 trainListFrame.BorderSizePixel = 0
@@ -551,7 +551,6 @@ local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
 
-	-- ใช้ด่านล่าสุดที่เรายืนอยู่ (currentIndex - 1)
 	local targetClaimIdx = currentIndex - 1
 	if targetClaimIdx < 1 then targetClaimIdx = 1 end
 
@@ -576,8 +575,6 @@ local function claimTargetStage()
 
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-			
-			-- สั่ง Reset ลำดับด่านกลับไปเริ่ม 1 เพื่อเตรียมรอบใหม่
 			currentIndex = 1
 			updateUI()
 		end
@@ -663,22 +660,16 @@ end)
 task.spawn(function()
 	while true do
 		if autoLoopActive then
-			-- กรณีที่ 1: เพิ่งเปิดลูป หรือเพิ่ง Claim เสร็จ (ตัวละครยังไม่เคยไปด่าน 1)
 			if currentIndex == 1 then
 				teleportToNextStage()
-				task.wait(1.5) -- หน่วงเวลารอโหลดด่านและเช็ค Status
-			
-			-- กรณีที่ 2: อยู่ระหว่างฟาร์มไปเรื่อยๆ
+				task.wait(1.5)
 			else
 				local lastWarpedIndex = currentIndex - 1
 				if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
 
-				-- เช็คว่าถึง Auto Stop Stage ที่เลือกไว้หรือยัง
 				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
-					claimTargetStage() -- วาปไป Claim และจะตั้งค่า currentIndex = 1 ให้อัตโนมัติ
-					task.wait(2) -- หน่วงเวลาหลังรับของ เพื่อให้ลูปวนกลับไปเข้า Stage 1 เองในรอบถัดไป
-				
-				-- ถ้าด่านปัจจุบัน Clear แล้ว ให้ไปด่านถัดไป
+					claimTargetStage()
+					task.wait(2)
 				elseif isStageClear then
 					teleportToNextStage()
 					task.wait(0.8)
