@@ -35,7 +35,9 @@ local selectedMapIndex = 1
 local selectedTrainIndex = 1
 local sortedStages = {}
 local currentIndex = 1
+local targetEndStageIndex = nil -- Stage ปลายทางที่เลือกจาก ListBox
 
+local autoLoopActive = false
 local autoClickActive = false
 local autoRebirthActive = false
 local antiAfkActive = false
@@ -49,10 +51,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame
+-- 3. Main Frame (ขยายขนาดรองรับ ListBox และ ปุ่ม Start/Stop)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 330)
+mainFrame.Size = UDim2.new(0, 230, 0, 395)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -170,7 +172,7 @@ stageStateLabel.TextSize = 10
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- 7. Stage Control Buttons (Claim / Tp Next / Reset เรียง 3 ปุ่ม)
+-- 7. Stage Control Buttons (Claim / Tp Next / Reset)
 local claimBtn = Instance.new("TextButton")
 claimBtn.Name = "ClaimButton"
 claimBtn.Size = UDim2.new(0, 55, 0, 26)
@@ -216,11 +218,62 @@ local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 8. Training Dropdown
+-- 8. Target End Stage Dropdown (ListBox ดึงรายการด่าน)
+local targetStageDropdownBtn = Instance.new("TextButton")
+targetStageDropdownBtn.Name = "TargetStageDropdownBtn"
+targetStageDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
+targetStageDropdownBtn.Position = UDim2.new(0, 8, 0, 130)
+targetStageDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+targetStageDropdownBtn.Font = Enum.Font.GothamBold
+targetStageDropdownBtn.Text = "🎯 Auto Stop Stage: Select ▼"
+targetStageDropdownBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
+targetStageDropdownBtn.TextSize = 10
+targetStageDropdownBtn.Parent = mainFrame
+
+local targetStageDropdownCorner = Instance.new("UICorner")
+targetStageDropdownCorner.CornerRadius = UDim.new(0, 6)
+targetStageDropdownCorner.Parent = targetStageDropdownBtn
+
+local targetStageScrollFrame = Instance.new("ScrollingFrame")
+targetStageScrollFrame.Name = "TargetStageScrollFrame"
+targetStageScrollFrame.Size = UDim2.new(1, -16, 0, 120)
+targetStageScrollFrame.Position = UDim2.new(0, 8, 0, 158)
+targetStageScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+targetStageScrollFrame.BorderSizePixel = 0
+targetStageScrollFrame.Visible = false
+targetStageScrollFrame.ZIndex = 25
+targetStageScrollFrame.ScrollBarThickness = 4
+targetStageScrollFrame.Parent = mainFrame
+
+local targetStageScrollCorner = Instance.new("UICorner")
+targetStageScrollCorner.CornerRadius = UDim.new(0, 6)
+targetStageScrollCorner.Parent = targetStageScrollFrame
+
+local targetStageListLayout = Instance.new("UIListLayout")
+targetStageListLayout.Padding = UDim.new(0, 2)
+targetStageListLayout.Parent = targetStageScrollFrame
+
+-- 9. Auto Start/Stop Loop Button
+local startStopToggleBtn = Instance.new("TextButton")
+startStopToggleBtn.Name = "StartStopToggleBtn"
+startStopToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+startStopToggleBtn.Position = UDim2.new(0, 8, 0, 162)
+startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+startStopToggleBtn.Font = Enum.Font.GothamBold
+startStopToggleBtn.Text = "▶️ Start Auto Loop"
+startStopToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+startStopToggleBtn.TextSize = 10
+startStopToggleBtn.Parent = mainFrame
+
+local startStopToggleCorner = Instance.new("UICorner")
+startStopToggleCorner.CornerRadius = UDim.new(0, 6)
+startStopToggleCorner.Parent = startStopToggleBtn
+
+-- 10. Training Dropdown
 local trainDropdownBtn = Instance.new("TextButton")
 trainDropdownBtn.Name = "TrainDropdownBtn"
 trainDropdownBtn.Size = UDim2.new(1, -48, 0, 26)
-trainDropdownBtn.Position = UDim2.new(0, 8, 0, 130)
+trainDropdownBtn.Position = UDim2.new(0, 8, 0, 194)
 trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 trainDropdownBtn.Font = Enum.Font.GothamBold
 trainDropdownBtn.Text = "🏋️ Select: Train 1 ▼"
@@ -235,7 +288,7 @@ trainDropdownCorner.Parent = trainDropdownBtn
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Name = "TrainWarpBtn"
 trainWarpBtn.Size = UDim2.new(0, 28, 0, 26)
-trainWarpBtn.Position = UDim2.new(1, -36, 0, 130)
+trainWarpBtn.Position = UDim2.new(1, -36, 0, 194)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
 trainWarpBtn.Font = Enum.Font.GothamBold
 trainWarpBtn.Text = "GO"
@@ -250,7 +303,7 @@ trainWarpCorner.Parent = trainWarpBtn
 local trainListFrame = Instance.new("Frame")
 trainListFrame.Name = "TrainListFrame"
 trainListFrame.Size = UDim2.new(1, -48, 0, 115)
-trainListFrame.Position = UDim2.new(0, 8, 0, 158)
+trainListFrame.Position = UDim2.new(0, 8, 0, 222)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 trainListFrame.BorderSizePixel = 0
 trainListFrame.Visible = false
@@ -265,10 +318,10 @@ local trainListLayout = Instance.new("UIListLayout")
 trainListLayout.Padding = UDim.new(0, 2)
 trainListLayout.Parent = trainListFrame
 
--- 9. Auto Buttons
+-- 11. Auto Buttons
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 162)
+clickToggleBtn.Position = UDim2.new(0, 8, 0, 226)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Auto Click: OFF"
@@ -282,7 +335,7 @@ clickToggleCorner.Parent = clickToggleBtn
 
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 194)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 258)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
@@ -294,10 +347,10 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- 10. Anti-AFK & Anti-Pause Buttons
+-- 12. Anti-AFK & Anti-Pause Buttons
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 226)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 290)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -311,7 +364,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 258)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 322)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -323,7 +376,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- 11. Open Button (Minimizing)
+-- 13. Open Button (Minimizing)
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -339,7 +392,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 12. Drag Window System
+-- 14. Drag Window System
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -367,10 +420,38 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 13. Dynamic Map & Stage Logic
+-- 15. Dynamic Map & Stage Logic
+local function updateTargetStageDropdownList()
+	for _, child in ipairs(targetStageScrollFrame:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+
+	for index, stageData in ipairs(sortedStages) do
+		local stageBtn = Instance.new("TextButton")
+		stageBtn.Size = UDim2.new(1, -8, 0, 20)
+		stageBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+		stageBtn.Font = Enum.Font.Gotham
+		stageBtn.Text = "Stage " .. stageData.number
+		stageBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+		stageBtn.TextSize = 10
+		stageBtn.ZIndex = 26
+		stageBtn.Parent = targetStageScrollFrame
+
+		stageBtn.MouseButton1Click:Connect(function()
+			targetEndStageIndex = index
+			targetStageDropdownBtn.Text = "🎯 Auto Stop Stage: " .. stageData.number .. " ▼"
+			targetStageScrollFrame.Visible = false
+		end)
+	end
+
+	targetStageScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #sortedStages * 22)
+end
+
 local function loadAndSortStages()
 	sortedStages = {}
 	currentIndex = 1
+	targetEndStageIndex = nil
+	targetStageDropdownBtn.Text = "🎯 Auto Stop Stage: Select ▼"
 	
 	local currentMapData = mapList[selectedMapIndex]
 	if not currentMapData then return end
@@ -390,6 +471,8 @@ local function loadAndSortStages()
 		end
 		table.sort(sortedStages, function(a, b) return a.number < b.number end)
 	end
+
+	updateTargetStageDropdownList()
 end
 
 local function updateUI()
@@ -461,7 +544,7 @@ local function teleportToNextStage()
 	end
 end
 
--- Claim Logic (วาปไป Pad.Free ของ Target Stage ปัจจุบัน)
+-- Claim Logic (วาปไป Pad.Free แล้ว Reset กลับเริ่ม 1)
 local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
@@ -488,7 +571,7 @@ local function claimTargetStage()
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
 			
-			-- รีเซ็ตลำดับกลับไปเริ่มด่านที่ 1 พร้อมอัปเดต UI
+			-- สั่ง Reset ลำดับด่าน
 			currentIndex = 1
 			updateUI()
 		end
@@ -529,7 +612,9 @@ local function teleportToTrain()
 	end
 end
 
--- 14. Stage Status Detection Loop
+-- 16. Stage Status Detection & Auto Loop Controller
+local isStageClear = false
+
 task.spawn(function()
 	while true do
 		local success, err = pcall(function()
@@ -547,30 +632,57 @@ task.spawn(function()
 					if infoGui.Enabled then
 						stageStateLabel.Text = "👾 Status: Enemy"
 						stageStateLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+						isStageClear = false
 					else
 						stageStateLabel.Text = "👾 Status: Clear"
 						stageStateLabel.TextColor3 = Color3.fromRGB(85, 255, 120)
+						isStageClear = true
 					end
 				else
 					stageStateLabel.Text = "👾 Status: Unknown"
 					stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+					isStageClear = false
 				end
 			else
 				stageStateLabel.Text = "👾 Status: Unknown"
 				stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+				isStageClear = false
 			end
 		end)
 		
 		if not success then
 			stageStateLabel.Text = "👾 Status: Unknown"
 			stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+			isStageClear = false
 		end
 		
 		task.wait(0.2)
 	end
 end)
 
--- 15. Loops System (Auto Click / Rebirth)
+-- Auto Loop Thread
+task.spawn(function()
+	while true do
+		if autoLoopActive then
+			if isStageClear then
+				local lastWarpedIndex = currentIndex - 1
+				if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
+
+				-- ถ้าถึง Stage ปลายทางที่กำหนดไว้ใน ListBox แล้วให้ Claim
+				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
+					claimTargetStage()
+					task.wait(1.5) -- หน่วงเวลาหลัง Claim ก่อนไปต่อ
+				else
+					teleportToNextStage()
+					task.wait(0.5) -- หน่วงเวลาหลัง Teleport Next
+				end
+			end
+		end
+		task.wait(0.3)
+	end
+end)
+
+-- 17. Loops System (Auto Click / Rebirth)
 task.spawn(function()
 	while true do
 		if autoClickActive then
@@ -593,18 +705,37 @@ task.spawn(function()
 	end
 end)
 
--- 16. Toggle Handlers
+-- 18. Toggle Handlers
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
+	targetStageScrollFrame.Visible = false
+	trainListFrame.Visible = false
+end)
+
+targetStageDropdownBtn.MouseButton1Click:Connect(function()
+	targetStageScrollFrame.Visible = not targetStageScrollFrame.Visible
+	mapListFrame.Visible = false
 	trainListFrame.Visible = false
 end)
 
 trainDropdownBtn.MouseButton1Click:Connect(function()
 	trainListFrame.Visible = not trainListFrame.Visible
 	mapListFrame.Visible = false
+	targetStageScrollFrame.Visible = false
 end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
+
+startStopToggleBtn.MouseButton1Click:Connect(function()
+	autoLoopActive = not autoLoopActive
+	if autoLoopActive then
+		startStopToggleBtn.Text = "⏹️ Stop Auto Loop"
+		startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+	else
+		startStopToggleBtn.Text = "▶️ Start Auto Loop"
+		startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+	end
+end)
 
 clickToggleBtn.MouseButton1Click:Connect(function()
 	autoClickActive = not autoClickActive
@@ -677,6 +808,7 @@ end)
 minBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 	mapListFrame.Visible = false
+	targetStageScrollFrame.Visible = false
 	trainListFrame.Visible = false
 	openBtn.Visible = true
 end)
@@ -687,6 +819,7 @@ openBtn.MouseButton1Click:Connect(function()
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
+	autoLoopActive = false
 	autoClickActive = false
 	autoRebirthActive = false
 	antiAfkActive = false
