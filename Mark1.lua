@@ -49,10 +49,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ขยายความสูงรองรับ Anti-AFK และ Anti-GamePause)
+-- 3. Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 310)
+mainFrame.Size = UDim2.new(0, 230, 0, 330)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -111,7 +111,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- 5. Dropdown เลือก Map (Map 3 - Map 5)
+-- 5. Dropdown เลือก Map
 local mapDropdownBtn = Instance.new("TextButton")
 mapDropdownBtn.Name = "MapDropdownBtn"
 mapDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
@@ -145,24 +145,36 @@ local mapListLayout = Instance.new("UIListLayout")
 mapListLayout.Padding = UDim.new(0, 2)
 mapListLayout.Parent = mapListFrame
 
--- 6. Status Bar
+-- 6. Status Bar & Stage Status Label (ส่วนที่เพิ่มใหม่)
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -16, 0, 18)
+statusLabel.Size = UDim2.new(1, -16, 0, 16)
 statusLabel.Position = UDim2.new(0, 8, 0, 62)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Font = Enum.Font.GothamBold
 statusLabel.Text = "📍 Target: Stage - (0/0)"
 statusLabel.TextColor3 = Color3.fromRGB(85, 205, 255)
-statusLabel.TextSize = 11
+statusLabel.TextSize = 10
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
+
+local stageStateLabel = Instance.new("TextLabel")
+stageStateLabel.Name = "StageStateLabel"
+stageStateLabel.Size = UDim2.new(1, -16, 0, 16)
+stageStateLabel.Position = UDim2.new(0, 8, 0, 78)
+stageStateLabel.BackgroundTransparency = 1
+stageStateLabel.Font = Enum.Font.GothamBold
+stageStateLabel.Text = "👾 Status: Unknown"
+stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+stageStateLabel.TextSize = 10
+stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
+stageStateLabel.Parent = mainFrame
 
 -- 7. Stage Warp & Reset Buttons
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
 nextBtn.Size = UDim2.new(1, -48, 0, 26)
-nextBtn.Position = UDim2.new(0, 8, 0, 82)
+nextBtn.Position = UDim2.new(0, 8, 0, 98)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 nextBtn.Font = Enum.Font.GothamBold
 nextBtn.Text = "⚡ Teleport Next"
@@ -177,7 +189,7 @@ nextCorner.Parent = nextBtn
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetButton"
 resetBtn.Size = UDim2.new(0, 28, 0, 26)
-resetBtn.Position = UDim2.new(1, -36, 0, 82)
+resetBtn.Position = UDim2.new(1, -36, 0, 98)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 resetBtn.Font = Enum.Font.GothamBold
 resetBtn.Text = "🔄"
@@ -193,7 +205,7 @@ resetCorner.Parent = resetBtn
 local trainDropdownBtn = Instance.new("TextButton")
 trainDropdownBtn.Name = "TrainDropdownBtn"
 trainDropdownBtn.Size = UDim2.new(1, -48, 0, 26)
-trainDropdownBtn.Position = UDim2.new(0, 8, 0, 114)
+trainDropdownBtn.Position = UDim2.new(0, 8, 0, 130)
 trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 trainDropdownBtn.Font = Enum.Font.GothamBold
 trainDropdownBtn.Text = "🏋️ Select: Train 1 ▼"
@@ -208,7 +220,7 @@ trainDropdownCorner.Parent = trainDropdownBtn
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Name = "TrainWarpBtn"
 trainWarpBtn.Size = UDim2.new(0, 28, 0, 26)
-trainWarpBtn.Position = UDim2.new(1, -36, 0, 114)
+trainWarpBtn.Position = UDim2.new(1, -36, 0, 130)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
 trainWarpBtn.Font = Enum.Font.GothamBold
 trainWarpBtn.Text = "GO"
@@ -223,7 +235,7 @@ trainWarpCorner.Parent = trainWarpBtn
 local trainListFrame = Instance.new("Frame")
 trainListFrame.Name = "TrainListFrame"
 trainListFrame.Size = UDim2.new(1, -48, 0, 115)
-trainListFrame.Position = UDim2.new(0, 8, 0, 142)
+trainListFrame.Position = UDim2.new(0, 8, 0, 158)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 trainListFrame.BorderSizePixel = 0
 trainListFrame.Visible = false
@@ -238,10 +250,10 @@ local trainListLayout = Instance.new("UIListLayout")
 trainListLayout.Padding = UDim.new(0, 2)
 trainListLayout.Parent = trainListFrame
 
--- 9. Auto Buttons System
+-- 9. Auto Buttons
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 146)
+clickToggleBtn.Position = UDim2.new(0, 8, 0, 162)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Auto Click: OFF"
@@ -255,7 +267,7 @@ clickToggleCorner.Parent = clickToggleBtn
 
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 178)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 194)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
@@ -270,7 +282,7 @@ rebirthToggleCorner.Parent = rebirthToggleBtn
 -- 10. Anti-AFK & Anti-Pause Buttons
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 210)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 226)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -284,7 +296,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 242)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 258)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -468,7 +480,49 @@ local function teleportToTrain()
 	end
 end
 
--- 14. Loops System (Auto Click / Rebirth)
+-- 14. Stage Status Detection Loop (เช็ค InfoGui.Enabled แบบ Real-time)
+task.spawn(function()
+	while true do
+		local success, err = pcall(function()
+			-- ดึง Stage ล่าสุดที่เพิ่งวาปไป (ด่านที่ทำอยู่นิยมใช้ currentIndex - 1)
+			local lastWarpedIndex = currentIndex - 1
+			if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
+			
+			local currentStageData = sortedStages[lastWarpedIndex]
+			
+			if currentStageData and currentStageData.folder then
+				local barrierFolder = currentStageData.folder:FindFirstChild("Barrier")
+				local innerBarrier = barrierFolder and barrierFolder:FindFirstChild("Barrier")
+				local infoGui = innerBarrier and innerBarrier:FindFirstChild("InfoGui")
+				
+				if infoGui then
+					if infoGui.Enabled then
+						stageStateLabel.Text = "👾 Status: Enemy"
+						stageStateLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+					else
+						stageStateLabel.Text = "👾 Status: Clear"
+						stageStateLabel.TextColor3 = Color3.fromRGB(85, 255, 120)
+					end
+				else
+					stageStateLabel.Text = "👾 Status: Unknown"
+					stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+				end
+			else
+				stageStateLabel.Text = "👾 Status: Unknown"
+				stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+			end
+		end)
+		
+		if not success then
+			stageStateLabel.Text = "👾 Status: Unknown"
+			stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+		end
+		
+		task.wait(0.2)
+	end
+end)
+
+-- 15. Loops System (Auto Click / Rebirth)
 task.spawn(function()
 	while true do
 		if autoClickActive then
@@ -491,7 +545,7 @@ task.spawn(function()
 	end
 end)
 
--- 15. Toggle Handlers
+-- 16. Toggle Handlers
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	trainListFrame.Visible = false
@@ -518,7 +572,6 @@ rebirthToggleBtn.MouseButton1Click:Connect(function()
 	rebirthToggleBtn.BackgroundColor3 = autoRebirthActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
--- Toggle Anti-AFK
 antiAfkToggleBtn.MouseButton1Click:Connect(function()
 	antiAfkActive = not antiAfkActive
 	if antiAfkActive then
@@ -526,7 +579,6 @@ antiAfkToggleBtn.MouseButton1Click:Connect(function()
 		antiAfkToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
 		antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
 		
-		-- Bind Event Idled
 		idleConnection = player.Idled:Connect(function()
 			if antiAfkActive then
 				VirtualUser:Button2Down(Vector2.zero, currentCamera.CFrame)
@@ -546,7 +598,6 @@ antiAfkToggleBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Toggle Anti-GamePause
 antiPauseToggleBtn.MouseButton1Click:Connect(function()
 	antiGamePauseActive = not antiGamePauseActive
 	if antiGamePauseActive then
@@ -554,7 +605,6 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
 		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
 		
-		-- ทำการลบ NetworkPause
 		pcall(function()
 			local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
 			if targetScript then
