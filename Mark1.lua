@@ -145,7 +145,7 @@ local mapListLayout = Instance.new("UIListLayout")
 mapListLayout.Padding = UDim.new(0, 2)
 mapListLayout.Parent = mapListFrame
 
--- 6. Status Bar & Stage Status Label (ส่วนที่เพิ่มใหม่)
+-- 6. Status Bar & Stage Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -16, 0, 16)
@@ -170,11 +170,26 @@ stageStateLabel.TextSize = 10
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- 7. Stage Warp & Reset Buttons
+-- 7. Stage Control Buttons (Claim / Tp Next / Reset เรียง 3 ปุ่ม)
+local claimBtn = Instance.new("TextButton")
+claimBtn.Name = "ClaimButton"
+claimBtn.Size = UDim2.new(0, 55, 0, 26)
+claimBtn.Position = UDim2.new(0, 8, 0, 98)
+claimBtn.BackgroundColor3 = Color3.fromRGB(40, 140, 70)
+claimBtn.Font = Enum.Font.GothamBold
+claimBtn.Text = "🎁 Claim"
+claimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+claimBtn.TextSize = 10
+claimBtn.Parent = mainFrame
+
+local claimCorner = Instance.new("UICorner")
+claimCorner.CornerRadius = UDim.new(0, 6)
+claimCorner.Parent = claimBtn
+
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
-nextBtn.Size = UDim2.new(1, -48, 0, 26)
-nextBtn.Position = UDim2.new(0, 8, 0, 98)
+nextBtn.Size = UDim2.new(1, -101, 0, 26)
+nextBtn.Position = UDim2.new(0, 67, 0, 98)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 nextBtn.Font = Enum.Font.GothamBold
 nextBtn.Text = "⚡ Teleport Next"
@@ -188,13 +203,13 @@ nextCorner.Parent = nextBtn
 
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetButton"
-resetBtn.Size = UDim2.new(0, 28, 0, 26)
-resetBtn.Position = UDim2.new(1, -36, 0, 98)
+resetBtn.Size = UDim2.new(0, 24, 0, 26)
+resetBtn.Position = UDim2.new(1, -32, 0, 98)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 resetBtn.Font = Enum.Font.GothamBold
 resetBtn.Text = "🔄"
 resetBtn.TextColor3 = Color3.fromRGB(245, 245, 245)
-resetBtn.TextSize = 12
+resetBtn.TextSize = 11
 resetBtn.Parent = mainFrame
 
 local resetCorner = Instance.new("UICorner")
@@ -446,6 +461,36 @@ local function teleportToNextStage()
 	end
 end
 
+-- Claim Logic (วาปไป Pad.Free ของ Target Stage ปัจจุบัน)
+local function claimTargetStage()
+	if #sortedStages == 0 then loadAndSortStages() end
+	if #sortedStages == 0 then return end
+
+	local currentStageData = sortedStages[currentIndex]
+	if not currentStageData then return end
+
+	local padFolder = currentStageData.folder:FindFirstChild("Pad")
+	local freePart = padFolder and padFolder:FindFirstChild("Free")
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+
+	if freePart and hrp then
+		local targetCFrame
+		if freePart:IsA("BasePart") then
+			targetCFrame = freePart.CFrame
+		elseif freePart:IsA("Model") then
+			targetCFrame = freePart:GetPivot()
+		else
+			local childPart = freePart:FindFirstChildWhichIsA("BasePart", true)
+			if childPart then targetCFrame = childPart.CFrame end
+		end
+
+		if targetCFrame then
+			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+		end
+	end
+end
+
 local function getTargetObject(pathArray)
 	local current = workspace
 	for _, name in ipairs(pathArray) do
@@ -480,11 +525,10 @@ local function teleportToTrain()
 	end
 end
 
--- 14. Stage Status Detection Loop (เช็ค InfoGui.Enabled แบบ Real-time)
+-- 14. Stage Status Detection Loop
 task.spawn(function()
 	while true do
 		local success, err = pcall(function()
-			-- ดึง Stage ล่าสุดที่เพิ่งวาปไป (ด่านที่ทำอยู่นิยมใช้ currentIndex - 1)
 			local lastWarpedIndex = currentIndex - 1
 			if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
 			
@@ -618,6 +662,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+claimBtn.MouseButton1Click:Connect(claimTargetStage)
 nextBtn.MouseButton1Click:Connect(teleportToNextStage)
 
 resetBtn.MouseButton1Click:Connect(function()
