@@ -1,8 +1,12 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local currentCamera = workspace.CurrentCamera
 
 -- 1. เคลียร์ UI เก่า
 for _, oldGui in ipairs(playerGui:GetChildren()) do
@@ -11,7 +15,7 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
--- ข้อมูล Map ที่เลือกได้ (Map3 - Map5)
+-- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 5)
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
@@ -34,6 +38,10 @@ local currentIndex = 1
 
 local autoClickActive = false
 local autoRebirthActive = false
+local antiAfkActive = false
+local antiGamePauseActive = false
+
+local idleConnection = nil
 
 -- 2. ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -41,11 +49,11 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ปรับขนาดรองรับ 2 Dropdown)
+-- 3. Main Frame (ขยายความสูงรองรับ Anti-AFK และ Anti-GamePause)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 250)
-mainFrame.Position = UDim2.new(0.85, -115, 0.2, 0)
+mainFrame.Size = UDim2.new(0, 230, 0, 310)
+mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = false
@@ -153,13 +161,13 @@ statusLabel.Parent = mainFrame
 -- 7. Stage Warp & Reset Buttons
 local nextBtn = Instance.new("TextButton")
 nextBtn.Name = "NextButton"
-nextBtn.Size = UDim2.new(1, -48, 0, 28)
+nextBtn.Size = UDim2.new(1, -48, 0, 26)
 nextBtn.Position = UDim2.new(0, 8, 0, 82)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 nextBtn.Font = Enum.Font.GothamBold
 nextBtn.Text = "⚡ Teleport Next"
 nextBtn.TextColor3 = Color3.fromRGB(245, 245, 245)
-nextBtn.TextSize = 11
+nextBtn.TextSize = 10
 nextBtn.Parent = mainFrame
 
 local nextCorner = Instance.new("UICorner")
@@ -168,7 +176,7 @@ nextCorner.Parent = nextBtn
 
 local resetBtn = Instance.new("TextButton")
 resetBtn.Name = "ResetButton"
-resetBtn.Size = UDim2.new(0, 28, 0, 28)
+resetBtn.Size = UDim2.new(0, 28, 0, 26)
 resetBtn.Position = UDim2.new(1, -36, 0, 82)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 resetBtn.Font = Enum.Font.GothamBold
@@ -185,7 +193,7 @@ resetCorner.Parent = resetBtn
 local trainDropdownBtn = Instance.new("TextButton")
 trainDropdownBtn.Name = "TrainDropdownBtn"
 trainDropdownBtn.Size = UDim2.new(1, -48, 0, 26)
-trainDropdownBtn.Position = UDim2.new(0, 8, 0, 116)
+trainDropdownBtn.Position = UDim2.new(0, 8, 0, 114)
 trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 trainDropdownBtn.Font = Enum.Font.GothamBold
 trainDropdownBtn.Text = "🏋️ Select: Train 1 ▼"
@@ -200,7 +208,7 @@ trainDropdownCorner.Parent = trainDropdownBtn
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Name = "TrainWarpBtn"
 trainWarpBtn.Size = UDim2.new(0, 28, 0, 26)
-trainWarpBtn.Position = UDim2.new(1, -36, 0, 116)
+trainWarpBtn.Position = UDim2.new(1, -36, 0, 114)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
 trainWarpBtn.Font = Enum.Font.GothamBold
 trainWarpBtn.Text = "GO"
@@ -215,7 +223,7 @@ trainWarpCorner.Parent = trainWarpBtn
 local trainListFrame = Instance.new("Frame")
 trainListFrame.Name = "TrainListFrame"
 trainListFrame.Size = UDim2.new(1, -48, 0, 115)
-trainListFrame.Position = UDim2.new(0, 8, 0, 144)
+trainListFrame.Position = UDim2.new(0, 8, 0, 142)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 trainListFrame.BorderSizePixel = 0
 trainListFrame.Visible = false
@@ -230,10 +238,10 @@ local trainListLayout = Instance.new("UIListLayout")
 trainListLayout.Padding = UDim.new(0, 2)
 trainListLayout.Parent = trainListFrame
 
--- 9. Auto Buttons (Click & Rebirth)
+-- 9. Auto Buttons System
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 150)
+clickToggleBtn.Position = UDim2.new(0, 8, 0, 146)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Auto Click: OFF"
@@ -247,7 +255,7 @@ clickToggleCorner.Parent = clickToggleBtn
 
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 182)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 178)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
@@ -259,7 +267,36 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- 10. Open Button (Minimizing)
+-- 10. Anti-AFK & Anti-Pause Buttons
+local antiAfkToggleBtn = Instance.new("TextButton")
+antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 210)
+antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+antiAfkToggleBtn.Font = Enum.Font.GothamBold
+antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
+antiAfkToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+antiAfkToggleBtn.TextSize = 10
+antiAfkToggleBtn.Parent = mainFrame
+
+local antiAfkCorner = Instance.new("UICorner")
+antiAfkCorner.CornerRadius = UDim.new(0, 6)
+antiAfkCorner.Parent = antiAfkToggleBtn
+
+local antiPauseToggleBtn = Instance.new("TextButton")
+antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 242)
+antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+antiPauseToggleBtn.Font = Enum.Font.GothamBold
+antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
+antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+antiPauseToggleBtn.TextSize = 10
+antiPauseToggleBtn.Parent = mainFrame
+
+local antiPauseCorner = Instance.new("UICorner")
+antiPauseCorner.CornerRadius = UDim.new(0, 6)
+antiPauseCorner.Parent = antiPauseToggleBtn
+
+-- 11. Open Button (Minimizing)
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -275,7 +312,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 11. Drag Window System
+-- 12. Drag Window System
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -303,7 +340,7 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 12. Dynamic Map & Stage Logic
+-- 13. Dynamic Map & Stage Logic
 local function loadAndSortStages()
 	sortedStages = {}
 	currentIndex = 1
@@ -339,7 +376,6 @@ local function updateUI()
 	end
 end
 
--- สร้างรายการ Map เลือกได้ (Map 3 - 5)
 for i, item in ipairs(mapList) do
 	local itemBtn = Instance.new("TextButton")
 	itemBtn.Size = UDim2.new(1, 0, 0, 20)
@@ -360,7 +396,6 @@ for i, item in ipairs(mapList) do
 	end)
 end
 
--- สร้างรายการ Train (1 - 5)
 for i, item in ipairs(trainLocations) do
 	local itemBtn = Instance.new("TextButton")
 	itemBtn.Size = UDim2.new(1, 0, 0, 21)
@@ -379,7 +414,7 @@ for i, item in ipairs(trainLocations) do
 	end)
 end
 
--- Teleport Stage Logic
+-- Teleport Logic
 local function teleportToNextStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
@@ -399,7 +434,6 @@ local function teleportToNextStage()
 	end
 end
 
--- Teleport Training Zone Logic
 local function getTargetObject(pathArray)
 	local current = workspace
 	for _, name in ipairs(pathArray) do
@@ -434,7 +468,7 @@ local function teleportToTrain()
 	end
 end
 
--- Loops System
+-- 14. Loops System (Auto Click / Rebirth)
 task.spawn(function()
 	while true do
 		if autoClickActive then
@@ -457,7 +491,7 @@ task.spawn(function()
 	end
 end)
 
--- Events
+-- 15. Toggle Handlers
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	trainListFrame.Visible = false
@@ -484,6 +518,56 @@ rebirthToggleBtn.MouseButton1Click:Connect(function()
 	rebirthToggleBtn.BackgroundColor3 = autoRebirthActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
+-- Toggle Anti-AFK
+antiAfkToggleBtn.MouseButton1Click:Connect(function()
+	antiAfkActive = not antiAfkActive
+	if antiAfkActive then
+		antiAfkToggleBtn.Text = "🛡️ Anti-AFK: ON"
+		antiAfkToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+		antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+		
+		-- Bind Event Idled
+		idleConnection = player.Idled:Connect(function()
+			if antiAfkActive then
+				VirtualUser:Button2Down(Vector2.zero, currentCamera.CFrame)
+				task.wait(1)
+				VirtualUser:Button2Up(Vector2.zero, currentCamera.CFrame)
+			end
+		end)
+	else
+		antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
+		antiAfkToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+		
+		if idleConnection then
+			idleConnection:Disconnect()
+			idleConnection = nil
+		end
+	end
+end)
+
+-- Toggle Anti-GamePause
+antiPauseToggleBtn.MouseButton1Click:Connect(function()
+	antiGamePauseActive = not antiGamePauseActive
+	if antiGamePauseActive then
+		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: ON"
+		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+		
+		-- ทำการลบ NetworkPause
+		pcall(function()
+			local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
+			if targetScript then
+				targetScript:Destroy()
+			end
+		end)
+	else
+		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
+		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	end
+end)
+
 nextBtn.MouseButton1Click:Connect(teleportToNextStage)
 
 resetBtn.MouseButton1Click:Connect(function()
@@ -506,6 +590,8 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
 	autoClickActive = false
 	autoRebirthActive = false
+	antiAfkActive = false
+	if idleConnection then idleConnection:Disconnect() end
 	screenGui:Destroy()
 end)
 
