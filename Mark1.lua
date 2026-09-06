@@ -487,6 +487,10 @@ local function claimTargetStage()
 
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+			
+			-- รีเซ็ตลำดับกลับไปเริ่มด่านที่ 1 พร้อมอัปเดต UI
+			currentIndex = 1
+			updateUI()
 		end
 	end
 end
