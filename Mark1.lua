@@ -51,7 +51,7 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ขยายขนาดรองรับ ListBox และ ปุ่ม Start/Stop)
+-- 3. Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 230, 0, 395)
@@ -218,7 +218,7 @@ local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 8. Target End Stage Dropdown (ListBox ดึงรายการด่าน)
+-- 8. Target End Stage Dropdown
 local targetStageDropdownBtn = Instance.new("TextButton")
 targetStageDropdownBtn.Name = "TargetStageDropdownBtn"
 targetStageDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
@@ -549,7 +549,11 @@ local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
 
-	local currentStageData = sortedStages[currentIndex]
+	-- ใช้ด่านล่าสุดที่เรายืนอยู่ (currentIndex - 1)
+	local targetClaimIdx = currentIndex - 1
+	if targetClaimIdx < 1 then targetClaimIdx = 1 end
+
+	local currentStageData = sortedStages[targetClaimIdx]
 	if not currentStageData then return end
 
 	local padFolder = currentStageData.folder:FindFirstChild("Pad")
@@ -571,7 +575,7 @@ local function claimTargetStage()
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
 			
-			-- สั่ง Reset ลำดับด่าน
+			-- สั่ง Reset ลำดับด่านกลับไปเริ่ม 1 เพื่อเตรียมรอบใหม่
 			currentIndex = 1
 			updateUI()
 		end
@@ -612,16 +616,16 @@ local function teleportToTrain()
 	end
 end
 
--- 16. Stage Status Detection & Auto Loop Controller
+-- 16. Stage Status Detection & Fixed Truly-Auto Loop Controller
 local isStageClear = false
 
 task.spawn(function()
 	while true do
-		local success, err = pcall(function()
-			local lastWarpedIndex = currentIndex - 1
-			if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
+		pcall(function()
+			local targetCheckIdx = currentIndex - 1
+			if targetCheckIdx < 1 then targetCheckIdx = 1 end
 			
-			local currentStageData = sortedStages[lastWarpedIndex]
+			local currentStageData = sortedStages[targetCheckIdx]
 			
 			if currentStageData and currentStageData.folder then
 				local barrierFolder = currentStageData.folder:FindFirstChild("Barrier")
@@ -639,9 +643,9 @@ task.spawn(function()
 						isStageClear = true
 					end
 				else
-					stageStateLabel.Text = "👾 Status: Unknown"
-					stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-					isStageClear = false
+					stageStateLabel.Text = "👾 Status: Clear"
+					stageStateLabel.TextColor3 = Color3.fromRGB(85, 255, 120)
+					isStageClear = true
 				end
 			else
 				stageStateLabel.Text = "👾 Status: Unknown"
@@ -649,32 +653,33 @@ task.spawn(function()
 				isStageClear = false
 			end
 		end)
-		
-		if not success then
-			stageStateLabel.Text = "👾 Status: Unknown"
-			stageStateLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-			isStageClear = false
-		end
-		
 		task.wait(0.2)
 	end
 end)
 
--- Auto Loop Thread
+-- Truly Auto Loop Thread
 task.spawn(function()
 	while true do
 		if autoLoopActive then
-			if isStageClear then
+			-- กรณีที่ 1: เพิ่งเปิดลูป หรือเพิ่ง Claim เสร็จ (ตัวละครยังไม่เคยไปด่าน 1)
+			if currentIndex == 1 then
+				teleportToNextStage()
+				task.wait(1.5) -- หน่วงเวลารอโหลดด่านและเช็ค Status
+			
+			-- กรณีที่ 2: อยู่ระหว่างฟาร์มไปเรื่อยๆ
+			else
 				local lastWarpedIndex = currentIndex - 1
-				if lastWarpedIndex < 1 then lastWarpedIndex = #sortedStages end
+				if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
 
-				-- ถ้าถึง Stage ปลายทางที่กำหนดไว้ใน ListBox แล้วให้ Claim
+				-- เช็คว่าถึง Auto Stop Stage ที่เลือกไว้หรือยัง
 				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
-					claimTargetStage()
-					task.wait(1.5) -- หน่วงเวลาหลัง Claim ก่อนไปต่อ
-				else
+					claimTargetStage() -- วาปไป Claim และจะตั้งค่า currentIndex = 1 ให้อัตโนมัติ
+					task.wait(2) -- หน่วงเวลาหลังรับของ เพื่อให้ลูปวนกลับไปเข้า Stage 1 เองในรอบถัดไป
+				
+				-- ถ้าด่านปัจจุบัน Clear แล้ว ให้ไปด่านถัดไป
+				elseif isStageClear then
 					teleportToNextStage()
-					task.wait(0.5) -- หน่วงเวลาหลัง Teleport Next
+					task.wait(0.8)
 				end
 			end
 		end
