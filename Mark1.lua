@@ -45,8 +45,8 @@ local selectedMapIndex = 1
 local selectedTrainIndex = 1
 local sortedStages = {}
 local currentIndex = 1
-local currentSpawnedIndex = 1 -- จำ Index ด่านที่เรากำลังยืนอยู่จริง
-local targetEndStageIndex = nil -- Stage ปลายทางที่เลือกจาก ListBox
+local currentSpawnedIndex = 1
+local targetEndStageIndex = nil
 
 local autoLoopActive = false
 local autoClickActive = false
@@ -185,7 +185,7 @@ stageStateLabel.TextSize = 10
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- 7. Stage Control Buttons (Claim / Tp Next / Reset)
+-- 7. Stage Control Buttons
 local claimBtn = Instance.new("TextButton")
 claimBtn.Name = "ClaimButton"
 claimBtn.Size = UDim2.new(0, 55, 0, 26)
@@ -391,7 +391,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- 13. Open Button (Minimizing)
+-- 13. Open Button
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -561,7 +561,7 @@ local function teleportToNextStage()
 
 		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3, 0)
 		
-		currentSpawnedIndex = currentIndex -- จำด่านที่วาร์ปไปสู้จริง
+		currentSpawnedIndex = currentIndex
 		
 		currentIndex = currentIndex + 1
 		if currentIndex > #sortedStages then currentIndex = 1 end
@@ -569,7 +569,7 @@ local function teleportToNextStage()
 	end
 end
 
--- Claim Logic (วาร์ปไป Pad.Free ของด่านถัดไป แล้ว Reset กลับเริ่ม 1)
+-- Claim Logic
 local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
@@ -677,7 +677,7 @@ task.spawn(function()
 	end
 end)
 
--- Truly Auto Loop Thread
+-- Truly Auto Loop Thread (ปรับแต่งให้เริ่มวาร์ปฉุกเฉินได้)
 task.spawn(function()
 	while true do
 		if autoLoopActive then
@@ -739,11 +739,15 @@ end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
 
+-- 🛠️ แก้ไขปุ่ม Start ให้สั่งวาร์ปทันทีเมื่อเริ่มกดใช้งาน
 startStopToggleBtn.MouseButton1Click:Connect(function()
 	autoLoopActive = not autoLoopActive
 	if autoLoopActive then
 		startStopToggleBtn.Text = "⏹️ Stop Auto Loop"
 		startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+		
+		-- บังคับสั่งวาร์ปไปด่านแรกทันทีเพื่อกระตุ้นให้ระบบ Auto ทำงาน
+		teleportToNextStage()
 	else
 		startStopToggleBtn.Text = "▶️ Start Auto Loop"
 		startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
@@ -806,7 +810,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 	else
 		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
 		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 	end
 end)
 
