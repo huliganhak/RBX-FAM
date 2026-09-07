@@ -652,7 +652,7 @@ task.spawn(function()
 				isStageClear = false
 			end
 		end)
-		task.wait(0.2)
+		task.wait(1)
 	end
 end)
 
@@ -676,7 +676,7 @@ task.spawn(function()
 				end
 			end
 		end
-		task.wait(0.3)
+		task.wait(1)
 	end
 end)
 
