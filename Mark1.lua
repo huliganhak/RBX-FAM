@@ -15,15 +15,19 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
--- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 6)
+-- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 10)
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
 	{ Name = "Map 5", WorkspaceName = "Map5" },
 	{ Name = "Map 6", WorkspaceName = "Map6" },
+	{ Name = "Map 7", WorkspaceName = "Map7" },
+	{ Name = "Map 8", WorkspaceName = "Map8" },
+	{ Name = "Map 9", WorkspaceName = "Map9" },
+	{ Name = "Map 10", WorkspaceName = "Map10" },
 }
 
--- ข้อมูล Training Zone (Train 1 - 6)
+-- ข้อมูล Training Zone (Train 1 - 10)
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -31,6 +35,10 @@ local trainLocations = {
 	{ Name = "Train 4", Path = {"Map4", "TrainingZone", "TrainingZone28"} },
 	{ Name = "Train 5", Path = {"Map5", "TrainingZone", "TrainingZone37"} },
 	{ Name = "Train 6", Path = {"Map6", "TrainingZone", "TrainingZone46"} },
+	{ Name = "Train 7", Path = {"Map7", "TrainingZone", "TrainingZone55"} },
+	{ Name = "Train 8", Path = {"Map8", "TrainingZone", "TrainingZone64"} },
+	{ Name = "Train 9", Path = {"Map9", "TrainingZone", "TrainingZone73"} },
+	{ Name = "Train 10", Path = {"Map10", "TrainingZone", "TrainingZone82"} },
 }
 
 local selectedMapIndex = 1
@@ -131,14 +139,17 @@ local mapDropdownCorner = Instance.new("UICorner")
 mapDropdownCorner.CornerRadius = UDim.new(0, 6)
 mapDropdownCorner.Parent = mapDropdownBtn
 
-local mapListFrame = Instance.new("Frame")
+-- จากเดิม Instance.new("Frame") เปลี่ยนเป็น ScrollingFrame
+local mapListFrame = Instance.new("ScrollingFrame")
 mapListFrame.Name = "MapListFrame"
-mapListFrame.Size = UDim2.new(1, -16, 0, 92) -- ขยายความสูงรองรับ Map 6
+mapListFrame.Size = UDim2.new(1, -16, 0, 110) -- ความสูงกรอบคงที่ แต่เลื่อนดูได้
 mapListFrame.Position = UDim2.new(0, 8, 0, 60)
 mapListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 mapListFrame.BorderSizePixel = 0
 mapListFrame.Visible = false
 mapListFrame.ZIndex = 30
+mapListFrame.ScrollBarThickness = 4
+mapListFrame.CanvasSize = UDim2.new(0, 0, 0, #mapList * 22) -- คำนวณความสูงแถบเลื่อนตามจำนวน Map อัตโนมัติ
 mapListFrame.Parent = mainFrame
 
 local mapListCorner = Instance.new("UICorner")
@@ -302,14 +313,17 @@ local trainWarpCorner = Instance.new("UICorner")
 trainWarpCorner.CornerRadius = UDim.new(0, 6)
 trainWarpCorner.Parent = trainWarpBtn
 
-local trainListFrame = Instance.new("Frame")
+-- จากเดิม Instance.new("Frame") เปลี่ยนเป็น ScrollingFrame
+local trainListFrame = Instance.new("ScrollingFrame")
 trainListFrame.Name = "TrainListFrame"
-trainListFrame.Size = UDim2.new(1, -48, 0, 138) -- ขยายความสูงรองรับ Train 6
+trainListFrame.Size = UDim2.new(1, -48, 0, 110)
 trainListFrame.Position = UDim2.new(0, 8, 0, 222)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 trainListFrame.BorderSizePixel = 0
 trainListFrame.Visible = false
 trainListFrame.ZIndex = 20
+trainListFrame.ScrollBarThickness = 4
+trainListFrame.CanvasSize = UDim2.new(0, 0, 0, #trainLocations * 22) -- คำนวณความสูงแถบเลื่อนตามจำนวน Train อัตโนมัติ
 trainListFrame.Parent = mainFrame
 
 local trainListCorner = Instance.new("UICorner")
