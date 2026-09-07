@@ -662,17 +662,17 @@ task.spawn(function()
 		if autoLoopActive then
 			if currentIndex == 1 then
 				teleportToNextStage()
-				task.wait(1.5)
+				task.wait(2)
 			else
 				local lastWarpedIndex = currentIndex - 1
 				if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
 
 				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
 					claimTargetStage()
-					task.wait(2)
+					task.wait(5)
 				elseif isStageClear then
 					teleportToNextStage()
-					task.wait(0.8)
+					task.wait(1)
 				end
 			end
 		end
