@@ -553,6 +553,11 @@ local function teleportToNextStage()
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 
 	if spawnPart and hrp then
+		-- 🛠️ ตั้งค่าให้เป็น false ไว้ก่อนทันทีที่สั่งวาร์ป เพื่อรอให้ Task 16 เช็คจริงอีกที
+		isStageClear = false 
+		stageStateLabel.Text = "👾 Status: Checking..."
+		stageStateLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+
 		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3, 0)
 		currentIndex = currentIndex + 1
 		if currentIndex > #sortedStages then currentIndex = 1 end
