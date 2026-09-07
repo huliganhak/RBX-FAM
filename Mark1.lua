@@ -551,8 +551,13 @@ local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
 
-	local targetClaimIdx = currentIndex - 1
-	if targetClaimIdx < 1 then targetClaimIdx = 1 end
+	--------------------------------------------------
+	-- 🛠️ ปรับแก้ตรงนี้: กำหนดให้ไป Claim ด่านถัดไป (+1)
+	local targetClaimIdx = currentIndex -- เปลี่ยนจาก (currentIndex - 1) เป็น currentIndex ตรงๆ
+	if targetClaimIdx > #sortedStages then 
+		targetClaimIdx = #sortedStages -- ป้องกัน Index เกินจำนวนด่านที่มีอยู่
+	end
+	--------------------------------------------------
 
 	local currentStageData = sortedStages[targetClaimIdx]
 	if not currentStageData then return end
@@ -660,23 +665,28 @@ end)
 task.spawn(function()
 	while true do
 		if autoLoopActive then
-			if currentIndex == 1 then
-				teleportToNextStage()
-				task.wait(2)
-			else
-				local lastWarpedIndex = currentIndex - 1
-				if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
+			-- ดึง Index ด่านที่เรายืนอยู่/เคลียร์ล่าสุดมาเช็ค
+			local lastWarpedIndex = currentIndex - 1
+			if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
 
-				if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
-					claimTargetStage()
-					task.wait(5)
-				elseif isStageClear then
+			-- 1. เช็คก่อนเลยว่าถึง Auto Stop Stage ที่เลือกไว้แล้วหรือยัง
+			if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
+				claimTargetStage()
+				task.wait(5) -- หน่วงเวลาหลัง Claim ก่อนเริ่มรอบใหม่
+
+			-- 2. ถ้ายังไม่ถึง แต่สถานะด่านเคลียร์แล้ว (Status: Clear) ให้สั่ง Claim / วาร์ปไปต่อทันที
+			elseif isStageClear then
+				teleportToNextStage()
+				task.wait(1)
+			else
+				-- 3. กรณีเริ่มต้นลูปใหม่ (currentIndex == 1) และเพิ่งเริ่มเกม ให้ส่งตัวละครไปด่านแรก
+				if currentIndex == 1 then
 					teleportToNextStage()
-					task.wait(1)
+					task.wait(2)
 				end
 			end
 		end
-		task.wait(1)
+		task.wait(0.5)
 	end
 end)
 
