@@ -45,6 +45,7 @@ local selectedMapIndex = 1
 local selectedTrainIndex = 1
 local sortedStages = {}
 local currentIndex = 1
+local currentSpawnedIndex = 1 -- จำ Index ด่านที่เรากำลังยืนอยู่จริง
 local targetEndStageIndex = nil -- Stage ปลายทางที่เลือกจาก ListBox
 
 local autoLoopActive = false
@@ -139,17 +140,16 @@ local mapDropdownCorner = Instance.new("UICorner")
 mapDropdownCorner.CornerRadius = UDim.new(0, 6)
 mapDropdownCorner.Parent = mapDropdownBtn
 
--- จากเดิม Instance.new("Frame") เปลี่ยนเป็น ScrollingFrame
 local mapListFrame = Instance.new("ScrollingFrame")
 mapListFrame.Name = "MapListFrame"
-mapListFrame.Size = UDim2.new(1, -16, 0, 110) -- ความสูงกรอบคงที่ แต่เลื่อนดูได้
+mapListFrame.Size = UDim2.new(1, -16, 0, 110)
 mapListFrame.Position = UDim2.new(0, 8, 0, 60)
 mapListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 mapListFrame.BorderSizePixel = 0
 mapListFrame.Visible = false
 mapListFrame.ZIndex = 30
 mapListFrame.ScrollBarThickness = 4
-mapListFrame.CanvasSize = UDim2.new(0, 0, 0, #mapList * 22) -- คำนวณความสูงแถบเลื่อนตามจำนวน Map อัตโนมัติ
+mapListFrame.CanvasSize = UDim2.new(0, 0, 0, #mapList * 22)
 mapListFrame.Parent = mainFrame
 
 local mapListCorner = Instance.new("UICorner")
@@ -313,7 +313,6 @@ local trainWarpCorner = Instance.new("UICorner")
 trainWarpCorner.CornerRadius = UDim.new(0, 6)
 trainWarpCorner.Parent = trainWarpBtn
 
--- จากเดิม Instance.new("Frame") เปลี่ยนเป็น ScrollingFrame
 local trainListFrame = Instance.new("ScrollingFrame")
 trainListFrame.Name = "TrainListFrame"
 trainListFrame.Size = UDim2.new(1, -48, 0, 110)
@@ -323,7 +322,7 @@ trainListFrame.BorderSizePixel = 0
 trainListFrame.Visible = false
 trainListFrame.ZIndex = 20
 trainListFrame.ScrollBarThickness = 4
-trainListFrame.CanvasSize = UDim2.new(0, 0, 0, #trainLocations * 22) -- คำนวณความสูงแถบเลื่อนตามจำนวน Train อัตโนมัติ
+trainListFrame.CanvasSize = UDim2.new(0, 0, 0, #trainLocations * 22)
 trainListFrame.Parent = mainFrame
 
 local trainListCorner = Instance.new("UICorner")
@@ -466,6 +465,7 @@ end
 local function loadAndSortStages()
 	sortedStages = {}
 	currentIndex = 1
+	currentSpawnedIndex = 1
 	targetEndStageIndex = nil
 	targetStageDropdownBtn.Text = "🎯 Auto Stop Stage: Select ▼"
 	
@@ -541,6 +541,8 @@ for i, item in ipairs(trainLocations) do
 end
 
 -- Teleport Logic
+local isStageClear = false
+
 local function teleportToNextStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
@@ -553,30 +555,29 @@ local function teleportToNextStage()
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 
 	if spawnPart and hrp then
-		-- 🛠️ ตั้งค่าให้เป็น false ไว้ก่อนทันทีที่สั่งวาร์ป เพื่อรอให้ Task 16 เช็คจริงอีกที
 		isStageClear = false 
 		stageStateLabel.Text = "👾 Status: Checking..."
 		stageStateLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
 
 		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3, 0)
+		
+		currentSpawnedIndex = currentIndex -- จำด่านที่วาร์ปไปสู้จริง
+		
 		currentIndex = currentIndex + 1
 		if currentIndex > #sortedStages then currentIndex = 1 end
 		updateUI()
 	end
 end
 
--- Claim Logic (วาปไป Pad.Free แล้ว Reset กลับเริ่ม 1)
+-- Claim Logic (วาร์ปไป Pad.Free ของด่านถัดไป แล้ว Reset กลับเริ่ม 1)
 local function claimTargetStage()
 	if #sortedStages == 0 then loadAndSortStages() end
 	if #sortedStages == 0 then return end
 
-	--------------------------------------------------
-	-- 🛠️ ปรับแก้ตรงนี้: กำหนดให้ไป Claim ด่านถัดไป (+1)
-	local targetClaimIdx = currentIndex -- เปลี่ยนจาก (currentIndex - 1) เป็น currentIndex ตรงๆ
+	local targetClaimIdx = currentSpawnedIndex + 1
 	if targetClaimIdx > #sortedStages then 
-		targetClaimIdx = #sortedStages -- ป้องกัน Index เกินจำนวนด่านที่มีอยู่
+		targetClaimIdx = #sortedStages 
 	end
-	--------------------------------------------------
 
 	local currentStageData = sortedStages[targetClaimIdx]
 	if not currentStageData then return end
@@ -600,6 +601,7 @@ local function claimTargetStage()
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
 			currentIndex = 1
+			currentSpawnedIndex = 1
 			updateUI()
 		end
 	end
@@ -639,16 +641,11 @@ local function teleportToTrain()
 	end
 end
 
--- 16. Stage Status Detection & Fixed Truly-Auto Loop Controller
-local isStageClear = false
-
+-- 16. Stage Status Detection
 task.spawn(function()
 	while true do
 		pcall(function()
-			local targetCheckIdx = currentIndex - 1
-			if targetCheckIdx < 1 then targetCheckIdx = 1 end
-			
-			local currentStageData = sortedStages[targetCheckIdx]
+			local currentStageData = sortedStages[currentSpawnedIndex]
 			
 			if currentStageData and currentStageData.folder then
 				local barrierFolder = currentStageData.folder:FindFirstChild("Barrier")
@@ -684,24 +681,13 @@ end)
 task.spawn(function()
 	while true do
 		if autoLoopActive then
-			-- ดึง Index ด่านที่เรายืนอยู่/เคลียร์ล่าสุดมาเช็ค
-			local lastWarpedIndex = currentIndex - 1
-			if lastWarpedIndex < 1 then lastWarpedIndex = 1 end
-
-			-- 1. เช็คก่อนเลยว่าถึง Auto Stop Stage ที่เลือกไว้แล้วหรือยัง
-			if targetEndStageIndex and lastWarpedIndex == targetEndStageIndex then
-				claimTargetStage()
-				task.wait(5) -- หน่วงเวลาหลัง Claim ก่อนเริ่มรอบใหม่
-
-			-- 2. ถ้ายังไม่ถึง แต่สถานะด่านเคลียร์แล้ว (Status: Clear) ให้สั่ง Claim / วาร์ปไปต่อทันที
-			elseif isStageClear then
-				teleportToNextStage()
-				task.wait(1)
-			else
-				-- 3. กรณีเริ่มต้นลูปใหม่ (currentIndex == 1) และเพิ่งเริ่มเกม ให้ส่งตัวละครไปด่านแรก
-				if currentIndex == 1 then
+			if isStageClear then
+				if targetEndStageIndex and currentSpawnedIndex == targetEndStageIndex then
+					claimTargetStage()
+					task.wait(5)
+				else
 					teleportToNextStage()
-					task.wait(2)
+					task.wait(1)
 				end
 			end
 		end
@@ -829,6 +815,7 @@ nextBtn.MouseButton1Click:Connect(teleportToNextStage)
 
 resetBtn.MouseButton1Click:Connect(function()
 	currentIndex = 1
+	currentSpawnedIndex = 1
 	updateUI()
 end)
 
