@@ -53,6 +53,7 @@ local autoClickActive = false
 local autoRebirthActive = false
 local antiAfkActive = false
 local antiGamePauseActive = false
+local isClaiming = false -- 🛠️ เพิ่ม Flag กัน Logic ชนกันขณะ Claim
 
 local idleConnection = nil
 
@@ -569,10 +570,16 @@ local function teleportToNextStage()
 	end
 end
 
--- Claim Logic
+-- Claim Logic (ปรับแต่งให้เริ่มรอบใหม่ต่ออัตโนมัติ)
 local function claimTargetStage()
+	if isClaiming then return end
+	isClaiming = true
+
 	if #sortedStages == 0 then loadAndSortStages() end
-	if #sortedStages == 0 then return end
+	if #sortedStages == 0 then 
+		isClaiming = false
+		return 
+	end
 
 	local targetClaimIdx = currentSpawnedIndex + 1
 	if targetClaimIdx > #sortedStages then 
@@ -580,7 +587,10 @@ local function claimTargetStage()
 	end
 
 	local currentStageData = sortedStages[targetClaimIdx]
-	if not currentStageData then return end
+	if not currentStageData then 
+		isClaiming = false
+		return 
+	end
 
 	local padFolder = currentStageData.folder:FindFirstChild("Pad")
 	local freePart = padFolder and padFolder:FindFirstChild("Free")
@@ -600,11 +610,20 @@ local function claimTargetStage()
 
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+			
+			-- 🛠️ พักให้ระบบรับ Claim 2 วินาที แล้ว Reset วาร์ปกลับเริ่ม Stage 1 ทันที
+			task.wait(2)
 			currentIndex = 1
 			currentSpawnedIndex = 1
 			updateUI()
+			
+			if autoLoopActive then
+				teleportToNextStage()
+			end
 		end
 	end
+	
+	isClaiming = false
 end
 
 local function getTargetObject(pathArray)
@@ -677,14 +696,13 @@ task.spawn(function()
 	end
 end)
 
--- Truly Auto Loop Thread (ปรับแต่งให้เริ่มวาร์ปฉุกเฉินได้)
+-- Truly Auto Loop Thread
 task.spawn(function()
 	while true do
-		if autoLoopActive then
+		if autoLoopActive and not isClaiming then
 			if isStageClear then
 				if targetEndStageIndex and currentSpawnedIndex == targetEndStageIndex then
 					claimTargetStage()
-					task.wait(5)
 				else
 					teleportToNextStage()
 					task.wait(1)
@@ -739,14 +757,11 @@ end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
 
--- 🛠️ แก้ไขปุ่ม Start ให้สั่งวาร์ปทันทีเมื่อเริ่มกดใช้งาน
 startStopToggleBtn.MouseButton1Click:Connect(function()
 	autoLoopActive = not autoLoopActive
 	if autoLoopActive then
 		startStopToggleBtn.Text = "⏹️ Stop Auto Loop"
 		startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-		
-		-- บังคับสั่งวาร์ปไปด่านแรกทันทีเพื่อกระตุ้นให้ระบบ Auto ทำงาน
 		teleportToNextStage()
 	else
 		startStopToggleBtn.Text = "▶️ Start Auto Loop"
@@ -810,7 +825,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 	else
 		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
 		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 	end
 end)
 
