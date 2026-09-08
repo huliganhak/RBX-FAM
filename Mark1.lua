@@ -51,6 +51,7 @@ local targetEndStageIndex = nil
 local autoLoopActive = false
 local autoClickActive = false
 local autoRebirthActive = false
+local autoEndlessActive = false -- 🛠️ เพิ่ม Flag สำหรับ Auto Endless Rejoin
 local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
@@ -63,10 +64,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ปรับความสูงเป็น 427 เพื่อรองรับแถวปุ่มใหม่)
+-- 3. Main Frame (ปรับความสูงเป็น 459 เพื่อรองรับปุ่ม Auto Endless)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 427)
+mainFrame.Size = UDim2.new(0, 230, 0, 459)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -119,7 +120,7 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Text = "X"
 closeBtn.TextSize = 10
-closeBtn.Parent = topBar
+closeBtn.Parent = closeBtn
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
@@ -334,7 +335,7 @@ local trainListLayout = Instance.new("UIListLayout")
 trainListLayout.Padding = UDim.new(0, 2)
 trainListLayout.Parent = trainListFrame
 
--- 11. Event Buttons (Endless & Boss Event - แถวเดียวกัน)
+-- 11. Event Buttons (Endless & Boss Event)
 local endlessBtn = Instance.new("TextButton")
 endlessBtn.Name = "EndlessBtn"
 endlessBtn.Size = UDim2.new(0.5, -11, 0, 26)
@@ -365,10 +366,26 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- 12. Auto Buttons
+-- 🛠️ 12. Auto Rejoin Endless Button Checkbox
+local autoEndlessToggleBtn = Instance.new("TextButton")
+autoEndlessToggleBtn.Name = "AutoEndlessToggleBtn"
+autoEndlessToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+autoEndlessToggleBtn.Position = UDim2.new(0, 8, 0, 258)
+autoEndlessToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+autoEndlessToggleBtn.Font = Enum.Font.GothamBold
+autoEndlessToggleBtn.Text = "🔄 Auto Re-Endless: OFF"
+autoEndlessToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+autoEndlessToggleBtn.TextSize = 10
+autoEndlessToggleBtn.Parent = mainFrame
+
+local autoEndlessCorner = Instance.new("UICorner")
+autoEndlessCorner.CornerRadius = UDim.new(0, 6)
+autoEndlessCorner.Parent = autoEndlessToggleBtn
+
+-- 13. Auto Buttons
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 258)
+clickToggleBtn.Position = UDim2.new(0, 8, 0, 290)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Auto Click: OFF"
@@ -382,7 +399,7 @@ clickToggleCorner.Parent = clickToggleBtn
 
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 290)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 322)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Auto Rebirth: OFF"
@@ -394,10 +411,10 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- 13. Anti-AFK & Anti-Pause Buttons
+-- 14. Anti-AFK & Anti-Pause Buttons
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 322)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 354)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -411,7 +428,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 354)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 386)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -423,7 +440,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- 14. Open Button
+-- 15. Open Button
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -439,7 +456,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 15. Drag Window System
+-- 16. Drag Window System
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -467,7 +484,7 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 16. Dynamic Map & Stage Logic
+-- 17. Dynamic Map & Stage Logic
 local function updateTargetStageDropdownList()
 	for _, child in ipairs(targetStageScrollFrame:GetChildren()) do
 		if child:IsA("TextButton") then child:Destroy() end
@@ -690,7 +707,7 @@ local function teleportToTrain()
 	end
 end
 
--- 17. Stage Status Detection
+-- 18. Stage Status Detection
 task.spawn(function()
 	while true do
 		pcall(function()
@@ -743,7 +760,30 @@ task.spawn(function()
 	end
 end)
 
--- 18. Loops System (Auto Click / Rebirth)
+-- 🛠️ Auto Rejoin Endless Loop (เช็คเฉพาะ EndlessEnemies โดยไม่สนใจ suffix)
+task.spawn(function()
+	while true do
+		if autoEndlessActive then
+			local inEndless = false
+			for _, child in ipairs(workspace:GetChildren()) do
+				if string.find(child.Name, "EndlessEnemies") then
+					inEndless = true
+					break
+				end
+			end
+
+			if not inEndless then
+				pcall(function()
+					ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("EndlessJoinRequest"):FireServer(6)
+				end)
+				task.wait(3) -- รอ 3 วินาทีให้ระบบวาร์ปเข้า
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+-- 19. Loops System (Auto Click / Rebirth)
 task.spawn(function()
 	while true do
 		if autoClickActive then
@@ -766,7 +806,7 @@ task.spawn(function()
 	end
 end)
 
--- 19. Toggle & Event Handlers
+-- 20. Toggle & Event Handlers
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	targetStageScrollFrame.Visible = false
@@ -797,6 +837,13 @@ bossEventBtn.MouseButton1Click:Connect(function()
 	pcall(function()
 		ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("BossEventResponse"):FireServer(true)
 	end)
+end)
+
+autoEndlessToggleBtn.MouseButton1Click:Connect(function()
+	autoEndlessActive = not autoEndlessActive
+	autoEndlessToggleBtn.Text = autoEndlessActive and "🔄 Auto Re-Endless: ON" or "🔄 Auto Re-Endless: OFF"
+	autoEndlessToggleBtn.TextColor3 = autoEndlessActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+	autoEndlessToggleBtn.BackgroundColor3 = autoEndlessActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
 startStopToggleBtn.MouseButton1Click:Connect(function()
@@ -897,6 +944,7 @@ closeBtn.MouseButton1Click:Connect(function()
 	autoLoopActive = false
 	autoClickActive = false
 	autoRebirthActive = false
+	autoEndlessActive = false
 	antiAfkActive = false
 	if idleConnection then idleConnection:Disconnect() end
 	screenGui:Destroy()
