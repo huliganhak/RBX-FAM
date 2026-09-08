@@ -51,7 +51,7 @@ local targetEndStageIndex = nil
 local autoLoopActive = false
 local autoClickActive = false
 local autoRebirthActive = false
-local autoEndlessActive = false -- 🛠️ เพิ่ม Flag สำหรับ Auto Endless Rejoin
+local autoEndlessActive = false
 local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
@@ -64,7 +64,7 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ปรับความสูงเป็น 459 เพื่อรองรับปุ่ม Auto Endless)
+-- 3. Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 230, 0, 459)
@@ -120,7 +120,7 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Text = "X"
 closeBtn.TextSize = 10
-closeBtn.Parent = closeBtn
+closeBtn.Parent = topBar
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
@@ -366,7 +366,7 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- 🛠️ 12. Auto Rejoin Endless Button Checkbox
+-- 12. Auto Rejoin Endless Button
 local autoEndlessToggleBtn = Instance.new("TextButton")
 autoEndlessToggleBtn.Name = "AutoEndlessToggleBtn"
 autoEndlessToggleBtn.Size = UDim2.new(1, -16, 0, 26)
@@ -760,7 +760,7 @@ task.spawn(function()
 	end
 end)
 
--- 🛠️ Auto Rejoin Endless Loop (เช็คเฉพาะ EndlessEnemies โดยไม่สนใจ suffix)
+-- Auto Rejoin Endless Loop
 task.spawn(function()
 	while true do
 		if autoEndlessActive then
@@ -776,7 +776,7 @@ task.spawn(function()
 				pcall(function()
 					ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("EndlessJoinRequest"):FireServer(6)
 				end)
-				task.wait(3) -- รอ 3 วินาทีให้ระบบวาร์ปเข้า
+				task.wait(3)
 			end
 		end
 		task.wait(1)
