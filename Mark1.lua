@@ -1,12 +1,13 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local currentCamera = workspace.CurrentCamera
+local camera = workspace.CurrentCamera
 
 -- 1. เคลียร์ UI เก่า
 for _, oldGui in ipairs(playerGui:GetChildren()) do
@@ -15,7 +16,7 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
--- ข้อมูล Map ที่เลือกได้ (Map 3 - Map 10)
+-- ข้อมูล Map
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
@@ -27,7 +28,7 @@ local mapList = {
 	{ Name = "Map 10", WorkspaceName = "Map10" },
 }
 
--- ข้อมูล Training Zone (Train 1 - 10)
+-- ข้อมูล Training Zone
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -56,7 +57,21 @@ local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
 
+-- Fly Variables
+local isFlying = false
+local flySpeed = 50
+local linearVelocity = nil
+local alignOrientation = nil
+local flyAttachment = nil
+local flyRenderConnection = nil
+
 local idleConnection = nil
+
+-- Safe Remote Helper (ป้องกัน Warning / Error ติดค้าง)
+local function getRemote(parent, name)
+	if not parent then return nil end
+	return parent:FindFirstChild(name)
+end
 
 -- 2. ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -64,10 +79,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame
+-- 3. Main Frame (ขยายความสูงรองรับปุ่ม Fly)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 459)
+mainFrame.Size = UDim2.new(0, 230, 0, 491)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -78,7 +93,7 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
--- 4. Top Title Bar
+-- Top Bar
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.Size = UDim2.new(1, 0, 0, 28)
@@ -126,7 +141,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- 5. Dropdown เลือก Map
+-- Dropdown Map
 local mapDropdownBtn = Instance.new("TextButton")
 mapDropdownBtn.Name = "MapDropdownBtn"
 mapDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
@@ -162,7 +177,7 @@ local mapListLayout = Instance.new("UIListLayout")
 mapListLayout.Padding = UDim.new(0, 2)
 mapListLayout.Parent = mapListFrame
 
--- 6. Status Bar & Stage Status Label
+-- Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -16, 0, 16)
@@ -187,9 +202,8 @@ stageStateLabel.TextSize = 10
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- 7. Stage Control Buttons
+-- Stage Controls
 local claimBtn = Instance.new("TextButton")
-claimBtn.Name = "ClaimButton"
 claimBtn.Size = UDim2.new(0, 55, 0, 26)
 claimBtn.Position = UDim2.new(0, 8, 0, 98)
 claimBtn.BackgroundColor3 = Color3.fromRGB(40, 140, 70)
@@ -204,7 +218,6 @@ claimCorner.CornerRadius = UDim.new(0, 6)
 claimCorner.Parent = claimBtn
 
 local nextBtn = Instance.new("TextButton")
-nextBtn.Name = "NextButton"
 nextBtn.Size = UDim2.new(1, -101, 0, 26)
 nextBtn.Position = UDim2.new(0, 67, 0, 98)
 nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
@@ -219,7 +232,6 @@ nextCorner.CornerRadius = UDim.new(0, 6)
 nextCorner.Parent = nextBtn
 
 local resetBtn = Instance.new("TextButton")
-resetBtn.Name = "ResetButton"
 resetBtn.Size = UDim2.new(0, 24, 0, 26)
 resetBtn.Position = UDim2.new(1, -32, 0, 98)
 resetBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
@@ -233,9 +245,8 @@ local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- 8. Target End Stage Dropdown
+-- Target Stage Dropdown
 local targetStageDropdownBtn = Instance.new("TextButton")
-targetStageDropdownBtn.Name = "TargetStageDropdownBtn"
 targetStageDropdownBtn.Size = UDim2.new(1, -16, 0, 26)
 targetStageDropdownBtn.Position = UDim2.new(0, 8, 0, 130)
 targetStageDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
@@ -250,7 +261,6 @@ targetStageDropdownCorner.CornerRadius = UDim.new(0, 6)
 targetStageDropdownCorner.Parent = targetStageDropdownBtn
 
 local targetStageScrollFrame = Instance.new("ScrollingFrame")
-targetStageScrollFrame.Name = "TargetStageScrollFrame"
 targetStageScrollFrame.Size = UDim2.new(1, -16, 0, 120)
 targetStageScrollFrame.Position = UDim2.new(0, 8, 0, 158)
 targetStageScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -268,9 +278,8 @@ local targetStageListLayout = Instance.new("UIListLayout")
 targetStageListLayout.Padding = UDim.new(0, 2)
 targetStageListLayout.Parent = targetStageScrollFrame
 
--- 9. Auto Start/Stop Loop Button
+-- Start Stop Auto Loop
 local startStopToggleBtn = Instance.new("TextButton")
-startStopToggleBtn.Name = "StartStopToggleBtn"
 startStopToggleBtn.Size = UDim2.new(1, -16, 0, 26)
 startStopToggleBtn.Position = UDim2.new(0, 8, 0, 162)
 startStopToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
@@ -284,9 +293,8 @@ local startStopToggleCorner = Instance.new("UICorner")
 startStopToggleCorner.CornerRadius = UDim.new(0, 6)
 startStopToggleCorner.Parent = startStopToggleBtn
 
--- 10. Training Dropdown
+-- Train Dropdown
 local trainDropdownBtn = Instance.new("TextButton")
-trainDropdownBtn.Name = "TrainDropdownBtn"
 trainDropdownBtn.Size = UDim2.new(1, -48, 0, 26)
 trainDropdownBtn.Position = UDim2.new(0, 8, 0, 194)
 trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
@@ -301,7 +309,6 @@ trainDropdownCorner.CornerRadius = UDim.new(0, 6)
 trainDropdownCorner.Parent = trainDropdownBtn
 
 local trainWarpBtn = Instance.new("TextButton")
-trainWarpBtn.Name = "TrainWarpBtn"
 trainWarpBtn.Size = UDim2.new(0, 28, 0, 26)
 trainWarpBtn.Position = UDim2.new(1, -36, 0, 194)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
@@ -316,7 +323,6 @@ trainWarpCorner.CornerRadius = UDim.new(0, 6)
 trainWarpCorner.Parent = trainWarpBtn
 
 local trainListFrame = Instance.new("ScrollingFrame")
-trainListFrame.Name = "TrainListFrame"
 trainListFrame.Size = UDim2.new(1, -48, 0, 110)
 trainListFrame.Position = UDim2.new(0, 8, 0, 222)
 trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -335,9 +341,8 @@ local trainListLayout = Instance.new("UIListLayout")
 trainListLayout.Padding = UDim.new(0, 2)
 trainListLayout.Parent = trainListFrame
 
--- 11. Event Buttons (Endless & Boss Event)
+-- Event Buttons
 local endlessBtn = Instance.new("TextButton")
-endlessBtn.Name = "EndlessBtn"
 endlessBtn.Size = UDim2.new(0.5, -11, 0, 26)
 endlessBtn.Position = UDim2.new(0, 8, 0, 226)
 endlessBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 180)
@@ -352,7 +357,6 @@ endlessCorner.CornerRadius = UDim.new(0, 6)
 endlessCorner.Parent = endlessBtn
 
 local bossEventBtn = Instance.new("TextButton")
-bossEventBtn.Name = "BossEventBtn"
 bossEventBtn.Size = UDim2.new(0.5, -11, 0, 26)
 bossEventBtn.Position = UDim2.new(0.5, 3, 0, 226)
 bossEventBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
@@ -366,9 +370,8 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- 12. Auto Rejoin Endless Button
+-- Auto Re-Endless
 local autoEndlessToggleBtn = Instance.new("TextButton")
-autoEndlessToggleBtn.Name = "AutoEndlessToggleBtn"
 autoEndlessToggleBtn.Size = UDim2.new(1, -16, 0, 26)
 autoEndlessToggleBtn.Position = UDim2.new(0, 8, 0, 258)
 autoEndlessToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
@@ -382,7 +385,7 @@ local autoEndlessCorner = Instance.new("UICorner")
 autoEndlessCorner.CornerRadius = UDim.new(0, 6)
 autoEndlessCorner.Parent = autoEndlessToggleBtn
 
--- 13. Auto Buttons
+-- Auto Click & Auto Rebirth
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(1, -16, 0, 26)
 clickToggleBtn.Position = UDim2.new(0, 8, 0, 290)
@@ -411,10 +414,26 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- 14. Anti-AFK & Anti-Pause Buttons
+-- Fly Mode Button
+local flyToggleBtn = Instance.new("TextButton")
+flyToggleBtn.Name = "FlyToggleBtn"
+flyToggleBtn.Size = UDim2.new(1, -16, 0, 26)
+flyToggleBtn.Position = UDim2.new(0, 8, 0, 354)
+flyToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+flyToggleBtn.Font = Enum.Font.GothamBold
+flyToggleBtn.Text = "🕊️ Fly Mode: OFF (E)"
+flyToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+flyToggleBtn.TextSize = 10
+flyToggleBtn.Parent = mainFrame
+
+local flyToggleCorner = Instance.new("UICorner")
+flyToggleCorner.CornerRadius = UDim.new(0, 6)
+flyToggleCorner.Parent = flyToggleBtn
+
+-- Anti-AFK & Anti-Pause
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 354)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 386)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -428,7 +447,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 386)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 418)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -440,7 +459,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- 15. Open Button
+-- Open Button
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -456,7 +475,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- 16. Drag Window System
+-- Drag System
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -484,7 +503,115 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- 17. Dynamic Map & Stage Logic
+-- Fly / Unfly System Logic
+local function stopFly()
+	isFlying = false
+	flyToggleBtn.Text = "🕊️ Fly Mode: OFF (E)"
+	flyToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+	flyToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+
+	if flyRenderConnection then
+		flyRenderConnection:Disconnect()
+		flyRenderConnection = nil
+	end
+
+	if linearVelocity then linearVelocity:Destroy() end
+	if alignOrientation then alignOrientation:Destroy() end
+	if flyAttachment then flyAttachment:Destroy() end
+
+	local character = player.Character
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.PlatformStand = false
+		end
+	end
+end
+
+local function startFly()
+	local character = player.Character
+	if not character then return end
+	
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not hrp or not humanoid then return end
+
+	isFlying = true
+	flyToggleBtn.Text = "🕊️ Fly Mode: ON (E)"
+	flyToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+	flyToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+
+	humanoid.PlatformStand = true
+
+	flyAttachment = Instance.new("Attachment")
+	flyAttachment.Name = "FlyAttachment"
+	flyAttachment.Parent = hrp
+
+	linearVelocity = Instance.new("LinearVelocity")
+	linearVelocity.Attachment0 = flyAttachment
+	linearVelocity.MaxForce = 999999
+	linearVelocity.VectorVelocity = Vector3.zero
+	linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+	linearVelocity.Parent = hrp
+
+	alignOrientation = Instance.new("AlignOrientation")
+	alignOrientation.Attachment0 = flyAttachment
+	alignOrientation.MaxTorque = 999999
+	alignOrientation.Responsiveness = 200
+	alignOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	alignOrientation.Parent = hrp
+
+	flyRenderConnection = RunService.RenderStepped:Connect(function()
+		if not isFlying then return end
+
+		alignOrientation.CFrame = camera.CFrame
+
+		local moveVector = Vector3.zero
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			moveVector = moveVector + camera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			moveVector = moveVector - camera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			moveVector = moveVector - camera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			moveVector = moveVector + camera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			moveVector = moveVector + Vector3.new(0, 1, 0)
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+			moveVector = moveVector - Vector3.new(0, 1, 0)
+		end
+
+		if moveVector.Magnitude > 0 then
+			linearVelocity.VectorVelocity = moveVector.Unit * flySpeed
+		else
+			linearVelocity.VectorVelocity = Vector3.zero
+		end
+	end)
+end
+
+local function toggleFly()
+	if isFlying then
+		stopFly()
+	else
+		startFly()
+	end
+end
+
+flyToggleBtn.MouseButton1Click:Connect(toggleFly)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.E then
+		toggleFly()
+	end
+end)
+
+-- Map & Stage System
 local function updateTargetStageDropdownList()
 	for _, child in ipairs(targetStageScrollFrame:GetChildren()) do
 		if child:IsA("TextButton") then child:Destroy() end
@@ -589,7 +716,6 @@ for i, item in ipairs(trainLocations) do
 	end)
 end
 
--- Teleport Logic
 local isStageClear = false
 
 local function teleportToNextStage()
@@ -609,16 +735,13 @@ local function teleportToNextStage()
 		stageStateLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
 
 		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3, 0)
-		
 		currentSpawnedIndex = currentIndex
-		
 		currentIndex = currentIndex + 1
 		if currentIndex > #sortedStages then currentIndex = 1 end
 		updateUI()
 	end
 end
 
--- Claim Logic
 local function claimTargetStage()
 	if isClaiming then return end
 	isClaiming = true
@@ -630,9 +753,7 @@ local function claimTargetStage()
 	end
 
 	local targetClaimIdx = currentSpawnedIndex + 1
-	if targetClaimIdx > #sortedStages then 
-		targetClaimIdx = #sortedStages 
-	end
+	if targetClaimIdx > #sortedStages then targetClaimIdx = #sortedStages end
 
 	local currentStageData = sortedStages[targetClaimIdx]
 	if not currentStageData then 
@@ -658,7 +779,6 @@ local function claimTargetStage()
 
 		if targetCFrame then
 			hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-			
 			task.wait(2)
 			currentIndex = 1
 			currentSpawnedIndex = 1
@@ -695,7 +815,7 @@ local function teleportToTrain()
 		if targetObj:IsA("BasePart") then
 			targetCFrame = targetObj.CFrame
 		elseif targetObj:IsA("Model") then
-			targetObj:GetPivot()
+			targetCFrame = targetObj:GetPivot()
 		else
 			local firstPart = targetObj:FindFirstChildWhichIsA("BasePart", true)
 			if firstPart then targetCFrame = firstPart.CFrame end
@@ -707,7 +827,7 @@ local function teleportToTrain()
 	end
 end
 
--- 18. Stage Status Detection
+-- Stage Detector Loop
 task.spawn(function()
 	while true do
 		pcall(function()
@@ -743,7 +863,7 @@ task.spawn(function()
 	end
 end)
 
--- Auto Loop Thread
+-- Auto Loops (Safe Remote Connection)
 task.spawn(function()
 	while true do
 		if autoLoopActive and not isClaiming then
@@ -760,7 +880,6 @@ task.spawn(function()
 	end
 end)
 
--- Auto Rejoin Endless Loop
 task.spawn(function()
 	while true do
 		if autoEndlessActive then
@@ -774,7 +893,10 @@ task.spawn(function()
 
 			if not inEndless then
 				pcall(function()
-					ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("EndlessJoinRequest"):FireServer(6)
+					local shared = getRemote(ReplicatedStorage, "Shared")
+					local remotes = getRemote(shared, "Remotes")
+					local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
+					if endlessRemote then endlessRemote:FireServer(6) end
 				end)
 				task.wait(3)
 			end
@@ -783,12 +905,14 @@ task.spawn(function()
 	end
 end)
 
--- 19. Loops System (Auto Click / Rebirth)
 task.spawn(function()
 	while true do
 		if autoClickActive then
 			pcall(function()
-				ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("PlayerClick"):FireServer()
+				local shared = getRemote(ReplicatedStorage, "Shared")
+				local remotes = getRemote(shared, "Remotes")
+				local clickRemote = getRemote(remotes, "PlayerClick")
+				if clickRemote then clickRemote:FireServer() end
 			end)
 		end
 		task.wait(0.1)
@@ -799,14 +923,17 @@ task.spawn(function()
 	while true do
 		if autoRebirthActive then
 			pcall(function()
-				ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("RequestRebirth"):InvokeServer()
+				local shared = getRemote(ReplicatedStorage, "Shared")
+				local remotes = getRemote(shared, "Remotes")
+				local rebirthRemote = getRemote(remotes, "RequestRebirth")
+				if rebirthRemote then rebirthRemote:InvokeServer() end
 			end)
 		end
 		task.wait(0.5)
 	end
 end)
 
--- 20. Toggle & Event Handlers
+-- Event Listeners
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	targetStageScrollFrame.Visible = false
@@ -829,13 +956,19 @@ trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
 
 endlessBtn.MouseButton1Click:Connect(function()
 	pcall(function()
-		ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("EndlessJoinRequest"):FireServer(6)
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
+		if endlessRemote then endlessRemote:FireServer(6) end
 	end)
 end)
 
 bossEventBtn.MouseButton1Click:Connect(function()
 	pcall(function()
-		ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("BossEventResponse"):FireServer(true)
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local bossRemote = getRemote(remotes, "BossEventResponse")
+		if bossRemote then bossRemote:FireServer(true) end
 	end)
 end)
 
@@ -881,20 +1014,16 @@ antiAfkToggleBtn.MouseButton1Click:Connect(function()
 		
 		idleConnection = player.Idled:Connect(function()
 			if antiAfkActive then
-				VirtualUser:Button2Down(Vector2.zero, currentCamera.CFrame)
+				VirtualUser:Button2Down(Vector2.zero, camera.CFrame)
 				task.wait(1)
-				VirtualUser:Button2Up(Vector2.zero, currentCamera.CFrame)
+				VirtualUser:Button2Up(Vector2.zero, camera.CFrame)
 			end
 		end)
 	else
 		antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
 		antiAfkToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
 		antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-		
-		if idleConnection then
-			idleConnection:Disconnect()
-			idleConnection = nil
-		end
+		if idleConnection then idleConnection:Disconnect() end
 	end
 end)
 
@@ -907,9 +1036,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 		
 		pcall(function()
 			local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
-			if targetScript then
-				targetScript:Destroy()
-			end
+			if targetScript then targetScript:Destroy() end
 		end)
 	else
 		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -946,6 +1073,7 @@ closeBtn.MouseButton1Click:Connect(function()
 	autoRebirthActive = false
 	autoEndlessActive = false
 	antiAfkActive = false
+	stopFly()
 	if idleConnection then idleConnection:Disconnect() end
 	screenGui:Destroy()
 end)
