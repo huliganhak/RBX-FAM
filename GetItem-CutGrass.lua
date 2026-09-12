@@ -69,11 +69,12 @@ end
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CompactCollectorUI"
 screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 999 -- ดันให้อยู่เหนือ UI ปกติของเกม
 screenGui.Parent = (CoreGui:FindFirstChild("CoreGui") and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 310) -- ย่อขนาดให้เล็กลง ไม่บังจอ
-mainFrame.Position = UDim2.new(0.02, 0, 0.15, 0) -- ไว้มุมซ้ายเพื่อไม่เกะกะตรงกลาง
+mainFrame.Size = UDim2.new(0, 260, 0, 310)
+mainFrame.Position = UDim2.new(0.02, 0, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -128,19 +129,23 @@ container.Position = UDim2.new(0, 0, 0, 24)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- Floating Icon ตอนพับจอ
+-- ==========================================
+-- ปรับตำแหน่ง Floating Icon ให้อยู่ใต้รูปกระเป๋า (มุมซ้ายบน)
+-- ==========================================
 local floatingIcon = Instance.new("TextButton")
-floatingIcon.Size = UDim2.new(0, 38, 0, 38)
-floatingIcon.Position = UDim2.new(0.02, 0, 0.15, 0)
+floatingIcon.Size = UDim2.new(0, 42, 0, 42)
+floatingIcon.Position = UDim2.new(0, 12, 0, 275) -- ย้ายมาอยู่โซนใต้กล่องกระเป๋าพอดี
 floatingIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 floatingIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 floatingIcon.Text = "🤖"
-floatingIcon.TextSize = 18
+floatingIcon.TextSize = 20
 floatingIcon.Visible = false
 floatingIcon.Active = true
 floatingIcon.Draggable = true
+floatingIcon.ZIndex = 9999
 floatingIcon.Parent = screenGui
 Instance.new("UICorner", floatingIcon).CornerRadius = UDim.new(1, 0)
+
 local floatingStroke = Instance.new("UIStroke")
 floatingStroke.Color = Color3.fromRGB(80, 80, 80)
 floatingStroke.Thickness = 2
@@ -151,7 +156,7 @@ local selectedZoneName = ""
 local autoLoopActive = false
 local autoClickActive = false
 
--- World & Zone Dropdown (แถวเดียวกัน แบบย่อ)
+-- World & Zone Dropdown
 local worldDropdownBtn = Instance.new("TextButton")
 worldDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
 worldDropdownBtn.Position = UDim2.new(0.04, 0, 0.02, 0)
@@ -194,7 +199,7 @@ zoneScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 zoneScroll.Parent = container
 Instance.new("UIListLayout", zoneScroll)
 
--- Delay Settings (บรรทัดเดียวรวมกัน)
+-- Delay Settings
 local delayLabel = Instance.new("TextLabel")
 delayLabel.Size = UDim2.new(0.55, 0, 0, 18)
 delayLabel.Position = UDim2.new(0.04, 0, 0.30, 0)
@@ -284,7 +289,7 @@ toggleClickBtn.TextSize = 11
 toggleClickBtn.Parent = container
 Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 4)
 
--- Anti-AFK & Anti-GamePause Toggles (จัดคู่กันซ้าย-ขวา)
+-- Anti-AFK & Anti-GamePause Toggles
 local toggleAfkBtn = Instance.new("TextButton")
 toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 26)
 toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.81, 0)
