@@ -1,9 +1,27 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 -- Remote สำหรับ Auto Click
 local clickRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("acecateer_knit@1.7.2"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("StrengthService"):WaitForChild("RE"):WaitForChild("ClickRequested")
+
+-- ==========================================
+-- 0. ฟังก์ชัน Anti-AFK & Anti-GamePause
+-- ==========================================
+-- Anti-AFK (ป้องกันโดนเตะ 20 นาที)
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0,0))
+end)
+
+-- Anti-GamePause (ป้องกันเกมหยุดชะงักเวลาพับจอ)
+pcall(function()
+    if getgenv then
+        getgenv().DisabledFocusPause = true
+    end
+end)
 
 -- ==========================================
 -- 1. ฟังก์ชันวาร์ปกลับ Spawn
@@ -55,15 +73,15 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI หลัก (ปรับความสูงให้รองรับเมนูใหม่)
+-- 3. สร้าง UI หลัก
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoLoopZoneCollectorUI"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+screenGui.Parent = (CoreGui:FindFirstChild("CoreGui") and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 420) -- ขยายความสูงเพิ่มรองรับ Auto Click
+mainFrame.Size = UDim2.new(0, 320, 0, 420)
 mainFrame.Position = UDim2.new(0.5, -160, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
@@ -112,12 +130,31 @@ closeBtn.TextSize = 13
 closeBtn.Parent = headerFrame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
 
--- Container
+-- Container หลัก
 local container = Instance.new("Frame")
 container.Size = UDim2.new(1, 0, 1, -30)
 container.Position = UDim2.new(0, 0, 0, 30)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
+
+-- [เพิ่มใหม่] Floating Icon สำหรับกดเปิดหน้าต่างคืนเวลาพับจอเล็ก
+local floatingIcon = Instance.new("TextButton")
+floatingIcon.Size = UDim2.new(0, 45, 0, 45)
+floatingIcon.Position = UDim2.new(0, 20, 0.2, 0)
+floatingIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+floatingIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatingIcon.Text = "🤖"
+floatingIcon.TextSize = 22
+floatingIcon.Visible = false
+floatingIcon.Active = true
+floatingIcon.Draggable = true
+floatingIcon.Parent = screenGui
+Instance.new("UICorner", floatingIcon).CornerRadius = UDim.new(1, 0)
+
+local floatingStroke = Instance.new("UIStroke")
+floatingStroke.Color = Color3.fromRGB(80, 80, 80)
+floatingStroke.Thickness = 2
+floatingStroke.Parent = floatingIcon
 
 local selectedWorldName = "W5"
 local selectedZoneName = ""
@@ -216,9 +253,9 @@ Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 4)
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.9, 0, 0, 25)
 statusLabel.Position = UDim2.new(0.05, 0, 0.27, 0)
-statusLabel.Text = "สถานะ: พร้อมทำงาน"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextSize = 12
+statusLabel.Text = "สถานะ: พร้อมทำงาน (Anti-AFK เปิดอยู่)"
+statusLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+statusLabel.TextSize = 11
 statusLabel.TextWrapped = true
 statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
@@ -237,7 +274,7 @@ toggleBtn.Parent = container
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
 -- ------------------------------------------
--- [โซนเพิ่มใหม่] AUTO CLICK STRENGTH
+-- AUTO CLICK STRENGTH
 -- ------------------------------------------
 local clickDivider = Instance.new("Frame")
 clickDivider.Size = UDim2.new(0.9, 0, 0, 1)
@@ -488,7 +525,7 @@ toggleBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 7. ระบบเปิด/ปิด Auto Click Strength (เพิ่มใหม่)
+-- 7. ระบบเปิด/ปิด Auto Click Strength
 -- ==========================================
 toggleClickBtn.MouseButton1Click:Connect(function()
     autoClickActive = not autoClickActive
@@ -513,13 +550,21 @@ toggleClickBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ระบบย่อ/ปิด UI
+-- ==========================================
+-- 8. ระบบย่อ/ซ่อน UI และ Icon เล็ก (Floating Icon)
+-- ==========================================
 local isMinimized = false
+
 minimizeBtn.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 30) or UDim2.new(0, 320, 0, 420)
-    container.Visible = not isMinimized
-    minimizeBtn.Text = isMinimized and "+" or "-"
+    isMinimized = true
+    mainFrame.Visible = false       -- ซ่อนหน้าต่างหลัก
+    floatingIcon.Visible = true     -- แสดง Icon วงกลมเล็กๆ บนจอ
+end)
+
+floatingIcon.MouseButton1Click:Connect(function()
+    isMinimized = false
+    mainFrame.Visible = true        -- เปิดหน้าต่างหลักกลับมา
+    floatingIcon.Visible = false    -- ซ่อน Icon เล็ก
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
