@@ -8,19 +8,20 @@ local LocalPlayer = Players.LocalPlayer
 local clickRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("acecateer_knit@1.7.2"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("StrengthService"):WaitForChild("RE"):WaitForChild("ClickRequested")
 
 -- ==========================================
--- 0. ฟังก์ชัน Anti-AFK & Anti-GamePause
+-- 0. ตัวแปรสถานะ Anti-AFK & Anti-GamePause
 -- ==========================================
--- Anti-AFK (ป้องกันโดนเตะ 20 นาที)
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new(0,0))
+local antiAfkActive = true
+local antiPauseActive = true
+
+local afkConnection = LocalPlayer.Idled:Connect(function()
+    if antiAfkActive then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new(0,0))
+    end
 end)
 
--- Anti-GamePause (ป้องกันเกมหยุดชะงักเวลาพับจอ)
 pcall(function()
-    if getgenv then
-        getgenv().DisabledFocusPause = true
-    end
+    if getgenv then getgenv().DisabledFocusPause = true end
 end)
 
 -- ==========================================
@@ -29,17 +30,13 @@ end)
 local function teleportToSpawn()
     local success, err = pcall(function()
         local teleportRemote = ReplicatedStorage:FindFirstChild("TeleportToSpawn", true)
-
         if teleportRemote and teleportRemote:IsA("RemoteFunction") then
             teleportRemote:InvokeServer()
         else
             for _, v in pairs(ReplicatedStorage:GetDescendants()) do
                 if v.Name == "TeleportToSpawn" and (v:IsA("RemoteFunction") or v:IsA("RemoteEvent")) then
-                    if v:IsA("RemoteFunction") then
-                        v:InvokeServer()
-                    elseif v:IsA("RemoteEvent") then
-                        v:FireServer()
-                    end
+                    if v:IsA("RemoteFunction") then v:InvokeServer()
+                    elseif v:IsA("RemoteEvent") then v:FireServer() end
                     break
                 end
             end
@@ -58,14 +55,8 @@ local function isBackpackFull()
     if backpackValue and backpackValue:IsA("TextLabel") then
         local currentText = backpackValue.Text
         local current, max = currentText:match("(%d+)%s*/%s*(%d+)")
-        
         if current and max then
-            local currentNum = tonumber(current)
-            local maxNum = tonumber(max)
-            
-            if currentNum and maxNum and currentNum >= maxNum then
-                return true, currentText
-            end
+            if tonumber(current) >= tonumber(max) then return true, currentText end
             return false, currentText
         end
     end
@@ -73,84 +64,83 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI หลัก
+-- 3. สร้าง UI ขนาดกะทัดรัด (Compact UI)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoLoopZoneCollectorUI"
+screenGui.Name = "CompactCollectorUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = (CoreGui:FindFirstChild("CoreGui") and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 420)
-mainFrame.Position = UDim2.new(0.5, -160, 0.2, 0)
+mainFrame.Size = UDim2.new(0, 260, 0, 310) -- ย่อขนาดให้เล็กลง ไม่บังจอ
+mainFrame.Position = UDim2.new(0.02, 0, 0.15, 0) -- ไว้มุมซ้ายเพื่อไม่เกะกะตรงกลาง
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.ClipsDescendants = false
 mainFrame.Parent = screenGui
 
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 6)
 
 -- Header
 local headerFrame = Instance.new("Frame")
-headerFrame.Size = UDim2.new(1, 0, 0, 30)
+headerFrame.Size = UDim2.new(1, 0, 0, 24)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -60, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "🤖 Auto Collector & Clicker"
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Position = UDim2.new(0, 8, 0, 0)
+titleLabel.Text = "🤖 Auto Collector (Compact)"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 13
+titleLabel.TextSize = 11
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.BackgroundTransparency = 1
 titleLabel.Parent = headerFrame
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
-minimizeBtn.Position = UDim2.new(1, -55, 0, 3)
+minimizeBtn.Size = UDim2.new(0, 20, 0, 20)
+minimizeBtn.Position = UDim2.new(1, -45, 0, 2)
 minimizeBtn.Text = "-"
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeBtn.Font = Enum.Font.SourceSansBold
-minimizeBtn.TextSize = 16
+minimizeBtn.TextSize = 14
 minimizeBtn.Parent = headerFrame
-Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 3)
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 25, 0, 25)
-closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -22, 0, 2)
 closeBtn.Text = "X"
 closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 13
+closeBtn.TextSize = 11
 closeBtn.Parent = headerFrame
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 3)
 
 -- Container หลัก
 local container = Instance.new("Frame")
-container.Size = UDim2.new(1, 0, 1, -30)
-container.Position = UDim2.new(0, 0, 0, 30)
+container.Size = UDim2.new(1, 0, 1, -24)
+container.Position = UDim2.new(0, 0, 0, 24)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- [เพิ่มใหม่] Floating Icon สำหรับกดเปิดหน้าต่างคืนเวลาพับจอเล็ก
+-- Floating Icon ตอนพับจอ
 local floatingIcon = Instance.new("TextButton")
-floatingIcon.Size = UDim2.new(0, 45, 0, 45)
-floatingIcon.Position = UDim2.new(0, 20, 0.2, 0)
+floatingIcon.Size = UDim2.new(0, 38, 0, 38)
+floatingIcon.Position = UDim2.new(0.02, 0, 0.15, 0)
 floatingIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 floatingIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 floatingIcon.Text = "🤖"
-floatingIcon.TextSize = 22
+floatingIcon.TextSize = 18
 floatingIcon.Visible = false
 floatingIcon.Active = true
 floatingIcon.Draggable = true
 floatingIcon.Parent = screenGui
 Instance.new("UICorner", floatingIcon).CornerRadius = UDim.new(1, 0)
-
 local floatingStroke = Instance.new("UIStroke")
 floatingStroke.Color = Color3.fromRGB(80, 80, 80)
 floatingStroke.Thickness = 2
@@ -161,101 +151,89 @@ local selectedZoneName = ""
 local autoLoopActive = false
 local autoClickActive = false
 
--- World Dropdown
+-- World & Zone Dropdown (แถวเดียวกัน แบบย่อ)
 local worldDropdownBtn = Instance.new("TextButton")
-worldDropdownBtn.Size = UDim2.new(0.42, 0, 0, 28)
-worldDropdownBtn.Position = UDim2.new(0.05, 0, 0.03, 0)
-worldDropdownBtn.Text = "World: W5 ▼"
+worldDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
+worldDropdownBtn.Position = UDim2.new(0.04, 0, 0.02, 0)
+worldDropdownBtn.Text = "W5 ▼"
 worldDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 worldDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 worldDropdownBtn.Font = Enum.Font.SourceSansBold
-worldDropdownBtn.TextSize = 12
+worldDropdownBtn.TextSize = 11
 worldDropdownBtn.Parent = container
-Instance.new("UICorner", worldDropdownBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", worldDropdownBtn).CornerRadius = UDim.new(0, 3)
 
 local worldScroll = Instance.new("ScrollingFrame")
-worldScroll.Size = UDim2.new(0.42, 0, 0, 100)
-worldScroll.Position = UDim2.new(0.05, 0, 0.11, 0)
+worldScroll.Size = UDim2.new(0.46, 0, 0, 90)
+worldScroll.Position = UDim2.new(0.04, 0, 0.09, 0)
 worldScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 worldScroll.Visible = false
 worldScroll.ZIndex = 10
 worldScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 worldScroll.Parent = container
-local worldListLayout = Instance.new("UIListLayout", worldScroll)
+Instance.new("UIListLayout", worldScroll)
 
--- Zone Dropdown
 local zoneDropdownBtn = Instance.new("TextButton")
-zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 28)
-zoneDropdownBtn.Position = UDim2.new(0.5, 0, 0.03, 0)
+zoneDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
+zoneDropdownBtn.Position = UDim2.new(0.52, 0, 0.02, 0)
 zoneDropdownBtn.Text = "เลือก Zone ▼"
 zoneDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 zoneDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 zoneDropdownBtn.Font = Enum.Font.SourceSansBold
-zoneDropdownBtn.TextSize = 12
+zoneDropdownBtn.TextSize = 11
 zoneDropdownBtn.Parent = container
-Instance.new("UICorner", zoneDropdownBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", zoneDropdownBtn).CornerRadius = UDim.new(0, 3)
 
 local zoneScroll = Instance.new("ScrollingFrame")
-zoneScroll.Size = UDim2.new(0.45, 0, 0, 100)
-zoneScroll.Position = UDim2.new(0.5, 0, 0.11, 0)
+zoneScroll.Size = UDim2.new(0.46, 0, 0, 90)
+zoneScroll.Position = UDim2.new(0.52, 0, 0.09, 0)
 zoneScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 zoneScroll.Visible = false
 zoneScroll.ZIndex = 10
 zoneScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 zoneScroll.Parent = container
-local zoneListLayout = Instance.new("UIListLayout", zoneScroll)
+Instance.new("UIListLayout", zoneScroll)
 
--- Settings Input: Loop Delay
-local loopDelayLabel = Instance.new("TextLabel")
-loopDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
-loopDelayLabel.Position = UDim2.new(0.05, 0, 0.12, 0)
-loopDelayLabel.Text = "หน่วงซ้ำฟาร์ม (วิ):"
-loopDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-loopDelayLabel.TextSize = 11
-loopDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-loopDelayLabel.BackgroundTransparency = 1
-loopDelayLabel.Parent = container
+-- Delay Settings (บรรทัดเดียวรวมกัน)
+local delayLabel = Instance.new("TextLabel")
+delayLabel.Size = UDim2.new(0.55, 0, 0, 18)
+delayLabel.Position = UDim2.new(0.04, 0, 0.30, 0)
+delayLabel.Text = "หน่วงฟาร์ม/วาร์ป (วิ):"
+delayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+delayLabel.TextSize = 10
+delayLabel.TextXAlignment = Enum.TextXAlignment.Left
+delayLabel.BackgroundTransparency = 1
+delayLabel.Parent = container
 
 local loopDelayBox = Instance.new("TextBox")
-loopDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
-loopDelayBox.Position = UDim2.new(0.6, 0, 0.12, 0)
+loopDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
+loopDelayBox.Position = UDim2.new(0.58, 0, 0.30, 0)
 loopDelayBox.Text = "0.5"
 loopDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 loopDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 loopDelayBox.Font = Enum.Font.SourceSans
-loopDelayBox.TextSize = 11
+loopDelayBox.TextSize = 10
 loopDelayBox.Parent = container
-Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 4)
-
--- Settings Input: Return Spawn Delay
-local returnDelayLabel = Instance.new("TextLabel")
-returnDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
-returnDelayLabel.Position = UDim2.new(0.05, 0, 0.19, 0)
-returnDelayLabel.Text = "หน่วงหลังวาร์ปกลับ (วิ):"
-returnDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-returnDelayLabel.TextSize = 11
-returnDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-returnDelayLabel.BackgroundTransparency = 1
-returnDelayLabel.Parent = container
+Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 3)
 
 local returnDelayBox = Instance.new("TextBox")
-returnDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
-returnDelayBox.Position = UDim2.new(0.6, 0, 0.19, 0)
+returnDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
+returnDelayBox.Position = UDim2.new(0.78, 0, 0.30, 0)
 returnDelayBox.Text = "3"
 returnDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 returnDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 returnDelayBox.Font = Enum.Font.SourceSans
-returnDelayBox.TextSize = 11
+returnDelayBox.TextSize = 10
 returnDelayBox.Parent = container
-Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 3)
 
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-statusLabel.Position = UDim2.new(0.05, 0, 0.27, 0)
-statusLabel.Text = "สถานะ: พร้อมทำงาน (Anti-AFK เปิดอยู่)"
-statusLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
-statusLabel.TextSize = 11
+statusLabel.Size = UDim2.new(0.92, 0, 0, 20)
+statusLabel.Position = UDim2.new(0.04, 0, 0.40, 0)
+statusLabel.Text = "สถานะ: พร้อมทำงาน"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextSize = 10
 statusLabel.TextWrapped = true
 statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
@@ -263,131 +241,129 @@ statusLabel.Parent = container
 
 -- Toggle Auto Loop Button
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.9, 0, 0, 38)
-toggleBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
-toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
+toggleBtn.Size = UDim2.new(0.92, 0, 0, 26)
+toggleBtn.Position = UDim2.new(0.04, 0, 0.48, 0)
+toggleBtn.Text = "▶️ Auto Loop"
 toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.TextSize = 13
+toggleBtn.TextSize = 11
 toggleBtn.Parent = container
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
 
--- ------------------------------------------
--- AUTO CLICK STRENGTH
--- ------------------------------------------
-local clickDivider = Instance.new("Frame")
-clickDivider.Size = UDim2.new(0.9, 0, 0, 1)
-clickDivider.Position = UDim2.new(0.05, 0, 0.48, 0)
-clickDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-clickDivider.BorderSizePixel = 0
-clickDivider.Parent = container
-
-local clickDelayLabel = Instance.new("TextLabel")
-clickDelayLabel.Size = UDim2.new(0.5, 0, 0, 20)
-clickDelayLabel.Position = UDim2.new(0.05, 0, 0.52, 0)
-clickDelayLabel.Text = "หน่วงเวลา Auto Click (วิ):"
-clickDelayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-clickDelayLabel.TextSize = 11
-clickDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-clickDelayLabel.BackgroundTransparency = 1
-clickDelayLabel.Parent = container
-
+-- Auto Click Setting & Button
 local clickDelayBox = Instance.new("TextBox")
-clickDelayBox.Size = UDim2.new(0.35, 0, 0, 20)
-clickDelayBox.Position = UDim2.new(0.6, 0, 0.52, 0)
+clickDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
+clickDelayBox.Position = UDim2.new(0.78, 0, 0.60, 0)
 clickDelayBox.Text = "0.1"
 clickDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 clickDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 clickDelayBox.Font = Enum.Font.SourceSans
-clickDelayBox.TextSize = 11
+clickDelayBox.TextSize = 10
 clickDelayBox.Parent = container
-Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 3)
+
+local clickDelayLabel = Instance.new("TextLabel")
+clickDelayLabel.Size = UDim2.new(0.55, 0, 0, 18)
+clickDelayLabel.Position = UDim2.new(0.04, 0, 0.60, 0)
+clickDelayLabel.Text = "หน่วงคลิก (วิ):"
+clickDelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+clickDelayLabel.TextSize = 10
+clickDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+clickDelayLabel.BackgroundTransparency = 1
+clickDelayLabel.Parent = container
 
 local toggleClickBtn = Instance.new("TextButton")
-toggleClickBtn.Size = UDim2.new(0.9, 0, 0, 38)
-toggleClickBtn.Position = UDim2.new(0.05, 0, 0.60, 0)
-toggleClickBtn.Text = "⚡ เปิดทำงาน Auto Click (Strength)"
+toggleClickBtn.Size = UDim2.new(0.92, 0, 0, 26)
+toggleClickBtn.Position = UDim2.new(0.04, 0, 0.68, 0)
+toggleClickBtn.Text = "⚡ Auto Click (Strength)"
 toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
 toggleClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleClickBtn.Font = Enum.Font.SourceSansBold
-toggleClickBtn.TextSize = 13
+toggleClickBtn.TextSize = 11
 toggleClickBtn.Parent = container
-Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 4)
+
+-- Anti-AFK & Anti-GamePause Toggles (จัดคู่กันซ้าย-ขวา)
+local toggleAfkBtn = Instance.new("TextButton")
+toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 26)
+toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.81, 0)
+toggleAfkBtn.Text = "🛡️ AFK: เปิด"
+toggleAfkBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+toggleAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleAfkBtn.Font = Enum.Font.SourceSansBold
+toggleAfkBtn.TextSize = 10
+toggleAfkBtn.Parent = container
+Instance.new("UICorner", toggleAfkBtn).CornerRadius = UDim.new(0, 4)
+
+local togglePauseBtn = Instance.new("TextButton")
+togglePauseBtn.Size = UDim2.new(0.45, 0, 0, 26)
+togglePauseBtn.Position = UDim2.new(0.51, 0, 0.81, 0)
+togglePauseBtn.Text = "⏸️ Pause: เปิด"
+togglePauseBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+togglePauseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+togglePauseBtn.Font = Enum.Font.SourceSansBold
+togglePauseBtn.TextSize = 10
+togglePauseBtn.Parent = container
+Instance.new("UICorner", togglePauseBtn).CornerRadius = UDim.new(0, 4)
 
 -- ==========================================
--- 4. ระบบ Dropdown
+-- 4. ระบบ Dropdown Logic
 -- ==========================================
 local function refreshZoneList()
-    for _, child in pairs(zoneScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-
+    for _, child in pairs(zoneScroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     local zonesFolder = workspace:FindFirstChild("Zones")
     local worldFolder = zonesFolder and zonesFolder:FindFirstChild(selectedWorldName)
     if not worldFolder then return end
-
     local zones = {}
-    for _, zone in pairs(worldFolder:GetChildren()) do
-        table.insert(zones, zone.Name)
-    end
+    for _, zone in pairs(worldFolder:GetChildren()) do table.insert(zones, zone.Name) end
     table.sort(zones)
-
     for _, zoneName in ipairs(zones) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 25)
+        btn.Size = UDim2.new(1, 0, 0, 22)
         btn.Text = zoneName
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.SourceSans
-        btn.TextSize = 12
+        btn.TextSize = 11
         btn.ZIndex = 11
         btn.Parent = zoneScroll
-
         btn.MouseButton1Click:Connect(function()
             selectedZoneName = zoneName
             zoneDropdownBtn.Text = zoneName .. " ▼"
             zoneScroll.Visible = false
         end)
     end
-    zoneScroll.CanvasSize = UDim2.new(0, 0, 0, #zones * 25)
+    zoneScroll.CanvasSize = UDim2.new(0, 0, 0, #zones * 22)
 end
 
 local function refreshWorldList()
-    for _, child in pairs(worldScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-
+    for _, child in pairs(worldScroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     local zonesFolder = workspace:FindFirstChild("Zones")
     if not zonesFolder then return end
-
     local worlds = {}
-    for _, w in pairs(zonesFolder:GetChildren()) do
-        table.insert(worlds, w.Name)
-    end
+    for _, w in pairs(zonesFolder:GetChildren()) do table.insert(worlds, w.Name) end
     table.sort(worlds)
-
     for _, worldName in ipairs(worlds) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 25)
+        btn.Size = UDim2.new(1, 0, 0, 22)
         btn.Text = worldName
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.SourceSans
-        btn.TextSize = 12
+        btn.TextSize = 11
         btn.ZIndex = 11
         btn.Parent = worldScroll
-
         btn.MouseButton1Click:Connect(function()
             selectedWorldName = worldName
-            worldDropdownBtn.Text = "World: " .. worldName .. " ▼"
+            worldDropdownBtn.Text = worldName .. " ▼"
             worldScroll.Visible = false
             selectedZoneName = ""
             zoneDropdownBtn.Text = "เลือก Zone ▼"
             refreshZoneList()
         end)
     end
-    worldScroll.CanvasSize = UDim2.new(0, 0, 0, #worlds * 25)
+    worldScroll.CanvasSize = UDim2.new(0, 0, 0, #worlds * 22)
 end
 
 worldDropdownBtn.MouseButton1Click:Connect(function()
@@ -403,172 +379,117 @@ zoneDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 5. ฟังก์ชันประมวลผล 1 รอบการฟาร์ม
+-- 5. ฟังก์ชันการทำงานหลัก
 -- ==========================================
 local function processSingleCollect()
     local isFull, capacityText = isBackpackFull()
     if isFull then
         local returnWait = tonumber(returnDelayBox.Text) or 3
-        statusLabel.Text = "🛑 กระเป๋าเต็ม! (" .. capacityText .. ") วาร์ปกลับ Spawn..."
+        statusLabel.Text = "🛑 กระเป๋าเต็ม! วาร์ปกลับ..."
         statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-        
         teleportToSpawn()
-        
-        statusLabel.Text = "⏳ รอนับถอยหลังพัก " .. tostring(returnWait) .. " วินาที..."
         task.wait(returnWait)
         return false
     end
 
     if selectedZoneName == "" then
-        statusLabel.Text = "⚠️ กรุณากดเลือก Zone ก่อนครับ"
+        statusLabel.Text = "⚠️ ยังไม่ได้เลือก Zone"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         return false
     end
 
     local targetZone = workspace.Zones[selectedWorldName]:FindFirstChild(selectedZoneName)
     local spawnZone = targetZone and targetZone:FindFirstChild("SpawnZone")
-
-    if not spawnZone then
-        statusLabel.Text = "❌ ไม่พบ SpawnZone ใน " .. selectedZoneName
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        return false
-    end
+    if not spawnZone then return false end
 
     local items = spawnZone:GetChildren()
-    if #items == 0 then
-        statusLabel.Text = "⚠️ ไม่พบไอเทมใน " .. selectedZoneName
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        return false
-    end
+    if #items == 0 then return false end
 
     local targetItem = items[1]
     local character = LocalPlayer.Character
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
     if hrp then
-        local itemCFrame = nil
-        if targetItem:IsA("Model") then
-            itemCFrame = targetItem.PrimaryPart and targetItem.PrimaryPart.CFrame or targetItem:GetPivot()
-        elseif targetItem:IsA("BasePart") then
-            itemCFrame = targetItem.CFrame
-        else
-            local part = targetItem:FindFirstChildWhichIsA("BasePart", true)
-            if part then itemCFrame = part.CFrame end
-        end
-
+        local itemCFrame = targetItem:IsA("Model") and (targetItem.PrimaryPart and targetItem.PrimaryPart.CFrame or targetItem:GetPivot())
+            or (targetItem:IsA("BasePart") and targetItem.CFrame)
+            or (targetItem:FindFirstChildWhichIsA("BasePart", true) and targetItem:FindFirstChildWhichIsA("BasePart", true).CFrame)
         if itemCFrame then hrp.CFrame = itemCFrame end
     end
 
     task.wait(0.15)
-
     local prompt = targetItem:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if prompt then
-        if typeof(fireproximityprompt) == "function" then
-            for i = 1, 3 do
-                if targetItem.Parent then
-                    fireproximityprompt(prompt)
-                    task.wait(0.05)
-                end
-            end
-        else
-            game:GetService("ProximityPromptService")
-            prompt:InputHoldBegin()
-            task.wait(prompt.HoldDuration or 0)
-            prompt:InputHoldEnd()
-        end
-
-        statusLabel.Text = "✅ เก็บสำเร็จ: " .. targetItem.Name
-        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        local itemPart = targetItem:IsA("BasePart") and targetItem or targetItem:FindFirstChildWhichIsA("BasePart", true)
-        if hrp and itemPart then
-            if typeof(firetouchinterest) == "function" then
-                firetouchinterest(hrp, itemPart, 0)
-                task.wait(0.05)
-                firetouchinterest(hrp, itemPart, 1)
-            end
-
-            statusLabel.Text = "✅ เก็บสำเร็จ: " .. targetItem.Name
-            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            statusLabel.Text = "❌ ไม่พบวิธีเก็บไอเทม"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        end
+    if prompt and typeof(fireproximityprompt) == "function" then
+        fireproximityprompt(prompt)
     end
+    statusLabel.Text = "✅ เก็บ: " .. targetItem.Name
+    statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     return true
 end
 
 -- ==========================================
--- 6. ระบบเปิด/ปิด Auto Loop เก็บของ
+-- 6. Events ปุ่มควบคุมต่างๆ
 -- ==========================================
 toggleBtn.MouseButton1Click:Connect(function()
     autoLoopActive = not autoLoopActive
-
     if autoLoopActive then
-        toggleBtn.Text = "⏹️ หยุดทำงาน Auto Loop"
+        toggleBtn.Text = "⏹️ หยุด Auto Loop"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-
         task.spawn(function()
             while autoLoopActive do
                 processSingleCollect()
-                
-                local loopWait = tonumber(loopDelayBox.Text) or 0.5
-                task.wait(loopWait)
+                task.wait(tonumber(loopDelayBox.Text) or 0.5)
             end
         end)
     else
-        toggleBtn.Text = "▶️ เปิดทำงาน Auto Loop"
+        toggleBtn.Text = "▶️ Auto Loop"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-        statusLabel.Text = "⏸️ หยุดการทำงาน Auto Loop แล้ว"
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        statusLabel.Text = "⏸️ หยุดทำงาน"
     end
 end)
 
--- ==========================================
--- 7. ระบบเปิด/ปิด Auto Click Strength
--- ==========================================
 toggleClickBtn.MouseButton1Click:Connect(function()
     autoClickActive = not autoClickActive
-
     if autoClickActive then
-        toggleClickBtn.Text = "⏹️ หยุดทำงาน Auto Click"
+        toggleClickBtn.Text = "⏹️ หยุด Auto Click"
         toggleClickBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-
         task.spawn(function()
             while autoClickActive do
-                pcall(function()
-                    clickRemote:FireServer()
-                end)
-                
-                local clickWait = tonumber(clickDelayBox.Text) or 0.1
-                task.wait(clickWait)
+                pcall(function() clickRemote:FireServer() end)
+                task.wait(tonumber(clickDelayBox.Text) or 0.1)
             end
         end)
     else
-        toggleClickBtn.Text = "⚡ เปิดทำงาน Auto Click (Strength)"
+        toggleClickBtn.Text = "⚡ Auto Click (Strength)"
         toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
     end
 end)
 
--- ==========================================
--- 8. ระบบย่อ/ซ่อน UI และ Icon เล็ก (Floating Icon)
--- ==========================================
-local isMinimized = false
+toggleAfkBtn.MouseButton1Click:Connect(function()
+    antiAfkActive = not antiAfkActive
+    toggleAfkBtn.Text = antiAfkActive and "🛡️ AFK: เปิด" or "🛡️ AFK: ปิด"
+    toggleAfkBtn.BackgroundColor3 = antiAfkActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
+end)
+
+togglePauseBtn.MouseButton1Click:Connect(function()
+    antiPauseActive = not antiPauseActive
+    togglePauseBtn.Text = antiPauseActive and "⏸️ Pause: เปิด" or "⏸️ Pause: ปิด"
+    togglePauseBtn.BackgroundColor3 = antiPauseActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
+    pcall(function() if getgenv then getgenv().DisabledFocusPause = antiPauseActive end end)
+end)
 
 minimizeBtn.MouseButton1Click:Connect(function()
-    isMinimized = true
-    mainFrame.Visible = false       -- ซ่อนหน้าต่างหลัก
-    floatingIcon.Visible = true     -- แสดง Icon วงกลมเล็กๆ บนจอ
+    mainFrame.Visible = false
+    floatingIcon.Visible = true
 end)
 
 floatingIcon.MouseButton1Click:Connect(function()
-    isMinimized = false
-    mainFrame.Visible = true        -- เปิดหน้าต่างหลักกลับมา
-    floatingIcon.Visible = false    -- ซ่อน Icon เล็ก
+    mainFrame.Visible = true
+    floatingIcon.Visible = false
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
     autoLoopActive = false
     autoClickActive = false
+    if afkConnection then afkConnection:Disconnect() end
     screenGui:Destroy()
 end)
