@@ -64,18 +64,18 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI ขนาดกะทัดรัด (เพิ่มความสูงพอดีสำหรับปุ่ม AFK/Pause)
+-- 3. สร้าง UI ขนาด Ultra-Compact (ความสูงเพียง 185px)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CompactCollectorUI"
+screenGui.Name = "UltraCompactCollectorUI"
 screenGui.ResetOnSpawn = false
 screenGui.DisplayOrder = 999
 screenGui.Parent = (CoreGui:FindFirstChild("CoreGui") and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 255) -- ปรับความสูงเพิ่มให้พอดีกับปุ่มล่างสุด
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -127.5) -- จัดกึ่งกลางจอ
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Size = UDim2.new(0, 250, 0, 185)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -92)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.ClipsDescendants = false
@@ -85,14 +85,14 @@ Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 6)
 
 -- Header
 local headerFrame = Instance.new("Frame")
-headerFrame.Size = UDim2.new(1, 0, 0, 24)
+headerFrame.Size = UDim2.new(1, 0, 0, 22)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Size = UDim2.new(1, -45, 1, 0)
 titleLabel.Position = UDim2.new(0, 8, 0, 0)
-titleLabel.Text = "🤖 Auto Collector (Compact)"
+titleLabel.Text = "🤖 Auto Collector"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 11
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -101,42 +101,42 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.Parent = headerFrame
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 20, 0, 20)
-minimizeBtn.Position = UDim2.new(1, -45, 0, 2)
+minimizeBtn.Size = UDim2.new(0, 18, 0, 18)
+minimizeBtn.Position = UDim2.new(1, -40, 0, 2)
 minimizeBtn.Text = "-"
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeBtn.Font = Enum.Font.SourceSansBold
-minimizeBtn.TextSize = 14
+minimizeBtn.TextSize = 12
 minimizeBtn.Parent = headerFrame
 Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 3)
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 20, 0, 20)
-closeBtn.Position = UDim2.new(1, -22, 0, 2)
+closeBtn.Size = UDim2.new(0, 18, 0, 18)
+closeBtn.Position = UDim2.new(1, -20, 0, 2)
 closeBtn.Text = "X"
 closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 11
+closeBtn.TextSize = 10
 closeBtn.Parent = headerFrame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 3)
 
 -- Container หลัก
 local container = Instance.new("Frame")
-container.Size = UDim2.new(1, 0, 1, -24)
-container.Position = UDim2.new(0, 0, 0, 24)
+container.Size = UDim2.new(1, 0, 1, -22)
+container.Position = UDim2.new(0, 0, 0, 22)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- Floating Icon (อยู่ใต้รูปกระเป๋าฝั่งซ้าย)
+-- Floating Icon
 local floatingIcon = Instance.new("TextButton")
-floatingIcon.Size = UDim2.new(0, 42, 0, 42)
+floatingIcon.Size = UDim2.new(0, 38, 0, 38)
 floatingIcon.Position = UDim2.new(0, 12, 0, 275)
 floatingIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 floatingIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 floatingIcon.Text = "🤖"
-floatingIcon.TextSize = 20
+floatingIcon.TextSize = 18
 floatingIcon.Visible = false
 floatingIcon.Active = true
 floatingIcon.Draggable = true
@@ -144,31 +144,26 @@ floatingIcon.ZIndex = 9999
 floatingIcon.Parent = screenGui
 Instance.new("UICorner", floatingIcon).CornerRadius = UDim.new(1, 0)
 
-local floatingStroke = Instance.new("UIStroke")
-floatingStroke.Color = Color3.fromRGB(80, 80, 80)
-floatingStroke.Thickness = 2
-floatingStroke.Parent = floatingIcon
-
 local selectedWorldName = "W5"
 local selectedZoneName = ""
 local autoLoopActive = false
 local autoClickActive = false
 
--- World & Zone Dropdown
+-- Row 1: World & Zone Dropdowns
 local worldDropdownBtn = Instance.new("TextButton")
-worldDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
-worldDropdownBtn.Position = UDim2.new(0.04, 0, 0.04, 0)
+worldDropdownBtn.Size = UDim2.new(0.45, 0, 0, 22)
+worldDropdownBtn.Position = UDim2.new(0.04, 0, 0.02, 0)
 worldDropdownBtn.Text = "W5 ▼"
 worldDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 worldDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 worldDropdownBtn.Font = Enum.Font.SourceSansBold
-worldDropdownBtn.TextSize = 11
+worldDropdownBtn.TextSize = 10
 worldDropdownBtn.Parent = container
 Instance.new("UICorner", worldDropdownBtn).CornerRadius = UDim.new(0, 3)
 
 local worldScroll = Instance.new("ScrollingFrame")
-worldScroll.Size = UDim2.new(0.46, 0, 0, 90)
-worldScroll.Position = UDim2.new(0.04, 0, 0.17, 0)
+worldScroll.Size = UDim2.new(0.45, 0, 0, 80)
+worldScroll.Position = UDim2.new(0.04, 0, 0.16, 0)
 worldScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 worldScroll.Visible = false
 worldScroll.ZIndex = 10
@@ -177,19 +172,19 @@ worldScroll.Parent = container
 Instance.new("UIListLayout", worldScroll)
 
 local zoneDropdownBtn = Instance.new("TextButton")
-zoneDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
-zoneDropdownBtn.Position = UDim2.new(0.52, 0, 0.04, 0)
+zoneDropdownBtn.Size = UDim2.new(0.45, 0, 0, 22)
+zoneDropdownBtn.Position = UDim2.new(0.51, 0, 0.02, 0)
 zoneDropdownBtn.Text = "เลือก Zone ▼"
 zoneDropdownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 zoneDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 zoneDropdownBtn.Font = Enum.Font.SourceSansBold
-zoneDropdownBtn.TextSize = 11
+zoneDropdownBtn.TextSize = 10
 zoneDropdownBtn.Parent = container
 Instance.new("UICorner", zoneDropdownBtn).CornerRadius = UDim.new(0, 3)
 
 local zoneScroll = Instance.new("ScrollingFrame")
-zoneScroll.Size = UDim2.new(0.46, 0, 0, 90)
-zoneScroll.Position = UDim2.new(0.52, 0, 0.17, 0)
+zoneScroll.Size = UDim2.new(0.45, 0, 0, 80)
+zoneScroll.Position = UDim2.new(0.51, 0, 0.16, 0)
 zoneScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 zoneScroll.Visible = false
 zoneScroll.ZIndex = 10
@@ -197,118 +192,106 @@ zoneScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 zoneScroll.Parent = container
 Instance.new("UIListLayout", zoneScroll)
 
--- Delay Settings
+-- Row 2: Delay Settings
 local delayLabel = Instance.new("TextLabel")
-delayLabel.Size = UDim2.new(0.55, 0, 0, 18)
-delayLabel.Position = UDim2.new(0.04, 0, 0.30, 0)
-delayLabel.Text = "หน่วงฟาร์ม/วาร์ป (วิ):"
-delayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-delayLabel.TextSize = 10
+delayLabel.Size = UDim2.new(0.5, 0, 0, 16)
+delayLabel.Position = UDim2.new(0.04, 0, 0.18, 0)
+delayLabel.Text = "หน่วงฟาร์ม/วาร์ป/คลิก:"
+delayLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+delayLabel.TextSize = 9
 delayLabel.TextXAlignment = Enum.TextXAlignment.Left
 delayLabel.BackgroundTransparency = 1
 delayLabel.Parent = container
 
 local loopDelayBox = Instance.new("TextBox")
-loopDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-loopDelayBox.Position = UDim2.new(0.58, 0, 0.30, 0)
+loopDelayBox.Size = UDim2.new(0.13, 0, 0, 16)
+loopDelayBox.Position = UDim2.new(0.53, 0, 0.18, 0)
 loopDelayBox.Text = "0.5"
-loopDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+loopDelayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 loopDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 loopDelayBox.Font = Enum.Font.SourceSans
-loopDelayBox.TextSize = 10
+loopDelayBox.TextSize = 9
 loopDelayBox.Parent = container
 Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 3)
 
 local returnDelayBox = Instance.new("TextBox")
-returnDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-returnDelayBox.Position = UDim2.new(0.78, 0, 0.30, 0)
+returnDelayBox.Size = UDim2.new(0.13, 0, 0, 16)
+returnDelayBox.Position = UDim2.new(0.68, 0, 0.18, 0)
 returnDelayBox.Text = "3"
-returnDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+returnDelayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 returnDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 returnDelayBox.Font = Enum.Font.SourceSans
-returnDelayBox.TextSize = 10
+returnDelayBox.TextSize = 9
 returnDelayBox.Parent = container
 Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 3)
 
--- Status Label
+local clickDelayBox = Instance.new("TextBox")
+clickDelayBox.Size = UDim2.new(0.13, 0, 0, 16)
+clickDelayBox.Position = UDim2.new(0.83, 0, 0.18, 0)
+clickDelayBox.Text = "0.1"
+clickDelayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+clickDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+clickDelayBox.Font = Enum.Font.SourceSans
+clickDelayBox.TextSize = 9
+clickDelayBox.Parent = container
+Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 3)
+
+-- Row 3: Status Label
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
-statusLabel.Position = UDim2.new(0.04, 0, 0.41, 0)
+statusLabel.Size = UDim2.new(0.92, 0, 0, 14)
+statusLabel.Position = UDim2.new(0.04, 0, 0.31, 0)
 statusLabel.Text = "สถานะ: พร้อมทำงาน"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextSize = 10
-statusLabel.TextWrapped = true
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusLabel.TextSize = 9
 statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- Toggle Auto Loop Button
+-- Row 4: Main Action Buttons (Auto Loop / Auto Click คู่กัน)
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.92, 0, 0, 24)
-toggleBtn.Position = UDim2.new(0.04, 0, 0.50, 0)
+toggleBtn.Size = UDim2.new(0.45, 0, 0, 24)
+toggleBtn.Position = UDim2.new(0.04, 0, 0.42, 0)
 toggleBtn.Text = "▶️ Auto Loop"
 toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.TextSize = 11
+toggleBtn.TextSize = 10
 toggleBtn.Parent = container
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
-
--- Auto Click Setting & Button
-local clickDelayBox = Instance.new("TextBox")
-clickDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-clickDelayBox.Position = UDim2.new(0.78, 0, 0.63, 0)
-clickDelayBox.Text = "0.1"
-clickDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-clickDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-clickDelayBox.Font = Enum.Font.SourceSans
-clickDelayBox.TextSize = 10
-clickDelayBox.Parent = container
-Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 3)
-
-local clickDelayLabel = Instance.new("TextLabel")
-clickDelayLabel.Size = UDim2.new(0.55, 0, 0, 18)
-clickDelayLabel.Position = UDim2.new(0.04, 0, 0.63, 0)
-clickDelayLabel.Text = "หน่วงคลิก (วิ):"
-clickDelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-clickDelayLabel.TextSize = 10
-clickDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-clickDelayLabel.BackgroundTransparency = 1
-clickDelayLabel.Parent = container
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 3)
 
 local toggleClickBtn = Instance.new("TextButton")
-toggleClickBtn.Size = UDim2.new(0.92, 0, 0, 24)
-toggleClickBtn.Position = UDim2.new(0.04, 0, 0.72, 0)
-toggleClickBtn.Text = "⚡ Auto Click (Strength)"
+toggleClickBtn.Size = UDim2.new(0.45, 0, 0, 24)
+toggleClickBtn.Position = UDim2.new(0.51, 0, 0.42, 0)
+toggleClickBtn.Text = "⚡ Auto Click"
 toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
 toggleClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleClickBtn.Font = Enum.Font.SourceSansBold
-toggleClickBtn.TextSize = 11
+toggleClickBtn.TextSize = 10
 toggleClickBtn.Parent = container
-Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 3)
 
--- Anti-AFK & Anti-GamePause Toggles (คืนค่าปุ่มเดิม)
+-- Row 5: Protection Toggles (AFK / Pause คู่กัน)
 local toggleAfkBtn = Instance.new("TextButton")
-toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 24)
-toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.84, 0)
+toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 22)
+toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.60, 0)
 toggleAfkBtn.Text = "🛡️ AFK: เปิด"
 toggleAfkBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 toggleAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleAfkBtn.Font = Enum.Font.SourceSansBold
 toggleAfkBtn.TextSize = 10
 toggleAfkBtn.Parent = container
-Instance.new("UICorner", toggleAfkBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", toggleAfkBtn).CornerRadius = UDim.new(0, 3)
 
 local togglePauseBtn = Instance.new("TextButton")
-togglePauseBtn.Size = UDim2.new(0.45, 0, 0, 24)
-togglePauseBtn.Position = UDim2.new(0.51, 0, 0.84, 0)
+togglePauseBtn.Size = UDim2.new(0.45, 0, 0, 22)
+togglePauseBtn.Position = UDim2.new(0.51, 0, 0.60, 0)
 togglePauseBtn.Text = "⏸️ Pause: เปิด"
 togglePauseBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 togglePauseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 togglePauseBtn.Font = Enum.Font.SourceSansBold
 togglePauseBtn.TextSize = 10
 togglePauseBtn.Parent = container
-Instance.new("UICorner", togglePauseBtn).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", togglePauseBtn).CornerRadius = UDim.new(0, 3)
 
 -- ==========================================
 -- 4. ระบบ Dropdown Logic
@@ -323,12 +306,12 @@ local function refreshZoneList()
     table.sort(zones)
     for _, zoneName in ipairs(zones) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 22)
+        btn.Size = UDim2.new(1, 0, 0, 20)
         btn.Text = zoneName
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.SourceSans
-        btn.TextSize = 11
+        btn.TextSize = 10
         btn.ZIndex = 11
         btn.Parent = zoneScroll
         btn.MouseButton1Click:Connect(function()
@@ -337,7 +320,7 @@ local function refreshZoneList()
             zoneScroll.Visible = false
         end)
     end
-    zoneScroll.CanvasSize = UDim2.new(0, 0, 0, #zones * 22)
+    zoneScroll.CanvasSize = UDim2.new(0, 0, 0, #zones * 20)
 end
 
 local function refreshWorldList()
@@ -349,12 +332,12 @@ local function refreshWorldList()
     table.sort(worlds)
     for _, worldName in ipairs(worlds) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 22)
+        btn.Size = UDim2.new(1, 0, 0, 20)
         btn.Text = worldName
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.SourceSans
-        btn.TextSize = 11
+        btn.TextSize = 10
         btn.ZIndex = 11
         btn.Parent = worldScroll
         btn.MouseButton1Click:Connect(function()
@@ -366,7 +349,7 @@ local function refreshWorldList()
             refreshZoneList()
         end)
     end
-    worldScroll.CanvasSize = UDim2.new(0, 0, 0, #worlds * 22)
+    worldScroll.CanvasSize = UDim2.new(0, 0, 0, #worlds * 20)
 end
 
 worldDropdownBtn.MouseButton1Click:Connect(function()
@@ -435,7 +418,7 @@ end
 toggleBtn.MouseButton1Click:Connect(function()
     autoLoopActive = not autoLoopActive
     if autoLoopActive then
-        toggleBtn.Text = "⏹️ หยุด Auto Loop"
+        toggleBtn.Text = "⏹️ หยุด Loop"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
         task.spawn(function()
             while autoLoopActive do
@@ -453,7 +436,7 @@ end)
 toggleClickBtn.MouseButton1Click:Connect(function()
     autoClickActive = not autoClickActive
     if autoClickActive then
-        toggleClickBtn.Text = "⏹️ หยุด Auto Click"
+        toggleClickBtn.Text = "⏹️ หยุด Click"
         toggleClickBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
         task.spawn(function()
             while autoClickActive do
@@ -462,7 +445,7 @@ toggleClickBtn.MouseButton1Click:Connect(function()
             end
         end)
     else
-        toggleClickBtn.Text = "⚡ Auto Click (Strength)"
+        toggleClickBtn.Text = "⚡ Auto Click"
         toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
     end
 end)
