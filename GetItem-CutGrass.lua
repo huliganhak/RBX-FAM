@@ -3,26 +3,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
 -- Remote สำหรับ Auto Click
 local clickRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("acecateer_knit@1.7.2"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("StrengthService"):WaitForChild("RE"):WaitForChild("ClickRequested")
 
 -- ==========================================
--- 0. ตัวแปรสถานะ Anti-AFK & Anti-GamePause
+-- 0. ตัวแปรสถานะ Anti-AFK & Anti-GamePause (เริ่มต้น OFF)
 -- ==========================================
-local antiAfkActive = true
-local antiPauseActive = true
-
-local afkConnection = LocalPlayer.Idled:Connect(function()
-    if antiAfkActive then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new(0,0))
-    end
-end)
-
-pcall(function()
-    if getgenv then getgenv().DisabledFocusPause = true end
-end)
+local antiAfkActive = false
+local antiGamePauseActive = false
+local idleConnection = nil
 
 -- ==========================================
 -- 1. ฟังก์ชันวาร์ปกลับ Spawn
@@ -64,7 +55,7 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI ขนาด Ultra-Compact (ความสูงเพียง 185px)
+-- 3. สร้าง UI ขนาด Ultra-Compact (ความสูง 185px)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "UltraCompactCollectorUI"
@@ -247,7 +238,7 @@ statusLabel.Font = Enum.Font.SourceSans
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = container
 
--- Row 4: Main Action Buttons (Auto Loop / Auto Click คู่กัน)
+-- Row 4: Main Action Buttons
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0.45, 0, 0, 24)
 toggleBtn.Position = UDim2.new(0.04, 0, 0.42, 0)
@@ -270,28 +261,28 @@ toggleClickBtn.TextSize = 10
 toggleClickBtn.Parent = container
 Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 3)
 
--- Row 5: Protection Toggles (AFK / Pause คู่กัน)
-local toggleAfkBtn = Instance.new("TextButton")
-toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 22)
-toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.60, 0)
-toggleAfkBtn.Text = "🛡️ AFK: เปิด"
-toggleAfkBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-toggleAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleAfkBtn.Font = Enum.Font.SourceSansBold
-toggleAfkBtn.TextSize = 10
-toggleAfkBtn.Parent = container
-Instance.new("UICorner", toggleAfkBtn).CornerRadius = UDim.new(0, 3)
+-- Row 5: Protection Toggles (เริ่มต้น OFF)
+local antiAfkToggleBtn = Instance.new("TextButton")
+antiAfkToggleBtn.Size = UDim2.new(0.45, 0, 0, 22)
+antiAfkToggleBtn.Position = UDim2.new(0.04, 0, 0.60, 0)
+antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
+antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+antiAfkToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+antiAfkToggleBtn.Font = Enum.Font.SourceSansBold
+antiAfkToggleBtn.TextSize = 9
+antiAfkToggleBtn.Parent = container
+Instance.new("UICorner", antiAfkToggleBtn).CornerRadius = UDim.new(0, 3)
 
-local togglePauseBtn = Instance.new("TextButton")
-togglePauseBtn.Size = UDim2.new(0.45, 0, 0, 22)
-togglePauseBtn.Position = UDim2.new(0.51, 0, 0.60, 0)
-togglePauseBtn.Text = "⏸️ Pause: เปิด"
-togglePauseBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
-togglePauseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-togglePauseBtn.Font = Enum.Font.SourceSansBold
-togglePauseBtn.TextSize = 10
-togglePauseBtn.Parent = container
-Instance.new("UICorner", togglePauseBtn).CornerRadius = UDim.new(0, 3)
+local antiPauseToggleBtn = Instance.new("TextButton")
+antiPauseToggleBtn.Size = UDim2.new(0.45, 0, 0, 22)
+antiPauseToggleBtn.Position = UDim2.new(0.51, 0, 0.60, 0)
+antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
+antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+antiPauseToggleBtn.Font = Enum.Font.SourceSansBold
+antiPauseToggleBtn.TextSize = 8
+antiPauseToggleBtn.Parent = container
+Instance.new("UICorner", antiPauseToggleBtn).CornerRadius = UDim.new(0, 3)
 
 -- ==========================================
 -- 4. ระบบ Dropdown Logic
@@ -450,17 +441,46 @@ toggleClickBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-toggleAfkBtn.MouseButton1Click:Connect(function()
+-- Anti-AFK Event Handler
+antiAfkToggleBtn.MouseButton1Click:Connect(function()
     antiAfkActive = not antiAfkActive
-    toggleAfkBtn.Text = antiAfkActive and "🛡️ AFK: เปิด" or "🛡️ AFK: ปิด"
-    toggleAfkBtn.BackgroundColor3 = antiAfkActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
+    if antiAfkActive then
+        antiAfkToggleBtn.Text = "🛡️ Anti-AFK: ON"
+        antiAfkToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+        antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+        
+        idleConnection = LocalPlayer.Idled:Connect(function()
+            if antiAfkActive then
+                VirtualUser:Button2Down(Vector2.zero, camera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.zero, camera.CFrame)
+            end
+        end)
+    else
+        antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
+        antiAfkToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+        antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        if idleConnection then idleConnection:Disconnect() end
+    end
 end)
 
-togglePauseBtn.MouseButton1Click:Connect(function()
-    antiPauseActive = not antiPauseActive
-    togglePauseBtn.Text = antiPauseActive and "⏸️ Pause: เปิด" or "⏸️ Pause: ปิด"
-    togglePauseBtn.BackgroundColor3 = antiPauseActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
-    pcall(function() if getgenv then getgenv().DisabledFocusPause = antiPauseActive end end)
+-- Anti-GamePause Event Handler
+antiPauseToggleBtn.MouseButton1Click:Connect(function()
+    antiGamePauseActive = not antiGamePauseActive
+    if antiGamePauseActive then
+        antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: ON"
+        antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+        antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+        
+        pcall(function()
+            local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
+            if targetScript then targetScript:Destroy() end
+        end)
+    else
+        antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
+        antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+        antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    end
 end)
 
 minimizeBtn.MouseButton1Click:Connect(function()
@@ -476,6 +496,6 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     autoLoopActive = false
     autoClickActive = false
-    if afkConnection then afkConnection:Disconnect() end
+    if idleConnection then idleConnection:Disconnect() end
     screenGui:Destroy()
 end)
