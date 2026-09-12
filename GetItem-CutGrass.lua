@@ -64,7 +64,7 @@ local function isBackpackFull()
 end
 
 -- ==========================================
--- 3. สร้าง UI ขนาดกะทัดรัด (ปรับลดความสูงให้ชิดกัน)
+-- 3. สร้าง UI ขนาดกะทัดรัด (เพิ่มความสูงพอดีสำหรับปุ่ม AFK/Pause)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CompactCollectorUI"
@@ -73,8 +73,8 @@ screenGui.DisplayOrder = 999
 screenGui.Parent = (CoreGui:FindFirstChild("CoreGui") and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 220) -- ปรับลดความสูงลงเหลือ 220
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -110) -- ปรับกึ่งกลางใหม่ตามความสูง
+mainFrame.Size = UDim2.new(0, 260, 0, 255) -- ปรับความสูงเพิ่มให้พอดีกับปุ่มล่างสุด
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -127.5) -- จัดกึ่งกลางจอ
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -129,7 +129,7 @@ container.Position = UDim2.new(0, 0, 0, 24)
 container.BackgroundTransparency = 1
 container.Parent = mainFrame
 
--- Floating Icon (อยู่ใต้รูปกระเป๋าฝั่งซ้ายเหมือนเดิม)
+-- Floating Icon (อยู่ใต้รูปกระเป๋าฝั่งซ้าย)
 local floatingIcon = Instance.new("TextButton")
 floatingIcon.Size = UDim2.new(0, 42, 0, 42)
 floatingIcon.Position = UDim2.new(0, 12, 0, 275)
@@ -154,7 +154,7 @@ local selectedZoneName = ""
 local autoLoopActive = false
 local autoClickActive = false
 
--- World & Zone Dropdown (ชิดด้านบน)
+-- World & Zone Dropdown
 local worldDropdownBtn = Instance.new("TextButton")
 worldDropdownBtn.Size = UDim2.new(0.46, 0, 0, 24)
 worldDropdownBtn.Position = UDim2.new(0.04, 0, 0.04, 0)
@@ -200,7 +200,7 @@ Instance.new("UIListLayout", zoneScroll)
 -- Delay Settings
 local delayLabel = Instance.new("TextLabel")
 delayLabel.Size = UDim2.new(0.55, 0, 0, 18)
-delayLabel.Position = UDim2.new(0.04, 0, 0.34, 0)
+delayLabel.Position = UDim2.new(0.04, 0, 0.30, 0)
 delayLabel.Text = "หน่วงฟาร์ม/วาร์ป (วิ):"
 delayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 delayLabel.TextSize = 10
@@ -210,7 +210,7 @@ delayLabel.Parent = container
 
 local loopDelayBox = Instance.new("TextBox")
 loopDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-loopDelayBox.Position = UDim2.new(0.58, 0, 0.34, 0)
+loopDelayBox.Position = UDim2.new(0.58, 0, 0.30, 0)
 loopDelayBox.Text = "0.5"
 loopDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 loopDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -221,7 +221,7 @@ Instance.new("UICorner", loopDelayBox).CornerRadius = UDim.new(0, 3)
 
 local returnDelayBox = Instance.new("TextBox")
 returnDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-returnDelayBox.Position = UDim2.new(0.78, 0, 0.34, 0)
+returnDelayBox.Position = UDim2.new(0.78, 0, 0.30, 0)
 returnDelayBox.Text = "3"
 returnDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 returnDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -233,7 +233,7 @@ Instance.new("UICorner", returnDelayBox).CornerRadius = UDim.new(0, 3)
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
-statusLabel.Position = UDim2.new(0.04, 0, 0.47, 0)
+statusLabel.Position = UDim2.new(0.04, 0, 0.41, 0)
 statusLabel.Text = "สถานะ: พร้อมทำงาน"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 10
@@ -245,7 +245,7 @@ statusLabel.Parent = container
 -- Toggle Auto Loop Button
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0.92, 0, 0, 24)
-toggleBtn.Position = UDim2.new(0.04, 0, 0.57, 0)
+toggleBtn.Position = UDim2.new(0.04, 0, 0.50, 0)
 toggleBtn.Text = "▶️ Auto Loop"
 toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -257,7 +257,7 @@ Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
 -- Auto Click Setting & Button
 local clickDelayBox = Instance.new("TextBox")
 clickDelayBox.Size = UDim2.new(0.18, 0, 0, 18)
-clickDelayBox.Position = UDim2.new(0.78, 0, 0.73, 0)
+clickDelayBox.Position = UDim2.new(0.78, 0, 0.63, 0)
 clickDelayBox.Text = "0.1"
 clickDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 clickDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -268,7 +268,7 @@ Instance.new("UICorner", clickDelayBox).CornerRadius = UDim.new(0, 3)
 
 local clickDelayLabel = Instance.new("TextLabel")
 clickDelayLabel.Size = UDim2.new(0.55, 0, 0, 18)
-clickDelayLabel.Position = UDim2.new(0.04, 0, 0.73, 0)
+clickDelayLabel.Position = UDim2.new(0.04, 0, 0.63, 0)
 clickDelayLabel.Text = "หน่วงคลิก (วิ):"
 clickDelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 clickDelayLabel.TextSize = 10
@@ -278,7 +278,7 @@ clickDelayLabel.Parent = container
 
 local toggleClickBtn = Instance.new("TextButton")
 toggleClickBtn.Size = UDim2.new(0.92, 0, 0, 24)
-toggleClickBtn.Position = UDim2.new(0.04, 0, 0.83, 0)
+toggleClickBtn.Position = UDim2.new(0.04, 0, 0.72, 0)
 toggleClickBtn.Text = "⚡ Auto Click (Strength)"
 toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
 toggleClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -286,6 +286,29 @@ toggleClickBtn.Font = Enum.Font.SourceSansBold
 toggleClickBtn.TextSize = 11
 toggleClickBtn.Parent = container
 Instance.new("UICorner", toggleClickBtn).CornerRadius = UDim.new(0, 4)
+
+-- Anti-AFK & Anti-GamePause Toggles (คืนค่าปุ่มเดิม)
+local toggleAfkBtn = Instance.new("TextButton")
+toggleAfkBtn.Size = UDim2.new(0.45, 0, 0, 24)
+toggleAfkBtn.Position = UDim2.new(0.04, 0, 0.84, 0)
+toggleAfkBtn.Text = "🛡️ AFK: เปิด"
+toggleAfkBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+toggleAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleAfkBtn.Font = Enum.Font.SourceSansBold
+toggleAfkBtn.TextSize = 10
+toggleAfkBtn.Parent = container
+Instance.new("UICorner", toggleAfkBtn).CornerRadius = UDim.new(0, 4)
+
+local togglePauseBtn = Instance.new("TextButton")
+togglePauseBtn.Size = UDim2.new(0.45, 0, 0, 24)
+togglePauseBtn.Position = UDim2.new(0.51, 0, 0.84, 0)
+togglePauseBtn.Text = "⏸️ Pause: เปิด"
+togglePauseBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+togglePauseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+togglePauseBtn.Font = Enum.Font.SourceSansBold
+togglePauseBtn.TextSize = 10
+togglePauseBtn.Parent = container
+Instance.new("UICorner", togglePauseBtn).CornerRadius = UDim.new(0, 4)
 
 -- ==========================================
 -- 4. ระบบ Dropdown Logic
@@ -442,6 +465,19 @@ toggleClickBtn.MouseButton1Click:Connect(function()
         toggleClickBtn.Text = "⚡ Auto Click (Strength)"
         toggleClickBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 180)
     end
+end)
+
+toggleAfkBtn.MouseButton1Click:Connect(function()
+    antiAfkActive = not antiAfkActive
+    toggleAfkBtn.Text = antiAfkActive and "🛡️ AFK: เปิด" or "🛡️ AFK: ปิด"
+    toggleAfkBtn.BackgroundColor3 = antiAfkActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
+end)
+
+togglePauseBtn.MouseButton1Click:Connect(function()
+    antiPauseActive = not antiPauseActive
+    togglePauseBtn.Text = antiPauseActive and "⏸️ Pause: เปิด" or "⏸️ Pause: ปิด"
+    togglePauseBtn.BackgroundColor3 = antiPauseActive and Color3.fromRGB(40, 160, 80) or Color3.fromRGB(180, 50, 50)
+    pcall(function() if getgenv then getgenv().DisabledFocusPause = antiPauseActive end end)
 end)
 
 minimizeBtn.MouseButton1Click:Connect(function()
