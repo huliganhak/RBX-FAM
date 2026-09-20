@@ -79,10 +79,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ขยายความสูงรองรับปุ่ม Fly)
+-- 3. Main Frame (ขยายความสูงรองรับปุ่ม Claim Rewards)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 491)
+mainFrame.Size = UDim2.new(0, 230, 0, 523)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -430,10 +430,26 @@ local flyToggleCorner = Instance.new("UICorner")
 flyToggleCorner.CornerRadius = UDim.new(0, 6)
 flyToggleCorner.Parent = flyToggleBtn
 
--- Anti-AFK & Anti-Pause
+-- Claim Playtime Rewards Button (ปุ่มใหม่ที่เพิ่มเข้ามา)
+local claimPlaytimeBtn = Instance.new("TextButton")
+claimPlaytimeBtn.Name = "ClaimPlaytimeBtn"
+claimPlaytimeBtn.Size = UDim2.new(1, -16, 0, 26)
+claimPlaytimeBtn.Position = UDim2.new(0, 8, 0, 386)
+claimPlaytimeBtn.BackgroundColor3 = Color3.fromRGB(220, 140, 0)
+claimPlaytimeBtn.Font = Enum.Font.GothamBold
+claimPlaytimeBtn.Text = "🎁 Claim All Playtime Rewards"
+claimPlaytimeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+claimPlaytimeBtn.TextSize = 10
+claimPlaytimeBtn.Parent = mainFrame
+
+local claimPlaytimeCorner = Instance.new("UICorner")
+claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
+claimPlaytimeCorner.Parent = claimPlaytimeBtn
+
+-- Anti-AFK & Anti-Pause (ขยับตำแหน่งลงมาให้พอดี)
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 386)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 418)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -447,7 +463,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 26)
-antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 418)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 450)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
@@ -915,7 +931,7 @@ task.spawn(function()
 				if clickRemote then clickRemote:FireServer() end
 			end)
 		end
-		task.wait(0.01)
+		task.wait(0.1)
 	end
 end)
 
@@ -1005,6 +1021,21 @@ rebirthToggleBtn.MouseButton1Click:Connect(function()
 	rebirthToggleBtn.BackgroundColor3 = autoRebirthActive and Color3.fromRGB(20, 60, 30) or Color3.fromRGB(40, 40, 50)
 end)
 
+-- Event Listener สำหรับปุ่ม Claim Playtime Rewards (วนลูป 1-12)
+claimPlaytimeBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local rewardRemote = getRemote(remotes, "ClaimPlaytimeReward")
+		
+		if rewardRemote then
+			for i = 1, 12 do
+				rewardRemote:FireServer(i)
+			end
+		end
+	end)
+end)
+
 antiAfkToggleBtn.MouseButton1Click:Connect(function()
 	antiAfkActive = not antiAfkActive
 	if antiAfkActive then
@@ -1029,19 +1060,21 @@ end)
 
 antiPauseToggleBtn.MouseButton1Click:Connect(function()
 	antiGamePauseActive = not antiGamePauseActive
-	if antiGamePauseActive then
-		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: ON"
-		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
-		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
-		
-		pcall(function()
-			local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
-			if targetScript then targetScript:Destroy() end
-		end)
-	else
-		antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
-		antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	if antiPauseToggleBtn then
+		if antiGamePauseActive then
+			antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: ON"
+			antiPauseToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+			antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+			
+			pcall(function()
+				local targetScript = CoreGui:FindFirstChild("RobloxGui") and CoreGui.RobloxGui:FindFirstChild("CoreScripts/NetworkPause", true)
+				if targetScript then targetScript:Destroy() end
+			end)
+		else
+			antiPauseToggleBtn.Text = "⏸️ Anti-GamePause: OFF"
+			antiPauseToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+			antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+		end
 	end
 end)
 
