@@ -915,7 +915,7 @@ task.spawn(function()
 				if clickRemote then clickRemote:FireServer() end
 			end)
 		end
-		task.wait(0.1)
+		task.wait(0.01)
 	end
 end)
 
