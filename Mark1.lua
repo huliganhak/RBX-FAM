@@ -912,7 +912,7 @@ task.spawn(function()
 					local shared = getRemote(ReplicatedStorage, "Shared")
 					local remotes = getRemote(shared, "Remotes")
 					local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
-					if endlessRemote then endlessRemote:FireServer(6) end
+					if endlessRemote then endlessRemote:FireServer(8) end
 				end)
 				task.wait(3)
 			end
@@ -975,7 +975,7 @@ endlessBtn.MouseButton1Click:Connect(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
 		local remotes = getRemote(shared, "Remotes")
 		local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
-		if endlessRemote then endlessRemote:FireServer(6) end
+		if endlessRemote then endlessRemote:FireServer(8) end
 	end)
 end)
 
