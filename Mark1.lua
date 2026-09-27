@@ -768,8 +768,8 @@ local function claimTargetStage()
 		return 
 	end
 
-	local targetClaimIdx = currentSpawnedIndex + 1
-	if targetClaimIdx > #sortedStages then targetClaimIdx = #sortedStages end
+	-- แก้ไขตรงนี้: ให้ใช้อินเดกซ์ของด่านปัจจุบันได้เลย ไม่ต้อง + 1
+	local targetClaimIdx = currentSpawnedIndex
 
 	local currentStageData = sortedStages[targetClaimIdx]
 	if not currentStageData then 
