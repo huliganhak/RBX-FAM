@@ -43,7 +43,6 @@ local trainLocations = {
 }
 
 local selectedMapIndex = 1
-local selectedTrainIndex = 1
 local sortedStages = {}
 local currentIndex = 1
 local currentSpawnedIndex = 1
@@ -89,10 +88,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ลดความสูงลงเหลือ 390)
+-- 3. Main Frame (ปรับขนาดความสูงลงเหลือ 362)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 390)
+mainFrame.Size = UDim2.new(0, 230, 0, 362)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -303,58 +302,10 @@ local startStopToggleCorner = Instance.new("UICorner")
 startStopToggleCorner.CornerRadius = UDim.new(0, 6)
 startStopToggleCorner.Parent = startStopToggleBtn
 
--- Train Dropdown
-local trainDropdownBtn = Instance.new("TextButton")
-trainDropdownBtn.Size = UDim2.new(1, -48, 0, 24)
-trainDropdownBtn.Position = UDim2.new(0, 8, 0, 172)
-trainDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-trainDropdownBtn.Font = Enum.Font.GothamBold
-trainDropdownBtn.Text = "🏋️ Select: Train 1 ▼"
-trainDropdownBtn.TextColor3 = Color3.fromRGB(200, 220, 255)
-trainDropdownBtn.TextSize = 10
-trainDropdownBtn.Parent = mainFrame
-
-local trainDropdownCorner = Instance.new("UICorner")
-trainDropdownCorner.CornerRadius = UDim.new(0, 6)
-trainDropdownCorner.Parent = trainDropdownBtn
-
-local trainWarpBtn = Instance.new("TextButton")
-trainWarpBtn.Size = UDim2.new(0, 28, 0, 24)
-trainWarpBtn.Position = UDim2.new(1, -36, 0, 172)
-trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
-trainWarpBtn.Font = Enum.Font.GothamBold
-trainWarpBtn.Text = "GO"
-trainWarpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-trainWarpBtn.TextSize = 10
-trainWarpBtn.Parent = mainFrame
-
-local trainWarpCorner = Instance.new("UICorner")
-trainWarpCorner.CornerRadius = UDim.new(0, 6)
-trainWarpCorner.Parent = trainWarpBtn
-
-local trainListFrame = Instance.new("ScrollingFrame")
-trainListFrame.Size = UDim2.new(1, -48, 0, 110)
-trainListFrame.Position = UDim2.new(0, 8, 0, 198)
-trainListFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-trainListFrame.BorderSizePixel = 0
-trainListFrame.Visible = false
-trainListFrame.ZIndex = 20
-trainListFrame.ScrollBarThickness = 4
-trainListFrame.CanvasSize = UDim2.new(0, 0, 0, #trainLocations * 22)
-trainListFrame.Parent = mainFrame
-
-local trainListCorner = Instance.new("UICorner")
-trainListCorner.CornerRadius = UDim.new(0, 6)
-trainListCorner.Parent = trainListFrame
-
-local trainListLayout = Instance.new("UIListLayout")
-trainListLayout.Padding = UDim.new(0, 2)
-trainListLayout.Parent = trainListFrame
-
--- Event Buttons (Row 1: Endless | Boss)
+-- Row 1: Endless | Boss Event
 local endlessBtn = Instance.new("TextButton")
 endlessBtn.Size = UDim2.new(0.5, -11, 0, 24)
-endlessBtn.Position = UDim2.new(0, 8, 0, 200)
+endlessBtn.Position = UDim2.new(0, 8, 0, 172)
 endlessBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 180)
 endlessBtn.Font = Enum.Font.GothamBold
 endlessBtn.Text = "♾️ Endless"
@@ -368,7 +319,7 @@ endlessCorner.Parent = endlessBtn
 
 local bossEventBtn = Instance.new("TextButton")
 bossEventBtn.Size = UDim2.new(0.5, -11, 0, 24)
-bossEventBtn.Position = UDim2.new(0.5, 3, 0, 200)
+bossEventBtn.Position = UDim2.new(0.5, 3, 0, 172)
 bossEventBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 bossEventBtn.Font = Enum.Font.GothamBold
 bossEventBtn.Text = "👹 Boss Event"
@@ -380,7 +331,37 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- Row 2: Auto Click | Auto Rebirth
+-- Row 2: Train (GO) | Claim Playtime Rewards
+local trainWarpBtn = Instance.new("TextButton")
+trainWarpBtn.Size = UDim2.new(0.38, -6, 0, 24)
+trainWarpBtn.Position = UDim2.new(0, 8, 0, 200)
+trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
+trainWarpBtn.Font = Enum.Font.GothamBold
+trainWarpBtn.Text = "🏋️ Train"
+trainWarpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+trainWarpBtn.TextSize = 9
+trainWarpBtn.Parent = mainFrame
+
+local trainWarpCorner = Instance.new("UICorner")
+trainWarpCorner.CornerRadius = UDim.new(0, 6)
+trainWarpCorner.Parent = trainWarpBtn
+
+local claimPlaytimeBtn = Instance.new("TextButton")
+claimPlaytimeBtn.Name = "ClaimPlaytimeBtn"
+claimPlaytimeBtn.Size = UDim2.new(0.62, -10, 0, 24)
+claimPlaytimeBtn.Position = UDim2.new(0.38, 4, 0, 200)
+claimPlaytimeBtn.BackgroundColor3 = Color3.fromRGB(220, 140, 0)
+claimPlaytimeBtn.Font = Enum.Font.GothamBold
+claimPlaytimeBtn.Text = "🎁 Rewards"
+claimPlaytimeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+claimPlaytimeBtn.TextSize = 9
+claimPlaytimeBtn.Parent = mainFrame
+
+local claimPlaytimeCorner = Instance.new("UICorner")
+claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
+claimPlaytimeCorner.Parent = claimPlaytimeBtn
+
+-- Row 3: Auto Click | Auto Rebirth
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
 clickToggleBtn.Position = UDim2.new(0, 8, 0, 228)
@@ -409,7 +390,7 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- Row 3: Auto Re-Endless | Fly Mode
+-- Row 4: Auto Re-Endless | Fly Mode
 local autoEndlessToggleBtn = Instance.new("TextButton")
 autoEndlessToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
 autoEndlessToggleBtn.Position = UDim2.new(0, 8, 0, 256)
@@ -439,26 +420,10 @@ local flyToggleCorner = Instance.new("UICorner")
 flyToggleCorner.CornerRadius = UDim.new(0, 6)
 flyToggleCorner.Parent = flyToggleBtn
 
--- Row 4: Claim Rewards
-local claimPlaytimeBtn = Instance.new("TextButton")
-claimPlaytimeBtn.Name = "ClaimPlaytimeBtn"
-claimPlaytimeBtn.Size = UDim2.new(1, -16, 0, 24)
-claimPlaytimeBtn.Position = UDim2.new(0, 8, 0, 284)
-claimPlaytimeBtn.BackgroundColor3 = Color3.fromRGB(220, 140, 0)
-claimPlaytimeBtn.Font = Enum.Font.GothamBold
-claimPlaytimeBtn.Text = "🎁 Claim Playtime Rewards"
-claimPlaytimeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-claimPlaytimeBtn.TextSize = 10
-claimPlaytimeBtn.Parent = mainFrame
-
-local claimPlaytimeCorner = Instance.new("UICorner")
-claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
-claimPlaytimeCorner.Parent = claimPlaytimeBtn
-
 -- Row 5: Anti-AFK | Anti-Pause
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 312)
+antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 284)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -472,7 +437,7 @@ antiAfkCorner.Parent = antiAfkToggleBtn
 
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-antiPauseToggleBtn.Position = UDim2.new(0.5, 3, 0, 312)
+antiPauseToggleBtn.Position = UDim2.new(0.5, 3, 0, 284)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-Pause: OFF"
@@ -712,33 +677,8 @@ for i, item in ipairs(mapList) do
 		selectedMapIndex = i
 		mapDropdownBtn.Text = "🗺️ Select: " .. item.Name .. " ▼"
 		mapListFrame.Visible = false
-		
-		local mapNum = getSelectedMapNumber()
-		if trainLocations[mapNum] then
-			selectedTrainIndex = mapNum
-			trainDropdownBtn.Text = "🏋️ Select: " .. trainLocations[mapNum].Name .. " ▼"
-		end
-
 		loadAndSortStages()
 		updateUI()
-	end)
-end
-
-for i, item in ipairs(trainLocations) do
-	local itemBtn = Instance.new("TextButton")
-	itemBtn.Size = UDim2.new(1, 0, 0, 21)
-	itemBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-	itemBtn.Font = Enum.Font.Gotham
-	itemBtn.Text = item.Name
-	itemBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-	itemBtn.TextSize = 10
-	itemBtn.ZIndex = 21
-	itemBtn.Parent = trainListFrame
-	
-	itemBtn.MouseButton1Click:Connect(function()
-		selectedTrainIndex = i
-		trainDropdownBtn.Text = "🏋️ Select: " .. item.Name .. " ▼"
-		trainListFrame.Visible = false
 	end)
 end
 
@@ -828,7 +768,8 @@ local function getTargetObject(pathArray)
 end
 
 local function teleportToTrain()
-	local selectedData = trainLocations[selectedTrainIndex]
+	local mapNum = getSelectedMapNumber()
+	local selectedData = trainLocations[mapNum]
 	if not selectedData then return end
 
 	local targetObj = getTargetObject(selectedData.Path)
@@ -964,19 +905,11 @@ end)
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	targetStageScrollFrame.Visible = false
-	trainListFrame.Visible = false
 end)
 
 targetStageDropdownBtn.MouseButton1Click:Connect(function()
 	targetStageScrollFrame.Visible = not targetStageScrollFrame.Visible
 	mapListFrame.Visible = false
-	trainListFrame.Visible = false
-end)
-
-trainDropdownBtn.MouseButton1Click:Connect(function()
-	trainListFrame.Visible = not trainListFrame.Visible
-	mapListFrame.Visible = false
-	targetStageScrollFrame.Visible = false
 end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
@@ -1103,7 +1036,6 @@ minBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 	mapListFrame.Visible = false
 	targetStageScrollFrame.Visible = false
-	trainListFrame.Visible = false
 	openBtn.Visible = true
 end)
 
