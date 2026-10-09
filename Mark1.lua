@@ -16,7 +16,7 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
--- ข้อมูล Map
+-- ข้อมูล Map (เพิ่มถึง Map 20)
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
@@ -26,9 +26,19 @@ local mapList = {
 	{ Name = "Map 8", WorkspaceName = "Map8" },
 	{ Name = "Map 9", WorkspaceName = "Map9" },
 	{ Name = "Map 10", WorkspaceName = "Map10" },
+	{ Name = "Map 11", WorkspaceName = "Map11" },
+	{ Name = "Map 12", WorkspaceName = "Map12" },
+	{ Name = "Map 13", WorkspaceName = "Map13" },
+	{ Name = "Map 14", WorkspaceName = "Map14" },
+	{ Name = "Map 15", WorkspaceName = "Map15" },
+	{ Name = "Map 16", WorkspaceName = "Map16" },
+	{ Name = "Map 17", WorkspaceName = "Map17" },
+	{ Name = "Map 18", WorkspaceName = "Map18" },
+	{ Name = "Map 19", WorkspaceName = "Map19" },
+	{ Name = "Map 20", WorkspaceName = "Map20" },
 }
 
--- ข้อมูล Training Zone
+-- ข้อมูล Training Zone (เพิ่มถึง Train 20)
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -40,9 +50,28 @@ local trainLocations = {
 	{ Name = "Train 8", Path = {"Map8", "TrainingZone", "TrainingZone64"} },
 	{ Name = "Train 9", Path = {"Map9", "TrainingZone", "TrainingZone73"} },
 	{ Name = "Train 10", Path = {"Map10", "TrainingZone", "TrainingZone82"} },
+	{ Name = "Train 11", Path = {"Map11", "TrainingZone", "TrainingZone91"} },
+	{ Name = "Train 12", Path = {"Map12", "TrainingZone", "TrainingZone100"} },
+	{ Name = "Train 13", Path = {"Map13", "TrainingZone", "TrainingZone109"} },
+	{ Name = "Train 14", Path = {"Map14", "TrainingZone", "TrainingZone118"} },
+	{ Name = "Train 15", Path = {"Map15", "TrainingZone", "TrainingZone127"} },
+	{ Name = "Train 16", Path = {"Map16", "TrainingZone", "TrainingZone136"} },
+	{ Name = "Train 17", Path = {"Map17", "TrainingZone", "TrainingZone145"} },
+	{ Name = "Train 18", Path = {"Map18", "TrainingZone", "TrainingZone154"} },
+	{ Name = "Train 19", Path = {"Map19", "TrainingZone", "TrainingZone163"} },
+	{ Name = "Train 20", Path = {"Map20", "TrainingZone", "TrainingZone172"} },
 }
 
-local selectedMapIndex = 1
+-- หาตำแหน่ง Index ของ Map 10 สำหรับตั้งเป็น Default
+local defaultMapIndex = 8 -- แมพที่ 10 อยู่ลำดับที่ 8 ในรายการ
+for index, item in ipairs(mapList) do
+	if item.Name == "Map 10" then
+		defaultMapIndex = index
+		break
+	end
+end
+
+local selectedMapIndex = defaultMapIndex
 local sortedStages = {}
 local currentIndex = 1
 local currentSpawnedIndex = 1
@@ -77,9 +106,9 @@ local function getSelectedMapNumber()
 	local mapData = mapList[selectedMapIndex]
 	if mapData then
 		local numStr = string.match(mapData.Name, "%d+")
-		return tonumber(numStr) or 1
+		return tonumber(numStr) or 10
 	end
-	return 1
+	return 10
 end
 
 -- 2. ScreenGui
@@ -88,10 +117,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ปรับขนาดความสูงลงเหลือ 362)
+-- 3. Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 362)
+mainFrame.Size = UDim2.new(0, 230, 0, 318)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -150,14 +179,14 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- Dropdown Map
+-- Dropdown Map (ปรับเริ่มต้นเป็น Map 10)
 local mapDropdownBtn = Instance.new("TextButton")
 mapDropdownBtn.Name = "MapDropdownBtn"
 mapDropdownBtn.Size = UDim2.new(1, -16, 0, 24)
 mapDropdownBtn.Position = UDim2.new(0, 8, 0, 32)
 mapDropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 mapDropdownBtn.Font = Enum.Font.GothamBold
-mapDropdownBtn.Text = "🗺️ Select: Map 3 ▼"
+mapDropdownBtn.Text = "🗺️ Select: " .. mapList[selectedMapIndex].Name .. " ▼"
 mapDropdownBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
 mapDropdownBtn.TextSize = 10
 mapDropdownBtn.Parent = mainFrame
@@ -333,13 +362,13 @@ bossEventCorner.Parent = bossEventBtn
 
 -- Row 2: Train (GO) | Claim Playtime Rewards
 local trainWarpBtn = Instance.new("TextButton")
-trainWarpBtn.Size = UDim2.new(0.38, -6, 0, 24)
+trainWarpBtn.Size = UDim2.new(0.5, -11, 0, 24)
 trainWarpBtn.Position = UDim2.new(0, 8, 0, 200)
 trainWarpBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 230)
 trainWarpBtn.Font = Enum.Font.GothamBold
 trainWarpBtn.Text = "🏋️ Train"
 trainWarpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-trainWarpBtn.TextSize = 9
+trainWarpBtn.TextSize = 10
 trainWarpBtn.Parent = mainFrame
 
 local trainWarpCorner = Instance.new("UICorner")
@@ -348,13 +377,13 @@ trainWarpCorner.Parent = trainWarpBtn
 
 local claimPlaytimeBtn = Instance.new("TextButton")
 claimPlaytimeBtn.Name = "ClaimPlaytimeBtn"
-claimPlaytimeBtn.Size = UDim2.new(0.62, -10, 0, 24)
-claimPlaytimeBtn.Position = UDim2.new(0.38, 4, 0, 200)
+claimPlaytimeBtn.Size = UDim2.new(0.5, -11, 0, 24)
+claimPlaytimeBtn.Position = UDim2.new(0.5, 3, 0, 200)
 claimPlaytimeBtn.BackgroundColor3 = Color3.fromRGB(220, 140, 0)
 claimPlaytimeBtn.Font = Enum.Font.GothamBold
 claimPlaytimeBtn.Text = "🎁 Rewards"
 claimPlaytimeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-claimPlaytimeBtn.TextSize = 9
+claimPlaytimeBtn.TextSize = 10
 claimPlaytimeBtn.Parent = mainFrame
 
 local claimPlaytimeCorner = Instance.new("UICorner")
