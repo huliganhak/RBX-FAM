@@ -937,25 +937,23 @@ end)
 task.spawn(function()
 	while true do
 		if autoEndlessActive then
-			local inEndless = false
-			for _, child in ipairs(workspace:GetChildren()) do
-				if string.find(child.Name, "EndlessEnemies") then
-					inEndless = true
-					break
-				end
-			end
+			pcall(function()
+				local shared = getRemote(ReplicatedStorage, "Shared")
+				local remotes = getRemote(shared, "Remotes")
+				local stateRemote = getRemote(remotes, "EndlessStateRequest")
+				local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
 
-			if not inEndless then
-				pcall(function()
-					local shared = getRemote(ReplicatedStorage, "Shared")
-					local remotes = getRemote(shared, "Remotes")
-					local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
-					if endlessRemote then 
-						endlessRemote:FireServer(getSelectedMapNumber()) 
+				if stateRemote and endlessRemote then
+					-- ยิงถามสถานะจาก Server โดยตรงด้วยเลขแมพที่เลือก
+					local state = stateRemote:InvokeServer(getSelectedMapNumber())
+					
+					-- ถ้า active เป็น false (หรือไม่มีค่าตอบกลับ) แสดงว่าเราไม่ได้เล่น Endless อยู่
+					if not state or state.active == false then
+						endlessRemote:FireServer(getSelectedMapNumber())
+						task.wait(3) -- รอเวลาให้ระบบพาเข้าห้อง
 					end
-				end)
-				task.wait(3)
-			end
+				end
+			end)
 		end
 		task.wait(1)
 	end
