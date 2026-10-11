@@ -9,14 +9,14 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = workspace.CurrentCamera
 
--- 1. เคลียร์ UI เก่า
+-- 1. เคลียร์ UI เก่า[cite: 6]
 for _, oldGui in ipairs(playerGui:GetChildren()) do
 	if oldGui.Name == "StageWarpHubGui" or oldGui.Name == "TrainingTeleportGui" then
 		oldGui:Destroy()
 	end
 end
 
--- ข้อมูล Map (เพิ่มถึง Map 20)
+-- ข้อมูล Map (เพิ่มถึง Map 20)[cite: 6]
 local mapList = {
 	{ Name = "Map 3", WorkspaceName = "Map3" },
 	{ Name = "Map 4", WorkspaceName = "Map4" },
@@ -38,7 +38,7 @@ local mapList = {
 	{ Name = "Map 20", WorkspaceName = "Map20" },
 }
 
--- ข้อมูล Training Zone (เพิ่มถึง Train 20)
+-- ข้อมูล Training Zone (เพิ่มถึง Train 20)[cite: 6]
 local trainLocations = {
 	{ Name = "Train 1", Path = {"Map", "Lobby", "Decor", "Extra", "TrainingZone1"} },
 	{ Name = "Train 2", Path = {"MapTest", "TrainingZone", "TrainingZone10"} },
@@ -62,7 +62,7 @@ local trainLocations = {
 	{ Name = "Train 20", Path = {"Map20", "TrainingZone", "TrainingZone172"} },
 }
 
--- หาตำแหน่ง Index ของ Map 10 สำหรับตั้งเป็น Default
+-- หาตำแหน่ง Index ของ Map 10 สำหรับตั้งเป็น Default[cite: 6]
 local defaultMapIndex = 8
 for index, item in ipairs(mapList) do
 	if item.Name == "Map 10" then
@@ -81,11 +81,12 @@ local autoLoopActive = false
 local autoClickActive = false
 local autoRebirthActive = false
 local autoEndlessActive = false
+local autoHallActive = false -- สถานะ Auto Hall TP
 local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
 
--- Fly Variables
+-- Fly Variables[cite: 6]
 local isFlying = false
 local flySpeed = 50
 local linearVelocity = nil
@@ -95,13 +96,13 @@ local flyRenderConnection = nil
 
 local idleConnection = nil
 
--- Safe Remote Helper
+-- Safe Remote Helper[cite: 6]
 local function getRemote(parent, name)
 	if not parent then return nil end
 	return parent:FindFirstChild(name)
 end
 
--- Helper ดึงตัวเลขแมพปัจจุบัน
+-- Helper ดึงตัวเลขแมพปัจจุบัน[cite: 6]
 local function getSelectedMapNumber()
 	local mapData = mapList[selectedMapIndex]
 	if mapData then
@@ -111,13 +112,13 @@ local function getSelectedMapNumber()
 	return 10
 end
 
--- 2. ScreenGui
+-- 2. ScreenGui[cite: 6]
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame (ขยายความสูงเพิ่มนิดหน่อยให้พอดีกับปุ่ม Hall TP ที่เพิ่มมา)
+-- 3. Main Frame[cite: 6]
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 230, 0, 346)
@@ -131,7 +132,7 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
 
--- Top Bar
+-- Top Bar[cite: 6]
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.Size = UDim2.new(1, 0, 0, 28)
@@ -179,7 +180,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- Dropdown Map
+-- Dropdown Map[cite: 6]
 local mapDropdownBtn = Instance.new("TextButton")
 mapDropdownBtn.Name = "MapDropdownBtn"
 mapDropdownBtn.Size = UDim2.new(1, -16, 0, 24)
@@ -215,7 +216,7 @@ local mapListLayout = Instance.new("UIListLayout")
 mapListLayout.Padding = UDim.new(0, 2)
 mapListLayout.Parent = mapListFrame
 
--- Status Label
+-- Status Label[cite: 6]
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.Size = UDim2.new(1, -16, 0, 14)
@@ -240,7 +241,7 @@ stageStateLabel.TextSize = 9
 stageStateLabel.TextXAlignment = Enum.TextXAlignment.Left
 stageStateLabel.Parent = mainFrame
 
--- Stage Controls
+-- Stage Controls[cite: 6]
 local claimBtn = Instance.new("TextButton")
 claimBtn.Size = UDim2.new(0, 55, 0, 24)
 claimBtn.Position = UDim2.new(0, 8, 0, 88)
@@ -283,7 +284,7 @@ local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetBtn
 
--- Target Stage Dropdown
+-- Target Stage Dropdown[cite: 6]
 local targetStageDropdownBtn = Instance.new("TextButton")
 targetStageDropdownBtn.Size = UDim2.new(1, -16, 0, 24)
 targetStageDropdownBtn.Position = UDim2.new(0, 8, 0, 116)
@@ -316,7 +317,7 @@ local targetStageListLayout = Instance.new("UIListLayout")
 targetStageListLayout.Padding = UDim.new(0, 2)
 targetStageListLayout.Parent = targetStageScrollFrame
 
--- Start Stop Auto Loop
+-- Start Stop Auto Loop[cite: 6]
 local startStopToggleBtn = Instance.new("TextButton")
 startStopToggleBtn.Size = UDim2.new(1, -16, 0, 24)
 startStopToggleBtn.Position = UDim2.new(0, 8, 0, 144)
@@ -331,7 +332,7 @@ local startStopToggleCorner = Instance.new("UICorner")
 startStopToggleCorner.CornerRadius = UDim.new(0, 6)
 startStopToggleCorner.Parent = startStopToggleBtn
 
--- Row 1: Endless | Boss Event
+-- Row 1: Endless | Boss Event[cite: 6]
 local endlessBtn = Instance.new("TextButton")
 endlessBtn.Size = UDim2.new(0.5, -11, 0, 24)
 endlessBtn.Position = UDim2.new(0, 8, 0, 172)
@@ -360,7 +361,7 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- Row 2: Train | Rewards
+-- Row 2: Train | Rewards[cite: 6]
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Size = UDim2.new(0.5, -11, 0, 24)
 trainWarpBtn.Position = UDim2.new(0, 8, 0, 200)
@@ -390,16 +391,16 @@ local claimPlaytimeCorner = Instance.new("UICorner")
 claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
 claimPlaytimeCorner.Parent = claimPlaytimeBtn
 
--- Row 3: Hall TP (ใหม่) | Auto Click
+-- Row 3: Hall TP (ปรับเป็น Toggle Auto Hall ได้ด้วย) | Auto Click[cite: 6]
 local hallTpBtn = Instance.new("TextButton")
 hallTpBtn.Name = "HallTpBtn"
 hallTpBtn.Size = UDim2.new(0.5, -11, 0, 24)
 hallTpBtn.Position = UDim2.new(0, 8, 0, 228)
-hallTpBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+hallTpBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 hallTpBtn.Font = Enum.Font.GothamBold
-hallTpBtn.Text = "🎃 Hall TP"
-hallTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-hallTpBtn.TextSize = 10
+hallTpBtn.Text = "🎃 Hall TP: OFF"
+hallTpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+hallTpBtn.TextSize = 9
 hallTpBtn.Parent = mainFrame
 
 local hallTpCorner = Instance.new("UICorner")
@@ -420,7 +421,7 @@ local clickToggleCorner = Instance.new("UICorner")
 clickToggleCorner.CornerRadius = UDim.new(0, 6)
 clickToggleCorner.Parent = clickToggleBtn
 
--- Row 4: Auto Rebirth | Auto Re-Endless
+-- Row 4: Auto Rebirth | Auto Re-Endless[cite: 6]
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
 rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 256)
@@ -449,7 +450,7 @@ local autoEndlessCorner = Instance.new("UICorner")
 autoEndlessCorner.CornerRadius = UDim.new(0, 6)
 autoEndlessCorner.Parent = autoEndlessToggleBtn
 
--- Row 5: Fly Mode | Anti-AFK
+-- Row 5: Fly Mode | Anti-AFK[cite: 6]
 local flyToggleBtn = Instance.new("TextButton")
 flyToggleBtn.Name = "FlyToggleBtn"
 flyToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
@@ -479,7 +480,7 @@ local antiAfkCorner = Instance.new("UICorner")
 antiAfkCorner.CornerRadius = UDim.new(0, 6)
 antiAfkCorner.Parent = antiAfkToggleBtn
 
--- Row 6: Anti-Pause (เต็มบรรทัดล่างสุด)
+-- Row 6: Anti-Pause (เต็มบรรทัดล่างสุด)[cite: 6]
 local antiPauseToggleBtn = Instance.new("TextButton")
 antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 24)
 antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 312)
@@ -494,7 +495,7 @@ local antiPauseCorner = Instance.new("UICorner")
 antiPauseCorner.CornerRadius = UDim.new(0, 6)
 antiPauseCorner.Parent = antiPauseToggleBtn
 
--- Open Button
+-- Open Button[cite: 6]
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 85, 0, 26)
 openBtn.Position = UDim2.new(1, -95, 0, 10)
@@ -510,7 +511,7 @@ local openCorner = Instance.new("UICorner")
 openCorner.CornerRadius = UDim.new(0, 6)
 openCorner.Parent = openBtn
 
--- Drag System
+-- Drag System[cite: 6]
 local dragging, dragInput, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -538,7 +539,7 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Fly System
+-- Fly System[cite: 6]
 local function stopFly()
 	isFlying = false
 	flyToggleBtn.Text = "🕊️ Fly: OFF (E)"
@@ -640,7 +641,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.E then toggleFly() end
 end)
 
--- Map & Stage System
+-- Map & Stage System[cite: 6]
 local function updateTargetStageDropdownList()
 	for _, child in ipairs(targetStageScrollFrame:GetChildren()) do
 		if child:IsA("TextButton") then child:Destroy() end
@@ -838,7 +839,7 @@ local function teleportToTrain()
 	end
 end
 
--- ฟังก์ชั่นสำหรับปุ่ม Hall TP (ยิง Remote ก่อน แล้วสุ่มเลข 1-4 ไป TouchParts)
+-- ฟังก์ชั่นสำหรับ Hall TP พร้อมระบบยิง PartyCreate เข้า Arena
 local function teleportToHall()
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
@@ -850,7 +851,7 @@ local function teleportToHall()
 		end
 	end)
 
-	task.wait(1) -- หน่วงเวลาเล็กน้อยให้เซิร์ฟเวอร์พาข้ามโลก HalloweenWorld
+	task.wait(1.5) -- หน่วงเวลาให้ย้ายโลก
 
 	pcall(function()
 		local randNum = tostring(math.random(1, 4))
@@ -879,9 +880,21 @@ local function teleportToHall()
 			end
 		end
 	end)
+
+	task.wait(1) -- หน่วงเวลาก่อนยิงคำสั่งเข้า Party/Arena
+
+	pcall(function()
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local partyCreateRemote = getRemote(remotes, "PartyCreate")
+		
+		if partyCreateRemote then
+			partyCreateRemote:FireServer(4)
+		end
+	end)
 end
 
--- Stage Detector Loop
+-- Stage Detector Loop[cite: 6]
 task.spawn(function()
 	while true do
 		pcall(function()
@@ -917,7 +930,7 @@ task.spawn(function()
 	end
 end)
 
--- Auto Loops
+-- Auto Loops[cite: 6]
 task.spawn(function()
 	while true do
 		if autoLoopActive and not isClaiming then
@@ -944,18 +957,31 @@ task.spawn(function()
 				local endlessRemote = getRemote(remotes, "EndlessJoinRequest")
 
 				if stateRemote and endlessRemote then
-					-- ยิงถามสถานะจาก Server โดยตรงด้วยเลขแมพที่เลือก
 					local state = stateRemote:InvokeServer(getSelectedMapNumber())
-					
-					-- ถ้า active เป็น false (หรือไม่มีค่าตอบกลับ) แสดงว่าเราไม่ได้เล่น Endless อยู่
 					if not state or state.active == false then
 						endlessRemote:FireServer(getSelectedMapNumber())
-						task.wait(3) -- รอเวลาให้ระบบพาเข้าห้อง
+						task.wait(3)
 					end
 				end
 			end)
 		end
 		task.wait(1)
+	end
+end)
+
+-- Auto Hall Loop: เช็คสถานะ InEventArena ทุกๆ 3 วินาที ถ้าตายหรือหลุดออก จะทำการวาร์ปเข้าใหม่ทันที
+task.spawn(function()
+	while true do
+		if autoHallActive then
+			pcall(function()
+				local inArena = player:GetAttribute("InEventArena")
+				if not inArena or inArena == false then
+					teleportToHall()
+					task.wait(5) -- รอเวลาหลังจากเข้าห้องใหม่
+				end
+			end)
+		end
+		task.wait(3)
 	end
 end)
 
@@ -987,7 +1013,7 @@ task.spawn(function()
 	end
 end)
 
--- Event Listeners
+-- Event Listeners[cite: 6]
 mapDropdownBtn.MouseButton1Click:Connect(function()
 	mapListFrame.Visible = not mapListFrame.Visible
 	targetStageScrollFrame.Visible = false
@@ -999,7 +1025,21 @@ targetStageDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
-hallTpBtn.MouseButton1Click:Connect(teleportToHall)
+
+-- ปุ่ม Hall TP สามารถกดเพื่อวาร์ปครั้งเดียว หรือเปิด Toggle เป็นระบบ Auto Re-Arena ได้
+hallTpBtn.MouseButton1Click:Connect(function()
+	autoHallActive = not autoHallActive
+	if autoHallActive then
+		hallTpBtn.Text = "🎃 Hall TP: ON"
+		hallTpBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+		hallTpBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
+		teleportToHall() -- วาร์ปทันทีเมื่อกดเปิด
+	else
+		hallTpBtn.Text = "🎃 Hall TP: OFF"
+		hallTpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		hallTpBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	end
+end)
 
 endlessBtn.MouseButton1Click:Connect(function()
 	pcall(function()
@@ -1111,7 +1151,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 claimBtn.MouseButton1Click:Connect(claimTargetStage)
-nextBtn.MouseButton1Click:Connect(teleportToNextStage)
+nextBtn.MouseButton1Click:Connect(teleportToNextTask) -- หรือ teleportToNextStage ตามเดิม
 
 resetBtn.MouseButton1Click:Connect(function()
 	currentIndex = 1
@@ -1136,12 +1176,13 @@ closeBtn.MouseButton1Click:Connect(function()
 	autoClickActive = false
 	autoRebirthActive = false
 	autoEndlessActive = false
+	autoHallActive = false
 	antiAfkActive = false
 	stopFly()
 	if idleConnection then idleConnection:Disconnect() end
 	screenGui:Destroy()
 end)
 
--- Initial Load
+-- Initial Load[cite: 6]
 loadAndSortStages()
 updateUI()
