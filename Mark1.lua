@@ -839,7 +839,7 @@ local function teleportToTrain()
 	end
 end
 
--- ฟังก์ชั่นสำหรับ Hall TP (ยิง RequestEventWorld -> สุ่ม TouchParts -> ยิง PartyCreate(4) -> รอ 35 วิ)
+-- ฟังก์ชั่นสำหรับ Hall TP (ยิง RequestEventWorld -> สุ่ม TouchParts -> PartyCreate(4) -> MeteorShowerRequestState)
 local function teleportToHall()
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
@@ -893,8 +893,17 @@ local function teleportToHall()
 		end
 	end)
 	
-	-- ⏳ รอเวลานับถอยหลัง 30 วินาที + เผื่อโหลด เพื่อไม่ให้ลูปส่งคำสั่งรัวซ้ำซ้อน
-	task.wait(35)
+	task.wait(1)
+	
+	pcall(function()
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local meteorRemote = getRemote(remotes, "MeteorShowerRequestState")
+		
+		if meteorRemote then
+			meteorRemote:FireServer()
+		end
+	end)
 end
 
 -- Stage Detector Loop[cite: 6]
@@ -979,7 +988,7 @@ task.spawn(function()
 			pcall(function()
 				local inArena = player:GetAttribute("InEventArena")
 				if not inArena or inArena == false then
-					teleportToHall() -- เมื่อเรียกใช้งาน จะรันและรอ 35 วินาทีอัตโนมัติ
+					teleportToHall()
 				end
 			end)
 		end
