@@ -63,7 +63,7 @@ local trainLocations = {
 }
 
 -- หาตำแหน่ง Index ของ Map 10 สำหรับตั้งเป็น Default
-local defaultMapIndex = 8 -- แมพที่ 10 อยู่ลำดับที่ 8 ในรายการ
+local defaultMapIndex = 8
 for index, item in ipairs(mapList) do
 	if item.Name == "Map 10" then
 		defaultMapIndex = index
@@ -117,10 +117,10 @@ screenGui.Name = "StageWarpHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- 3. Main Frame
+-- 3. Main Frame (ขยายความสูงเพิ่มนิดหน่อยให้พอดีกับปุ่ม Hall TP ที่เพิ่มมา)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 318)
+mainFrame.Size = UDim2.new(0, 230, 0, 346)
 mainFrame.Position = UDim2.new(0.85, -115, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
 mainFrame.BorderSizePixel = 0
@@ -179,7 +179,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- Dropdown Map (ปรับเริ่มต้นเป็น Map 10)
+-- Dropdown Map
 local mapDropdownBtn = Instance.new("TextButton")
 mapDropdownBtn.Name = "MapDropdownBtn"
 mapDropdownBtn.Size = UDim2.new(1, -16, 0, 24)
@@ -360,7 +360,7 @@ local bossEventCorner = Instance.new("UICorner")
 bossEventCorner.CornerRadius = UDim.new(0, 6)
 bossEventCorner.Parent = bossEventBtn
 
--- Row 2: Train (GO) | Claim Playtime Rewards
+-- Row 2: Train | Rewards
 local trainWarpBtn = Instance.new("TextButton")
 trainWarpBtn.Size = UDim2.new(0.5, -11, 0, 24)
 trainWarpBtn.Position = UDim2.new(0, 8, 0, 200)
@@ -390,10 +390,25 @@ local claimPlaytimeCorner = Instance.new("UICorner")
 claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
 claimPlaytimeCorner.Parent = claimPlaytimeBtn
 
--- Row 3: Auto Click | Auto Rebirth
+-- Row 3: Hall TP (ใหม่) | Auto Click
+local hallTpBtn = Instance.new("TextButton")
+hallTpBtn.Name = "HallTpBtn"
+hallTpBtn.Size = UDim2.new(0.5, -11, 0, 24)
+hallTpBtn.Position = UDim2.new(0, 8, 0, 228)
+hallTpBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+hallTpBtn.Font = Enum.Font.GothamBold
+hallTpBtn.Text = "🎃 Hall TP"
+hallTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+hallTpBtn.TextSize = 10
+hallTpBtn.Parent = mainFrame
+
+local hallTpCorner = Instance.new("UICorner")
+hallTpCorner.CornerRadius = UDim.new(0, 6)
+hallTpCorner.Parent = hallTpBtn
+
 local clickToggleBtn = Instance.new("TextButton")
 clickToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-clickToggleBtn.Position = UDim2.new(0, 8, 0, 228)
+clickToggleBtn.Position = UDim2.new(0.5, 3, 0, 228)
 clickToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 clickToggleBtn.Font = Enum.Font.GothamBold
 clickToggleBtn.Text = "🖱️ Click: OFF"
@@ -405,9 +420,10 @@ local clickToggleCorner = Instance.new("UICorner")
 clickToggleCorner.CornerRadius = UDim.new(0, 6)
 clickToggleCorner.Parent = clickToggleBtn
 
+-- Row 4: Auto Rebirth | Auto Re-Endless
 local rebirthToggleBtn = Instance.new("TextButton")
 rebirthToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-rebirthToggleBtn.Position = UDim2.new(0.5, 3, 0, 228)
+rebirthToggleBtn.Position = UDim2.new(0, 8, 0, 256)
 rebirthToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 rebirthToggleBtn.Font = Enum.Font.GothamBold
 rebirthToggleBtn.Text = "♻️ Rebirth: OFF"
@@ -419,10 +435,9 @@ local rebirthToggleCorner = Instance.new("UICorner")
 rebirthToggleCorner.CornerRadius = UDim.new(0, 6)
 rebirthToggleCorner.Parent = rebirthToggleBtn
 
--- Row 4: Auto Re-Endless | Fly Mode
 local autoEndlessToggleBtn = Instance.new("TextButton")
 autoEndlessToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-autoEndlessToggleBtn.Position = UDim2.new(0, 8, 0, 256)
+autoEndlessToggleBtn.Position = UDim2.new(0.5, 3, 0, 256)
 autoEndlessToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 autoEndlessToggleBtn.Font = Enum.Font.GothamBold
 autoEndlessToggleBtn.Text = "🔄 Re-Endless: OFF"
@@ -434,10 +449,11 @@ local autoEndlessCorner = Instance.new("UICorner")
 autoEndlessCorner.CornerRadius = UDim.new(0, 6)
 autoEndlessCorner.Parent = autoEndlessToggleBtn
 
+-- Row 5: Fly Mode | Anti-AFK
 local flyToggleBtn = Instance.new("TextButton")
 flyToggleBtn.Name = "FlyToggleBtn"
 flyToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-flyToggleBtn.Position = UDim2.new(0.5, 3, 0, 256)
+flyToggleBtn.Position = UDim2.new(0, 8, 0, 284)
 flyToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 flyToggleBtn.Font = Enum.Font.GothamBold
 flyToggleBtn.Text = "🕊️ Fly: OFF (E)"
@@ -449,10 +465,9 @@ local flyToggleCorner = Instance.new("UICorner")
 flyToggleCorner.CornerRadius = UDim.new(0, 6)
 flyToggleCorner.Parent = flyToggleBtn
 
--- Row 5: Anti-AFK | Anti-Pause
 local antiAfkToggleBtn = Instance.new("TextButton")
 antiAfkToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-antiAfkToggleBtn.Position = UDim2.new(0, 8, 0, 284)
+antiAfkToggleBtn.Position = UDim2.new(0.5, 3, 0, 284)
 antiAfkToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiAfkToggleBtn.Font = Enum.Font.GothamBold
 antiAfkToggleBtn.Text = "🛡️ Anti-AFK: OFF"
@@ -464,9 +479,10 @@ local antiAfkCorner = Instance.new("UICorner")
 antiAfkCorner.CornerRadius = UDim.new(0, 6)
 antiAfkCorner.Parent = antiAfkToggleBtn
 
+-- Row 6: Anti-Pause (เต็มบรรทัดล่างสุด)
 local antiPauseToggleBtn = Instance.new("TextButton")
-antiPauseToggleBtn.Size = UDim2.new(0.5, -11, 0, 24)
-antiPauseToggleBtn.Position = UDim2.new(0.5, 3, 0, 284)
+antiPauseToggleBtn.Size = UDim2.new(1, -16, 0, 24)
+antiPauseToggleBtn.Position = UDim2.new(0, 8, 0, 312)
 antiPauseToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 antiPauseToggleBtn.Font = Enum.Font.GothamBold
 antiPauseToggleBtn.Text = "⏸️ Anti-Pause: OFF"
@@ -822,6 +838,49 @@ local function teleportToTrain()
 	end
 end
 
+-- ฟังก์ชั่นสำหรับปุ่ม Hall TP (ยิง Remote ก่อน แล้วสุ่มเลข 1-4 ไป TouchParts)
+local function teleportToHall()
+	pcall(function()
+		local shared = getRemote(ReplicatedStorage, "Shared")
+		local remotes = getRemote(shared, "Remotes")
+		local eventTeleportRemote = getRemote(remotes, "RequestEventWorldTeleport")
+		
+		if eventTeleportRemote then
+			eventTeleportRemote:InvokeServer("halloween_2026")
+		end
+	end)
+
+	task.wait(1) -- หน่วงเวลาเล็กน้อยให้เซิร์ฟเวอร์พาข้ามโลก HalloweenWorld
+
+	pcall(function()
+		local randNum = tostring(math.random(1, 4))
+		local halloweenWorld = workspace:FindFirstChild("HalloweenWorld")
+		local scriptable = halloweenWorld and halloweenWorld:FindFirstChild("Scriptable")
+		local teleporters = scriptable and scriptable:FindFirstChild("Teleporters")
+		local targetFolder = teleporters and teleporters:FindFirstChild(randNum)
+		local touchParts = targetFolder and targetFolder:FindFirstChild("TouchParts")
+
+		local character = player.Character or player.CharacterAdded:Wait()
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+
+		if touchParts and hrp then
+			local targetCFrame
+			if touchParts:IsA("BasePart") then
+				targetCFrame = touchParts.CFrame
+			elseif touchParts:IsA("Model") then
+				targetCFrame = touchParts:GetPivot()
+			else
+				local firstPart = touchParts:FindFirstChildWhichIsA("BasePart", true)
+				if firstPart then targetCFrame = firstPart.CFrame end
+			end
+
+			if targetCFrame then
+				hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+			end
+		end
+	end)
+end
+
 -- Stage Detector Loop
 task.spawn(function()
 	while true do
@@ -942,6 +1001,7 @@ targetStageDropdownBtn.MouseButton1Click:Connect(function()
 end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
+hallTpBtn.MouseButton1Click:Connect(teleportToHall)
 
 endlessBtn.MouseButton1Click:Connect(function()
 	pcall(function()
