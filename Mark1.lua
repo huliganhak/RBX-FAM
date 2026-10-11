@@ -81,7 +81,7 @@ local autoLoopActive = false
 local autoClickActive = false
 local autoRebirthActive = false
 local autoEndlessActive = false
-local autoHallActive = false -- สถานะ Auto Hall TP
+local autoHallActive = false
 local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
@@ -391,7 +391,7 @@ local claimPlaytimeCorner = Instance.new("UICorner")
 claimPlaytimeCorner.CornerRadius = UDim.new(0, 6)
 claimPlaytimeCorner.Parent = claimPlaytimeBtn
 
--- Row 3: Hall TP (ปรับเป็น Toggle Auto Hall ได้ด้วย) | Auto Click[cite: 6]
+-- Row 3: Hall TP | Auto Click[cite: 6]
 local hallTpBtn = Instance.new("TextButton")
 hallTpBtn.Name = "HallTpBtn"
 hallTpBtn.Size = UDim2.new(0.5, -11, 0, 24)
@@ -839,7 +839,7 @@ local function teleportToTrain()
 	end
 end
 
--- ฟังก์ชั่นสำหรับ Hall TP พร้อมระบบยิง PartyCreate เข้า Arena
+-- ฟังก์ชั่นสำหรับ Hall TP (ยิง RequestEventWorld -> สุ่ม TouchParts -> ยิง PartyCreate(4) -> รอ 35 วิ)
 local function teleportToHall()
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
@@ -851,7 +851,7 @@ local function teleportToHall()
 		end
 	end)
 
-	task.wait(1.5) -- หน่วงเวลาให้ย้ายโลก
+	task.wait(1.5)
 
 	pcall(function()
 		local randNum = tostring(math.random(1, 4))
@@ -881,7 +881,7 @@ local function teleportToHall()
 		end
 	end)
 
-	task.wait(1) -- หน่วงเวลาก่อนยิงคำสั่งเข้า Party/Arena
+	task.wait(1)
 
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
@@ -892,6 +892,9 @@ local function teleportToHall()
 			partyCreateRemote:FireServer(4)
 		end
 	end)
+	
+	-- ⏳ รอเวลานับถอยหลัง 30 วินาที + เผื่อโหลด เพื่อไม่ให้ลูปส่งคำสั่งรัวซ้ำซ้อน
+	task.wait(35)
 end
 
 -- Stage Detector Loop[cite: 6]
@@ -969,15 +972,14 @@ task.spawn(function()
 	end
 end)
 
--- Auto Hall Loop: เช็คสถานะ InEventArena ทุกๆ 3 วินาที ถ้าตายหรือหลุดออก จะทำการวาร์ปเข้าใหม่ทันที
+-- Auto Hall Loop: ตรวจสอบสถานะ InEventArena ทุกๆ 3 วินาที
 task.spawn(function()
 	while true do
 		if autoHallActive then
 			pcall(function()
 				local inArena = player:GetAttribute("InEventArena")
 				if not inArena or inArena == false then
-					teleportToHall()
-					task.wait(5) -- รอเวลาหลังจากเข้าห้องใหม่
+					teleportToHall() -- เมื่อเรียกใช้งาน จะรันและรอ 35 วินาทีอัตโนมัติ
 				end
 			end)
 		end
@@ -1026,14 +1028,13 @@ end)
 
 trainWarpBtn.MouseButton1Click:Connect(teleportToTrain)
 
--- ปุ่ม Hall TP สามารถกดเพื่อวาร์ปครั้งเดียว หรือเปิด Toggle เป็นระบบ Auto Re-Arena ได้
 hallTpBtn.MouseButton1Click:Connect(function()
 	autoHallActive = not autoHallActive
 	if autoHallActive then
 		hallTpBtn.Text = "🎃 Hall TP: ON"
 		hallTpBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
 		hallTpBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
-		teleportToHall() -- วาร์ปทันทีเมื่อกดเปิด
+		teleportToHall()
 	else
 		hallTpBtn.Text = "🎃 Hall TP: OFF"
 		hallTpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
@@ -1151,7 +1152,7 @@ antiPauseToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 claimBtn.MouseButton1Click:Connect(claimTargetStage)
-nextBtn.MouseButton1Click:Connect(teleportToNextTask) -- หรือ teleportToNextStage ตามเดิม
+nextBtn.MouseButton1Click:Connect(teleportToNextStage)
 
 resetBtn.MouseButton1Click:Connect(function()
 	currentIndex = 1
