@@ -82,6 +82,7 @@ local autoClickActive = false
 local autoRebirthActive = false
 local autoEndlessActive = false
 local autoHallActive = false
+local isTeleportingHall = false -- ตัวแปรป้องกันการกดซ้ำซ้อน
 local antiAfkActive = false
 local antiGamePauseActive = false
 local isClaiming = false
@@ -839,8 +840,11 @@ local function teleportToTrain()
 	end
 end
 
--- ฟังก์ชั่นสำหรับ Hall TP (ยิง RequestEventWorld -> สุ่ม TouchParts -> PartyCreate(4) -> MeteorShowerRequestState)
+-- ฟังก์ชั่นสำหรับ Hall TP ที่ปรับปรุงความปลอดภัยในการค้นหา Object
 local function teleportToHall()
+	if isTeleportingHall then return end
+	isTeleportingHall = true
+
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
 		local remotes = getRemote(shared, "Remotes")
@@ -851,18 +855,24 @@ local function teleportToHall()
 		end
 	end)
 
-	task.wait(1.5)
+	-- ⏳ เพิ่มเวลาให้ระบบข้ามโลกและให้ Client โหลด Workspace ของ HalloweenWorld
+	task.wait(2)
 
 	pcall(function()
+		-- ใช้ WaitForChild เพื่อรอจนกว่า HalloweenWorld จะโหลดเข้ามาใน Workspace จริงๆ (รอสูงสุด 5 วินาที)
+		local halloweenWorld = workspace:WaitForChild("HalloweenWorld", 5)
+		if not halloweenWorld then return end
+		
+		local scriptable = halloweenWorld:WaitForChild("Scriptable", 3)
+		local teleporters = scriptable and scriptable:WaitForChild("Teleporters", 3)
+		if not teleporters then return end
+
 		local randNum = tostring(math.random(1, 4))
-		local halloweenWorld = workspace:FindFirstChild("HalloweenWorld")
-		local scriptable = halloweenWorld and halloweenWorld:FindFirstChild("Scriptable")
-		local teleporters = scriptable and scriptable:FindFirstChild("Teleporters")
-		local targetFolder = teleporters and teleporters:FindFirstChild(randNum)
-		local touchParts = targetFolder and targetFolder:FindFirstChild("TouchParts")
+		local targetFolder = teleporters:WaitForChild(randNum, 3)
+		local touchParts = targetFolder and targetFolder:WaitForChild("TouchParts", 3)
 
 		local character = player.Character or player.CharacterAdded:Wait()
-		local hrp = character:FindFirstChild("HumanoidRootPart")
+		local hrp = character:WaitForChild("HumanoidRootPart", 3)
 
 		if touchParts and hrp then
 			local targetCFrame
@@ -904,6 +914,9 @@ local function teleportToHall()
 			meteorRemote:FireServer()
 		end
 	end)
+
+	task.wait(8)
+	isTeleportingHall = false
 end
 
 -- Stage Detector Loop[cite: 6]
@@ -981,10 +994,10 @@ task.spawn(function()
 	end
 end)
 
--- Auto Hall Loop: ตรวจสอบสถานะ InEventArena ทุกๆ 3 วินาที
+-- Auto Hall Loop: ตรวจสอบสถานะ InEventArena ทุกๆ 3 วินาที (ป้องกันการยิงซ้ำซ้อนด้วย isTeleportingHall)
 task.spawn(function()
 	while true do
-		if autoHallActive then
+		if autoHallActive and not isTeleportingHall then
 			pcall(function()
 				local inArena = player:GetAttribute("InEventArena")
 				if not inArena or inArena == false then
