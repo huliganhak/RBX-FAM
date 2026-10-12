@@ -840,7 +840,7 @@ local function teleportToTrain()
 	end
 end
 
--- ฟังก์ชั่นสำหรับ Hall TP ที่ปรับปรุงความปลอดภัยในการค้นหา Object
+-- ฟังก์ชั่นสำหรับ Hall TP ที่ปรับแก้รีโมทตัวสุดท้ายเป็น PartyStart
 local function teleportToHall()
 	if isTeleportingHall then return end
 	isTeleportingHall = true
@@ -855,11 +855,9 @@ local function teleportToHall()
 		end
 	end)
 
-	-- ⏳ เพิ่มเวลาให้ระบบข้ามโลกและให้ Client โหลด Workspace ของ HalloweenWorld
 	task.wait(2)
 
 	pcall(function()
-		-- ใช้ WaitForChild เพื่อรอจนกว่า HalloweenWorld จะโหลดเข้ามาใน Workspace จริงๆ (รอสูงสุด 5 วินาที)
 		local halloweenWorld = workspace:WaitForChild("HalloweenWorld", 5)
 		if not halloweenWorld then return end
 		
@@ -908,10 +906,10 @@ local function teleportToHall()
 	pcall(function()
 		local shared = getRemote(ReplicatedStorage, "Shared")
 		local remotes = getRemote(shared, "Remotes")
-		local meteorRemote = getRemote(remotes, "MeteorShowerRequestState")
+		local partyStartRemote = getRemote(remotes, "PartyStart")
 		
-		if meteorRemote then
-			meteorRemote:FireServer()
+		if partyStartRemote then
+			partyStartRemote:FireServer()
 		end
 	end)
 
